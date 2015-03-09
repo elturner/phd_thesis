@@ -1,0 +1,105 @@
+Original Papers:
+
+	3DimPVT 2012   :    Eigencrust floorplan
+	3DPVT 2013     :    Voxel carving
+	VISIGRAPP 2014 :    Floorplan, room labeling
+	siggraph 2015  :    procarve
+
+Secondary papers:
+
+	qual exam
+
+	jstsp 2014     :    combining carving and floorplans
+
+other applications:
+
+	hardware development
+
+	arpa-e grant
+		- floorplans used as input for window detection, plugload, lights
+		- simplicity requirements of EnergyPlus
+
+
+Thesis outline :
+
+
+	abstract (~1 page)
+
+	dedication
+
+	Table of contents
+		- list of figures
+	
+	Acknowledgements (1 page)
+
+	Introduction (10-15 pages)
+		- motivation
+		- overview
+		- background
+			- surface reconstruction in general
+			- talk about ICIP 2012?
+			- indoor scanning
+				- the need for volumetric approaches
+				- backpack systems
+				- quadrotor systems
+		- organization of thesis
+
+	harware description (5-10 pages)
+		- mechanical specs
+		- sweeping orientation of scanners
+		- data acquisition software		
+		- time synchronization between sensors
+		- background on localization
+		- alignment of path to compass north
+
+	Pointcloud generation
+		- color by camera via time window
+		- partition pointcloud by levels
+	
+	Floorplan generation
+		- wall sampling techniques
+			- histogram binning of pointclouds
+				(with and without normal analysis)
+			- unsuccessfuly attempts:
+				- extrema wall samples
+	
+		- volumetric approaches with triangles
+		- Eigencrust
+		- visigrapp
+		- room detection
+		- simplification techniques
+		
+	Carving
+		- 3DV 2013 voxel carving
+		- everything in siggraph paper about 3D stuff 
+			- (save fp for later)
+			- (save furniture segmentation for later)
+		- expand A LOT on mathematics of probabiltiy
+			- explain what's going on with noisypath
+			- everything regarding the wedge model
+			- chunking of scans
+
+	Improving floorplans with carving
+		- level-splitting with octree, improves on pointcloud level split
+		- wall sample generation via procarve
+		- include optimization of fp alignment
+		- include some hia stuff
+
+	Improving carving with floorplans
+		- removing explosions
+		- merging fp and oct
+		- refining furniture
+		- representing furniture and building separately
+
+	Applications and Analysis
+		- error analysis of meshes to pointclouds?
+		- Energy related
+			- discuss failed attempt to simplify voxel carving
+			- floorplan input for window detection, plugload, lights
+			- simplicity requirements of EnergyPlus
+		- wifi maps
+		- pressure maps? temperature maps?
+
+	Conclusion (1-2 pages)
+
+	Bibliography (~100 sources)

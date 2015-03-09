@@ -1,0 +1,44 @@
+# Ignore hidden files
+*~
+*.swp
+**/.metadata/**
+*.DS_Store
+
+# Ignore output latex files
+*.pdf
+*.bbl
+*.log
+*.tlog
+*.blg
+*.dvi
+*.out
+*.aux
+
+# ignore images
+*.jpg
+*.jpeg
+*.png
+*.wmv
+
+# Ignore binary files
+*.exe
+*.exe.*
+*.obj
+*.bin
+*.dll
+*.lib
+*.zip
+*.dmg
+*.iso
+*.gz
+*.jar
+*.rar
+*.tar
+*.sql
+*.pyc
+**/bin/**
+**/x64/**
+**/data/**
+**/Release/**
+**/Debug/**
+**/build/**

@@ -1,0 +1,739 @@
+%\documentclass[journal]{IEEEtran}
+%\documentclass[11pt,draftcls,onecolumn]{IEEEtran}
+\documentclass[10pt,twocolumn,twoside]{IEEEtran}
+\usepackage{cite}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% may not exceed 13 double-column pages %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% avideh formatting
+%\usepackage{setspace}
+%\doublespacing
+%\onecolumn
+% end avideh formatting
+
+% *** GRAPHICS RELATED PACKAGES ***
+\usepackage[pdftex]{graphicx}
+% declare the path(s) where your graphic files are
+\graphicspath{{../figures/}}
+% and their extensions so you won't have to specify these with
+% every instance of \includegraphics
+\DeclareGraphicsExtensions{.pdf,.jpg,.jpeg,.png}
+
+% *** MATH PACKAGES ***
+\usepackage[cmex10]{amsmath}
+\usepackage{amssymb}
+\interdisplaylinepenalty=2500
+
+% *** SPECIALIZED LIST PACKAGES ***
+%\usepackage{algorithmic}
+
+% *** ALIGNMENT PACKAGES ***
+%\usepackage{array}
+
+% *** SUBFIGURE PACKAGES ***
+%\ifCLASSOPTIONcompsoc
+%  \usepackage[caption=false,font=normalsize,labelfont=sf,textfont=sf]{subfig}
+%\else
+%  \usepackage[caption=false,font=footnotesize]{subfig}
+%\fi
+% subfig.sty, written by Steven Douglas Cochran, is the modern replacement
+% for subfigure.sty, the latter of which is no longer maintained and is
+% incompatible with some LaTeX packages including fixltx2e. However,
+% subfig.sty requires and automatically loads Axel Sommerfeldt's caption.sty
+% which will override IEEEtran.cls' handling of captions and this will result
+% in non-IEEE style figure/table captions. To prevent this problem, be sure
+% and invoke subfig.sty's "caption=false" package option (available since
+% subfig.sty version 1.3, 2005/06/28) as this is will preserve IEEEtran.cls
+% handling of captions.
+% Note that the Computer Society format requires a larger sans serif font
+% than the serif footnote size font used in traditional IEEE formatting
+% and thus the need to invoke different subfig.sty package options depending
+% on whether compsoc mode has been enabled.
+%
+% The latest version and documentation of subfig.sty can be obtained at:
+% http://www.ctan.org/tex-archive/macros/latex/contrib/subfig/
+
+
+% *** PDF, URL AND HYPERLINK PACKAGES ***
+\usepackage{url}
+
+% correct bad hyphenation here
+\hyphenation{op-tical net-works semi-conduc-tor}
+
+
+\begin{document}
+
+\title{Fast, Automated, Scalable Generation of Textured 3D Models of Indoor Environments}
+
+% author names and IEEE memberships
+% note positions of commas and nonbreaking spaces ( ~ ) LaTeX will not break
+% a structure at a ~ so this keeps an author's name from being broken across
+% two lines.
+% use \thanks{} to gain access to the first footnote area
+% a separate \thanks must be used for each paragraph as LaTeX2e's \thanks
+% was not built to handle multiple paragraphs
+%
+
+\author{Eric~Turner,~\IEEEmembership{Student Member,~IEEE}, ~Peter~Cheng, ~and~Avideh~Zakhor,~\IEEEmembership{Fellow,~IEEE}\thanks{E. Turner and A. Zakhor are with University of California Berkeley}\thanks{Department of Electrical Engineering and Computer Sciences}\thanks{Berkeley, CA 94720 USA (email: elturner@eecs.berkeley.edu; petercheng00@gmail.com; avz@eecs.berkeley.edu)}\thanks{This research was conducted with Government support under and awarded by DoD, Air Force Office of Scientific Research, National Defense Science and Engineering Graduate (NDSEG) Fellowship, 32 CFR 168a. }}
+
+% make the title area
+\maketitle
+
+% As a general rule, do not put math, special symbols or citations
+% in the abstract or keywords.
+\begin{abstract}
+
+3D modeling of building architecture from mobile scanning is a rapidly advancing field.  These models are used in virtual reality, gaming, navigation, and simulation applications.  State-of-the-art scanning produces accurate point-clouds of building interiors containing hundreds of millions of points.  This paper presents several scalable surface reconstruction techniques to generate watertight meshes that preserve sharp features in the geometry common to buildings.  Our techniques can automatically produce high-resolution meshes that preserve the fine detail of the environment by performing a ray-carving volumetric approach to surface reconstruction.  We present methods to automatically generate 2D floor plans of scanned building environments by detecting walls and room separations.  These floor plans can be used to generate simplified 3D meshes that remove furniture and other temporary objects.  We propose a method to texture-map these models from captured camera imagery to produce photo-realistic models.  We apply these techniques to several data sets of building interiors, including multi-story datasets.
+
+\end{abstract}
+
+% Note that keywords are not normally used for peer review papers.
+\begin{IEEEkeywords}
+Architecture, Floor Plan, Surface Reconstruction, LiDAR, Texture Mapping
+\end{IEEEkeywords}
+
+\section{Introduction}
+\label{sec:introduction}
+% Here we have the typical use of a "T" for an initial drop letter
+% and "HIS" in caps to complete the first word.
+
+% motivation
+\IEEEPARstart{L}{aser} scanning technology is becoming a vital component of building construction and maintenance.  During building construction, laser scanning can be used to record the as-built locations of HVAC and plumbing systems before drywall is installed.  In existing buildings, blueprints are often outdated or missing, especially after several remodelings.  Such scans can be used to generate building models describing the current architecture.  Meshed triangulations allow for the efficient representation of the scanned geometry.  In addition to being useful in the fields of architecture, civil engineering, and construction, these models can be directly applied to virtual walk-throughs of environments, gaming entertainment, augmented reality, indoor navigation, and energy simulation analysis.  These applications rely on the accuracy of a model as well as its compact representation.
+
+% figure with pointcloud and models
+\begin{figure*}[t]
+
+	% top row
+	\begin{minipage}[t]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.4cm]{joint/coryf2/coryf2_photo}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.4cm]{joint/coryf2/coryf2_3d_triangles}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.4cm]{joint/coryf2/coryf2_3d_texture_compressed}}
+		\centerline{(c)}\medskip
+	\end{minipage}
+	
+	% bottom row
+	\begin{minipage}[b]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.4cm]{joint/coryf2/coryf2_pointcloud_compressed}}
+		\centerline{(d)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.4cm]{joint/coryf2/coryf2_2d_triangles}}
+		\centerline{(e)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.4cm]{joint/coryf2/coryf2_2d_texture_compressed}}
+		\centerline{(f)}\medskip
+	\end{minipage}
+	
+	\caption{Models generated with the techniques described in this paper:  (a) photograph of scanned area, academic building; (b) surface carving model of this area; (c) surface carving model with texturing; (d) point cloud of captured scans; (e) extruded floor plan model of area; (f) extruded floor plan with texturing.}
+	\label{fig:coryf2}
+
+\end{figure*}
+
+% applications
+Generating an accurate model of indoor environments is an emerging challenge in the fields of architecture and construction for the purposes of verifying as-built compliance to engineering designs~\cite{Bosche10,Xiong13}.  This task is made more challenging by the GPS-deprived nature of indoor environments~\cite{Liang13}.  Another application that requires an exported mesh to retain as much detail as possible is historical preservation via a virtual reality model~\cite{VillageHeritage,Carving}.  Alternatively, building energy efficiency simulations can use watertight meshes of the environment to estimate airflow and heat distribution~\cite{EnergyPlus}.  These simulations require simplified meshes as input, since finite element models are difficult to scale.  It is also important to be able to generate an immersive visualization and walk-through of the environment for these applications, so experts can remotely inspect the scanned environment via telepresence, a task that currently requires expensive travel and on-site visits.  Different applications require models of different complexities, both with and without furniture geometry.  The modeling approaches detailed in this paper are useful for both types of applications, as shown in the examples in Fig.~\ref{fig:coryf2}.  Fig.~\ref{fig:coryf2}a is a photograph of the scanned area: the hallways of an academic building, encompassing about 1,000 square meters of scanned area.  Fig.~\ref{fig:coryf2}d represents the captured 3D point-cloud of this area.  Figs.~\ref{fig:coryf2}b and~\ref{fig:coryf2}c show a high-detail 3D mesh of 2.7 million triangles generated using the algorithm in Sec.~\ref{sec:carving}, with and without texturing, respectively.  Figs.~\ref{fig:coryf2}e and~\ref{fig:coryf2}f show a low detail model of 2,644 triangles generated using the approach in Sec.~\ref{sec:floorplan}, with and without texturing.
+
+%\subsection{Hardware Configuration}
+%\label{ssec:hardware}
+
+% competing systems
+% include system hardware description
+% our system and WHAT WE DO DIFFERENT AND WHY IT IS BETTER!!!!!!!!!
+In this paper, we focus on ambulatory scanning platforms, where the sensor suite is carried by a human operator as the operator moves through the building environment~\cite{Sweep,MITBackpack,VillageHeritage}.  These systems allow for rapid data acquisition and can be actively scanning for several hours at a time.  They use 2D LiDAR scanners due to the cost and weight of full 3D laser range finders.  The captured scans are used both to reconstruct the geometry of the environment and to localize the system in the environment over time.  The datasets shown in this paper were generated by a backpack-mounted system that uses 2D LiDAR scanners to estimate the 3D path of the system over time as well as multiple scanners to generate geometry for the environment~\cite{liu2010indoor,Backpack,Localization,NickJournal}.  This system also has multiple cameras collecting imagery during the data acquisition process, which allows for scanned points to be colored or for generated meshes to be textured with realistic imagery. 
+
+% Brief bit on localization
+%\subsection{Localization}
+%\label{ssec:localization}
+
+In order to reconstruct the observed geometry, the position and orientation of the scanning system must be estimated for each time-instant during the acquisition.  To localize the datasets presented in this paper, we matched successive 2D scans of a horizontally-oriented scanner in order to estimate the change in 2D position and orientation of the system between scans~\cite{NickJournal}.  These incremental changes in pose are refined by a global graph optimization step that constrains the system path whenever an area is revisited~\cite{toro07}.  These revisits are automatically detected and constrained in order to produce an accurate 2D trajectory of the system.  The elevation of the system is computed using a similar technique with a vertically mounted scanner~\cite{Backpack}.
+
+%\subsection{Modeling}
+%\label{ssec:modeling}
+
+% generating a pointcloud
+Once the path of the system over time is recovered using the above localization schemes, the pose of each sensor is known at any given time, where pose refers to 3D position and orientation.  A point cloud of the scanned environment can be generated by performing a rigid translation and rotation of scanned points from the sensor's coordinate frame at each timestamp to the world coordinate frame.  These points can then be back-projected to the image plane of the temporally nearest camera image in order to assign color information~\cite{Backpack}.  Fig.~\ref{fig:coryf2}d shows an example of a captured point cloud that is colored with imagery in this manner.
+
+% brief overview of different modeling techniques presented
+In this paper, we show two surface reconstruction techniques for 3D point clouds generated by ambulatory systems.  Sec.~\ref{sec:carving} describes a method that preserves these fine details while remaining robust to registration errors and noise from the input scans, which generates models such as the one shown in Fig.~\ref{fig:coryf2}b.  Sec.~\ref{sec:floorplan} describes a method that first generates a floor plan of the building environment, then creates a 2.5D model by extruding the floor plan vertically using captured height information.  Such a model represents the floors, walls, and ceilings of a model efficiently, while removing geometry associated with furniture and other objects within the building.  This type of model is shown in Fig.~\ref{fig:coryf2}e.  The output of both of these modeling techniques can be texture-mapped with captured camera imagery, as described in Sec.~\ref{sec:texture}.  An example of texture-mapping these two modeling processes is shown in Figs.~\ref{fig:coryf2}c and~\ref{fig:coryf2}f.  Lastly, we will show the results of all of these techniques on a variety of data sets in Sec.~\ref{sec:results}.
+
+% background section
+\section{Related Work}
+\label{sec:background}
+
+Traditional industry standard building scanning is to use static scanners.  Such scanners are mounted on tripods, and moved from area to area in the building~\cite{Mattausch14,Mura13,RoomSegmentation,HistWallRecon,BasicPlaneFit}. This scanning process is labor intensive and slow, but results in highly accurate point clouds after stitching.  In order to automate indoor scanning, many mobile systems have been introduced.  Wheeled platforms that carry scanning equipment and are manually pushed through the environment are popular~\cite{Carving, ProbabilisticRobotics}.  Mobility of such systems is limited, since they are unable to traverse rough terrain or stairs easily.  Others have investigated mounting laser range finders on unmanned aerial vehicles~\cite{Quadrotor,QuadrotorMIT}.  Such platforms are agile in that they can scan difficult-to-reach areas.  Such unmanned platforms are limited by short battery life and cannot scan for long durations.  This paper focuses on scans from mobile systems.  Such systems allow for faster acquisition of the data, but also introduce increased mis-registration error.
+
+One of the primary challenges of indoor modeling is the sheer size of the input point-clouds.  Scans of single floors of buildings result in point-clouds that contain hundreds of millions of points, often larger than the physical memory in a personal computer.  Man-made geometry is typically composed of planar regions and sharp corners, but many conventional surface reconstruction schemes assume a certain degree of smoothness and result in rounded or blobby output if applied to these models~\cite{Powercrust,OctreeSculpting,Carving,ProgressiveMesh,Poisson,Eigencrust}.  In addition to large flat regions, building interiors also contain many small details, such as furniture.  A surface reconstruction scheme must be able to represent the large surfaces in a building with an efficient number of elements and preserve their sharp features.  The fine details of furniture are useful for some applications whereas others require furniture to be removed.  
+
+% voxel-specific background
+Mobile mapping systems use range scanners to create a dense 3D point-cloud representation of the environment geometry~\cite{Sweep,Localization}, which can be used to develop full 3D models~\cite{Pons10,Carving}.  One approach to generating models of high detail is to use a classification scheme on the input point-cloud.  Such schemes are capable of preserving the fine detail in the model, such as staircases~\cite{Victors} or furniture~\cite{Kim12, SearchClassifyPointcloud, Shao12}.  Unfortunately, these techniques are heavily dependant on the variance of the database of shapes available and are prone to errors due to mislabeling.  Many surface reconstruction techniques applied to building architecture commonly assume that building geometry is piece-wise planar, with the orientation of planar elements as either perfectly horizontal or vertical.  This assumption allows for plane-fitting to be performed on the input point-cloud, either by a histogram approach or random consensus~\cite{HistWallRecon,Victors,BasicPlaneFit}.  Such approaches do not guarantee watertightness of the resulting mesh and can require substantial post-processing.  While similar techniques exist that ensure watertightness, they are unable to capture fine details~\cite{Museums}. Existing techniques that attempt to preserve fine detail for architecture models often require computationally expensive global optimizations~\cite{Pons10}.  Those approaches work well for a limited modeling environment, but do not scale well.  The largest tested model in~\cite{Pons10} consists of 3.3 million points, whereas the techniques described in this paper are easily applied to models with 115 million points~\cite{Turner13}.  There are also many Kinect-based approaches~\cite{Kintinuous,Zhou13,Zhou14}, which offer high-detailed models, but generate dense enough models that prevent scalability to building-level scanning.  One advantage of Kinect-based systems is the large amount of data produced in each frame, which allows for accurate models based on averaging techniques.  However, the additive noise in each Kinect scan is much larger than other scanning technologies, such as time-of-flight, thus requiring aggressive filtering to be used with any Kinect-based point-cloud.  It is desirable to develop techniques that (a) use a volumetric approach to ensure watertightness, (b) preserve sharp, planar features as well as fine detail, and (c) are fast and memory efficient even with large models.
+
+There have been several algorithms that reconstruct surfaces from point-clouds using a volumetric approach via partitioning Delaunay Tetrahedralizations generated from input point clouds~\cite{Powercrust,EigencrustShewchuk}.  The downsides to such techniques are that (a) the complexity of the output surface scales with number of input points, (b) they break down under noise due to scan misregistration, (c) they are optimized for smooth and continuous surfaces, and (d) they require a global optimization step.  These factors limit the scalability of existing approaches to mobile scanning of indoor environments.  While advancements have been made to perform these computations in an efficient and out-of-core manner~\cite{RealTimeEigenCrust,StreamingDelaunay}, the resulting models are too large to be practical for graphical or simulation applications.
+
+Implicit surface reconstruction techniques generate watertight meshes and can be applied to large models using distributed computing techniques~\cite{Poisson,UnorganizedPoints,OutOfCorePoisson,ParallelPoisson}. These techniques are unsuitable for modeling man-made architecture, since output models lack sharp features due to implicit surfacing from Gaussian basis functions.  Additionally, many common triangulation schemes for implicit surfaces result in uniform elements~\cite{DualContouring,MarchingCubes}, which are undesirable for large, flat surfaces that can be modeled just as accurately with fewer elements.  Such techniques also often require mesh smoothing, further reducing accuracy~\cite{Carving}. Algorithms that adaptively mesh an isosurface or simplify an existing mesh rely on the local feature size of a model~\cite{QEM,ProgressiveMesh,Isostuffing,AdaptiveMeshing}.  Models with flat regions or sharp corners, where the curvature approaches zero or infinity, can become degenerate or have poor quality.  Models of building interiors are rich with flat surfaces and right angles.  This prior knowledge supports the use of primitives that have these same aspects.  Examples include voxel and octree structures, which are used in many carving techniques~\cite{OctreeSculpting,Carving,SpaceTime,VoxelSurfaceArea,Yang05,ParallelOctree}.  Such approaches are robust to noise and registration errors, but challenges with voxel representations are memory and computational intensity.
+
+% floor plan specific background
+A number of simplified building modeling algorithms have been developed, most of which assume vertical walls, rectified rooms, and axis-alignment~\cite{Museums,WallFinder}.  Being able to make assumptions about the planarity of an environment has been used successfully to model only the major features of scanned objects even in the presence of high noise~\cite{Lafarge13}.  A simplified model tends to be more robust to noise and clutter and allows for faster processing of data.  One of the major limitations of these techniques is that they are typically developed only for axis-aligned models or fundamentally change the topology of minor areas, such as ignoring doorways, shapes of rooms, or small rooms entirely.  Our approach described in Sec.~\ref{sec:floorplan} generates a 2D floor plan of the building, then uses wall height information to generate a 3D extrusion of this floor plan.  Such blueprint-to-model techniques have been well-studied~\cite{Or05,Lewis98}, but rely on the original building blueprints as input.  Prior work on automatic floor plan generation use dense 3D point-clouds as input, and take advantage of the verticality of walls to perform histogram analysis to sample wall position estimates~\cite{Okorn09,Eigencrust}, which are in the same format as a grid map for particle filtering~\cite{toro05}.  In situations where dense 3D point-clouds are available, we apply similar techniques to recover point estimates of wall positions.
+
+% discuss texture-mapping background
+When generating a mesh of indoor environments, one application allows for imagery to be used to create texture-maps for the mesh.  Each surface of the environment is represented by a generated texture image.  There are many existing approaches to stitching together multiple images to produce a larger, seamless image \cite{szeliski2006image,agarwalapanoramas,wangmultipleviews,coorg1997matching,debevechybrid,bernardinimultiplescans}.  Generally, parts of images are matched to each other by detecting feature points and identifying matches. Images are then transformed to maximally align matches.  There exist impressive techniques that perform high-quality texture-mapping given sufficient coverage of an object with high-calibrated scanners~\cite{Zhou14}, but the process of using noisy camera orientations with fast-moving scanners is still a challenge.  Feature matching works best when unique visual references exist in the environment that can be detected in multiple images.  Unfortunately, many indoor environments have a high prevalence of bare surfaces as well as repeating textures, such as windows and doors.
+
+\section{Detailed Mesh Reconstruction}
+\label{sec:carving}
+
+% general description of 3D modeling approach
+Many practical applications require the captured geometry of building interiors to preserve as much detail as possible. This detail includes all static objects in the scene, such as furniture or temporary items.  The surface reconstruction method we propose in this section generates a watertight mesh that preserves all details in the original scan points~\cite{Turner13}.  The approach described below is a modification of voxel carving to address these issues.  We also introduce memory-efficient data structures that produce models that preserve fine details with an efficient number of elements.  In subsection~\ref{ssec:voxel_carving}, we detail the voxel carving step, which produces a volumetric representation of the scanned environment.  In subsection~\ref{ssec:planar_meshing}, we describe our approach to generate planar surfaces in order to form a watertight mesh of the captured volume.
+
+% voxel carving
+\subsection{Voxel Carving}
+\label{ssec:voxel_carving}
+We partition space volumetrically into interior and exterior sets to ensure the boundary between these areas is watertight.  This \textit{interior} and \textit{exterior} volume classification is performed on a voxel grid.  Initially, all voxels are assumed to be \textit{exterior}, referring to any space that never had a line-of-sight with the scanners.  This label applies to the interior volume of solid objects, as well as the area completely outside the building environment.  The process of \textit{carving} refers to relabeling a voxel from \textit{exterior} to \textit{interior}, which occurs when a voxel is found to intersect the line segment from a scanner to a corresponding scan point.  If a laser passes through a voxel, that voxel is considered \textit{interior}.
+
+Additionally, the sweeping nature of the laser scanning process is utilized by also carving voxels that reside between two adjacent scan-lines~\cite{Turner13,Carving}.  As the scanning system moves from pose $t_i$ to pose $t_{i+1}$, the scan-lines $p_{i,j}$, $p_{i,j+1}$, $p_{i+1,j}$, and $p_{i+1,j+1}$ are captured, as shown in Fig.~\ref{fig:carving}a.  These scan-lines are bilinearly interpolated, as shown in Fig.~\ref{fig:carving}b, so that all intersected voxels are carved, which is depicted in Fig.~\ref{fig:carving}c.
+
+% make figure of prism carving and interpolation
+\begin{figure*}[t]
+
+  \begin{minipage}[b]{0.3\linewidth}
+  \centerline{\includegraphics[height=2.7cm]{carving/diagrams/triangle_prism_carve_a}}
+  \centerline{(a)}\medskip
+  \end{minipage}
+  \begin{minipage}[b]{0.3\linewidth}
+  \centerline{\includegraphics[height=2.7cm]{carving/diagrams/triangle_prism_carve_b}}
+  \centerline{(b)}\medskip
+  \end{minipage}
+  \begin{minipage}[b]{0.3\linewidth}
+  \centerline{\includegraphics[height=2.7cm]{carving/diagrams/triangle_prism_carve_c}}
+  \centerline{(c)}\medskip
+  \end{minipage}
+
+\caption{(a) The input point-cloud is used in conjunction with the track of each scanner to define interior space to carve; (b) carving is performed using ray-tracing from scanner location to an interpolation of the input points; (c) the result is a set of voxels labeled as {\it interior}.}
+\label{fig:carving}
+\end{figure*}
+
+% voxel data structure
+In most common voxel representations, memory usage is proportional to the volume represented.  For sizeable models, this memory footprint rapidly becomes intractable, necessitating splitting models into smaller chunks and processing each separately~\cite{Carving,Kintinuous}.  This step adds redundant computation and storage overhead.  Rather than storing all relevant voxels in memory, we propose a data structure that implicitly represents the interior and exterior voxels by only explicitly storing the boundary voxels.  A boundary voxel is defined to be one that is labeled as exterior, but has at least one face incident to a voxel labeled interior.  The number of boundary voxels is proportional to the surface area of a model, so storing the boundary only requires $O(n^2)$ memory, whereas the full volume would require $O(n^3)$ memory to store, where $n$ is the characteristic length of a model.
+
+%Fig.~\ref{fig:boundary_carving} demonstrates in 2D how a voxel representation of the full model can be built from a starting configuration using ray-tracing as a primitive operation, while still respecting the above invariants.  The starting configuration for the 2D map is shown in Fig.~\ref{fig:boundary_carving}a, with a single interior voxel represented using four boundary voxels.  This interior voxel is initialized to be at the scanner's start position, which is known to be interior.  Dark green lines indicate faces bordering interior voxels.  Recall that interior voxels denoted in white are not explicitly stored in the map while the boundary voxels, denoted in light green, are stored explicitly.  If an external voxel $v$ is designated to be carved, then each of these neighboring exterior voxels, $v^{\prime}$, is added to the map as boundary voxels.  Lastly, $v$ is removed from the map, which now represents that $v$ is part of the interior volume, as seen in Fig.~\ref{fig:boundary_carving}c.  Any carving attempt on a voxel that is not in the map can be ignored, since all carving initiates from within the interior volume.  By using only this operation, the map invariants are preserved and consistently define an interior volume.
+
+% show boundary carving
+%\begin{figure}[t]
+%
+%  \centerline{\includegraphics[width=0.85\linewidth]{carving/diagrams/boundary_voxel_carving}}
+%  \centerline{(a)\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,(b)\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,(c)\,\,\,\,\,}
+%\caption{A 2D example of carving a voxel.  Stored boundary voxels are shown in green.  White voxels are not explicitly stored. (a) The initial map configuration; (b) voxel $v$ is carved by removing $v$ from the map and adding additional boundary voxels $v^{\prime}$ to the map; (c) $v$ is represented as interior volume.}
+%\label{fig:boundary_carving}
+%\end{figure}
+
+% surface reconstruction and why planarity first is good for us
+\subsection{Planar Surface Meshing}
+\label{ssec:planar_meshing}
+
+Our procedure for surface reconstruction of voxels can be broken into two parts.  First, estimates of planar regions are found around the boundary faces of these voxels.  These regions are formed from connected sets of voxel faces, all of which are positioned on best-fit planes.  Second, each region is triangulated, forming a mesh.  This triangulation lies along the best-fit plane for each region, with elements whose sizes are proportional to the size of the region.
+
+We wish to encourage the output surface to contain large planar regions.  Such regions accurately model most man-made structures and the dominant surfaces in a building environment: the floors, walls, and ceiling.  As shown in Sec.~\ref{sec:texture}, surfaces composed of large planar regions have improved aesthetic quality after texture-mapping is applied.  Since the voxels are a discretized representation of the volume, any flat surface of the environment that is not axis-aligned is represented as a zig-zag pattern of voxels.  By fitting planes that only approximate the voxel faces, the output model can contain surfaces that are not axis-aligned.  The approximating planes are found by performing Principle Component Analysis (PCA) on connected subsets of voxel faces~\cite{PCA}.  Adjacent regions of voxel faces are progressively merged by attempting to model their union with a single best-fit plane.  In order to yield a more aesthetically pleasing output, we further relax these region definitions.  If two adjacent regions are fit by planes whose normal vectors are within $15^{\circ}$, then they are replaced by a single region defined by their union.  The result of this processing yields plane definitions that closely resemble an intuitive labeling of the floors, walls, and ceilings. 
+
+Once the set of voxel faces has been partitioned into planar regions, it is necessary to triangulate these regions.  Taking advantage of the existing voxel grid ensures that each region is represented with good quality triangles.  This grid allows for regions to be triangulated with a 2D variant of Isosurface Stuffing techniques, which provide strict bounds on resulting triangle angles~\cite{Isostuffing}.  An example region of voxel faces is shown in Fig.~\ref{fig:triangulation}a.  Since this region is best-fit by a plane that is not axis aligned, the region is composed of voxel faces in a zig-zag pattern.  The voxel faces that are most aligned with the normal vector of the region's plane, shown in red, are considered the dominant faces of the region.  These dominant faces are projected along their corresponding axis to generate an axis-aligned 2D projection of the region.  This projection is shown with black dashed lines in Fig.~\ref{fig:triangulation}a.  The triangulation is found by populating a quadtree that is aligned to the projected grid with the faces of this region.  An example of this quadtree is shown in Fig.~\ref{fig:triangulation}b.  The tree is triangulated by placing vertices at the center and corners of the leaf nodes, as shown in Fig.~\ref{fig:triangulation}c.  This step results in larger triangles for larger leaf nodes, while still controlling the quality of the output triangles.  This triangulation is projected back onto the plane defined by the region, to result in triangulated representation of this region in 3D space.
+
+% show cartoon of triangulation of region, including quadtree
+\begin{figure}[t]
+
+	\begin{minipage}[b]{0.48\linewidth}
+		\centerline{\includegraphics[height=3.2cm]{carving/project_plane/dominant_axis_project_a}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.48\linewidth}
+		\centerline{\includegraphics[height=3.2cm]{carving/project_plane/2dtri2}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	
+	\begin{minipage}[b]{0.48\linewidth}
+		\centerline{\includegraphics[height=3.2cm]{carving/project_plane/2dtri3}}
+		\centerline{(c)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.48\linewidth}
+		\centerline{\includegraphics[height=3.2cm]{carving/snapshot_triangles_corner00}}
+		\centerline{(d)}\medskip
+	\end{minipage}
+
+	\caption{(a) The dominant faces of a planar region (shown in red) are projected to the dominant axis-aligned plane; (b) projected faces represented in a quadtree structure to reduce number of elements; (c) this quadtree can be triangulated efficiently while ensuring high-quality triangles; (d) an example output of the triangulation of three regions in the corner of a room.}
+	\label{fig:triangulation}
+
+\end{figure}
+
+To ensure that the borders between planar regions are represented sharply, the vertices that are shared by multiple regions are snapped onto the intersection of those regions.  This step yields a watertight mesh across regions, as can be seen in the intersection of three regions at the corner of a room in Fig.~\ref{fig:triangulation}d.
+
+% describe final result
+As shown in Sec.~\ref{sec:results}, this approach results in models that preserve geometric detail up to the voxel resolution.  Improving the input resolution allows for finer detail to be represented in the output model, at the cost of increased run-time.
+
+\section{Simplified Mesh Reconstruction and Floor Plan Generation}
+\label{sec:floorplan}
+
+% motivation for simpler geometry
+While the technique described in Sec.~\ref{sec:carving} has many applications, it is often necessary to generate models rapidly or with very few elements, that do not represent objects such as furniture in the environment.  Such models are especially useful for building simulation applications, which are restrictive in the number of elements used to represent building geometry~\cite{EnergyPlus}.  In this section, we describe a surface reconstruction technique that first constructs a 2D floor plan of the area for each level of the building, then extrudes these floor plans into 3D models using estimates of the floor and ceiling heights in each room scanned.  We refer to this process as 2.5D modeling~\cite{Turner14}.
+
+A novel contribution of our method is the use of room labeling to enhance building models.  One motivation for existing work has been to capture line-of-sight information for fast rendering of building environments~\cite{WalkthroughRendering}, whereas others have partitioned environments into segments for efficient localization and tracking~\cite{SpectralClustering}.  These approaches are meant to create easily recognizable subsections of the environment, whereas our proposed room labeling technique uses geometric features to capture semantic room definitions for both architectural and building energy simulation applications.
+
+% wall sampling
+\subsection{Wall Sampling}
+\label{ssec:wall_sampling}
+The input data used during floor plan generation consist of points in the ($x$,$y$) horizontal plane, which we call wall samples.  These points depict locations of walls or vertical objects in the environment.  We assume that interior environments satisfy ``2.5-Dimensional'' geometry:  all walls are vertically aligned, whereas floors and ceilings are perfectly horizontal.  Many mapping systems use a horizontal LiDAR scanner to estimate a map of the area as a set of wall sample positions in order to refine estimates for scanner poses~\cite{MITBackpack,NickJournal}.  Such 2D wall samples are often generated during the localization process and do not require separate processing to produce.  These mobile mapping systems often have additional sensors capable of estimating floor and ceiling heights at each pose~\cite{Backpack,Quadrotor}.  The input to our algorithm is a set of 2D wall samples, where each sample is associated with the scanner pose that observed it, as well as estimates of the floor and ceiling heights at the wall sample location.
+
+An alternate method of computing wall samples is to subsample a full 3D point-cloud to a set of representative 2D points~\cite{Turner14,Eigencrust,Okorn09}.  This process cannot be done in a streaming fashion, since it requires a complete point cloud as input, but it can provide more accurate estimates for wall positions than a real-time particle filter.  Such an approach is useful when representing dense, highly complex point clouds with simple geometry.  Under the 2.5D assumption of the environment, wall samples can be detected by projecting 3D points onto the horizontal plane.  Horizontal areas with a high density of projected points are likely to correspond to vertical surfaces.  This approach works well to capture permanent wall features and ignore furniture and other interior clutter.
+
+% cropping the pointclouds based on level, or separating gridmap by floors
+This approach creates models by generating a floor plan separately for each level in the building.  Some localization systems that rely on 2D grid maps of wall samples are capable of detecting when the operator moves from one level to another and automatically partition their output grid maps accordingly~\cite{MITBackpack}.  If the wall samples are generated from point-clouds, then a histogram approach can be used to separate the point-cloud by levels~\cite{Eigencrust}. Fig.~\ref{fig:heighthist}a shows an example point-cloud, colored by height, which contains multiple levels.  By computing a histogram along the vertical-axis of the point-cloud, it is possible to find heights with high point density, which indicates the presence of a large horizontal surface.  An example of this process is shown in Fig.~\ref{fig:heighthist}b, where peaks in the histogram correspond to the floors and ceilings of each scanned level in the building.  Points scanned from above, in a downward direction, are used to populate a histogram to estimate the position of each floor, and the histogram used to estimate the position of each ceiling is populated by points scanned from below.  The local maxima of these two histograms show locations of likely candidates for floor and ceiling positions, which are used to estimate the number of scanned levels and the vertical extent of each level.  Fig.~\ref{fig:heighthist}c shows the final extruded mesh with all three scanned levels.
+
+% show example histogram and partitioning
+\begin{figure}[t]
+
+	\centerline{\begin{minipage}[c]{0.45\linewidth}
+		\centerline{\includegraphics[height=5.5cm]{floorplan/cory3story/points_LEFT}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[c]{0.45\linewidth}
+		\centerline{\includegraphics[height=6.5cm]{floorplan/cory3story/hist}}
+		\centerline{(b)}\medskip
+	\end{minipage}}
+	\begin{minipage}[c]{0.9\linewidth}
+		\centerline{\includegraphics[height=3.5cm]{floorplan/cory3story/mesh}}
+		\centerline{(c)}
+	\end{minipage}
+	
+	\caption{An example point-cloud partitioning by height: (a) the input point-cloud, showing geometry for three levels; (b) the vertical histogram showing estimates of each building level height; (c) the produced mesh of this building scan.}
+	\label{fig:heighthist}
+
+\end{figure}
+
+% border generation
+\subsection{Floor Plan Generation}
+\label{ssec:floorplan}
+For each scanned level of the building, we generate a 2D floor plan by partitioning space into \textit{interior} and \textit{exterior} domains, in the same manner as in Sec.~\ref{sec:carving}.  The boundary between these two domains are exported as the building walls in the floor plan.
+
+%\begin{figure}[t]
+%  \centering
+%  \includegraphics[width=0.9\linewidth]{floorplan/algorithm/carving/carving_full_figure}
+%  \caption{Example of carving process to find interior triangles:  (a) wall samples (in blue) with path of scanner (in green); (b) Delaunay Triangulation of wall samples; (c) laser scans from each pose (in red); (d) triangles that intersect with laser scans (in pink), used as interior triangles, with building model border (in blue).}
+%  \label{fig:floorplan_creation}
+%\end{figure}
+
+The input wall samples are used to define a volumetric representation by generating a Delaunay Triangulation on the plane.  Each triangle is labeled either interior or exterior by analyzing the line-of-sight information of each wall sample.  Initially, all triangles are considered exterior.  For every scanner position over time, the line segments from the scanner's position to each associated wall sample are considered.  If a triangle is intersected by one of these line segments, then it must be interior, since the scan was not occluded by any solid objects.  Each such intersected triangle is relabeled to be interior.  This process is similar to the carving process described in Sec.~\ref{sec:carving}, but traces 2D lines across triangles, rather than 3D lines across voxels.  The line-of-sight information is analyzed from each pose of the system.  The subset of triangles that are intersected by these projected laser scans are considered interior, while the remaining triangles are denoted as exterior and discarded.
+
+%Fig.~\ref{fig:floorplan_creation} demonstrates an example of this process.  Fig.~\ref{fig:floorplan_creation}a shows the input wall samples, in blue, as well as the path of the mobile mapping system, in green.  These points are triangulated, as shown in Fig.~\ref{fig:floorplan_creation}b.  The line-of-sight information is analyzed from each pose of the system, demonstrated by the laser scans from each pose to its observed wall samples in Fig.~\ref{fig:floorplan_creation}c.  The subset of triangles that are intersected by these laser scans are considered interior.  The interior triangles are shown in pink in Fig.~\ref{fig:floorplan_creation}d, denoting the interior volume of the reconstructed building model.  The border of this building model is shown in blue, denoting the estimated walls of the floor plan.
+
+% room labeling
+\begin{figure}[t]
+  \centering
+	\begin{minipage}[t]{0.9\linewidth}
+		\centering
+  		\includegraphics[width=0.98\linewidth]{floorplan/algorithm/room_seeds/room_seeds_part_a}
+		\centerline{(a)}\medskip
+  	\end{minipage}
+	\begin{minipage}[t]{0.9\linewidth}
+		\centering
+  		\includegraphics[width=0.98\linewidth]{floorplan/algorithm/room_seeds/room_seeds_part_b}
+		\centerline{(b)}\medskip
+  	\end{minipage}
+  \caption{Example room seed partitioning on an interior triangulation: (a) the room seed triangles, and their corresponding circumcircles; (b) room labels propagated to all other triangles.}
+  \label{fig:roomlabeling}
+\end{figure}
+
+\subsection{Room Labeling}
+\label{ssec:rooms}
+
+Once we have a volumetric partitioning that defines the interior space of a building, we can use this information to model individual rooms inside the building.  We define a \textit{room} to be a connected subset of the interior triangles in the building model.  Detected rooms should match with real-world architecture, where separations between labeled rooms are located at doorways in the building.  We model room labeling as a graph-cut problem.  First, a rough estimate for the number of rooms and a seed triangle for each room is computed.  A seed triangle is representative of a room, where every room to be modeled has one seed triangle.  These seeds are used to partition the remainder of interior triangles into rooms.  This process typically over-estimates the number of rooms, so prior knowledge of architectural compliance standards is used to evaluate each estimated room geometry.  Using this analysis, the number of ill-formed rooms is reduced, providing an update on the original seed points.  This process is repeated until the set of room seeds converges.
+
+We use the Delaunay property of the triangulation to identify likely seed triangle locations for room labels.  It is unlikely that the circumcircles of the interior triangles intersect the boundary walls of the carved floor plan, which causes these circles to overlap only interior area.  Each triangle's circumradius provides an estimate of the local feature size at its location on the floor plan boundary polygon.  An example of this process is shown in Fig.~\ref{fig:roomlabeling}, with the highlighted triangles in Fig.~\ref{fig:roomlabeling}a showing the chosen seed locations. Triangles with larger circumradii are likely to be more representative of their rooms than those with smaller circumradii.  We form the initial set of room seeds by finding all triangles whose circumcircles are local maxima.  That is, a seed triangle will have a circumcircle with a larger radius than any other circumcircle that intersects it. This process selects the largest triangles that encompass the space of rooms as the seeds for room labeling.  Fig.~\ref{fig:roomlabeling}b shows example seed triangles and their corresponding circumcircles.  The result is an estimate of the number of rooms and a rough location for each room.
+
+All interior triangles in the floor plan are then associated with one of these seeds, to form the total area of each room.  This step can be performed as a graph-cut on the dual of the triangulation.  Specifically, each triangle is a node in the graph, with the edge weight between two abutting triangles as the length of their shared side.  Performing a min-cut on this graph partitions rooms to minimize inter-room boundary length.  In other words, rooms are defined to minimize the size of doors.  This process propagates the room labels to every triangle, and the boundaries between rooms are composed of only the smallest edges in the triangulation.  The result of this process is shown in Fig.~\ref{fig:roomlabeling}c.
+
+The initial room seeds typically over-estimate the number of rooms, since a room may have multiple local maxima.  This case is especially true for long hallways, where the assumption that one triangle dominates the area of the room is invalid.  The solution is to selectively remove room seeds and redefine the partition. A room is considered a candidate for merging if it shares a large perimeter with another room.  Ideally, two rooms sharing a border too large to be a door should be considered the same room.  By Americans with Disabilities Act Compliance Standards, a swinging door cannot exceed 48 inches in width~\cite{ADACompliance}.  Accounting for the possibility of double-doors, we use a threshold of 2.44 meters, or 96 inches, when considering boundaries between rooms.  If two rooms share a border greater than this threshold, then the seed triangle with the smaller circumradius is discarded.  With a reduced set of room seeds, existing room labels are discarded and the process of room partitioning is repeated.  This iteration repeats until the room labeling converges.
+
+% Height estimation by room
+\subsection{2.5D Model Extrusion and Simplification}
+\label{ssec:extrusion}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\linewidth]{floorplan/algorithm/height_extrusion/height_extrusion_full}
+  \caption{Example of creating a 3D extruded mesh from 2D wall samples:  (a) walls of generated floor plan with estimated height ranges; (b) floor and ceiling heights are grouped by room; (c) simplification performed on walls; (d) floor and ceiling triangles added to create a watertight mesh. }
+  \label{fig:heightextrusion}
+\end{figure}
+
+Partitioning the floor plan model into separate rooms is useful for both model refinement and 3D mesh extrusion.  In order to generate a 3D mesh, we extrude the floor plan vertically using estimates of the floor and ceiling height at each wall sample location.  These heights estimates are often very noisy, due to clutter in the room, or the sparsity of samples. Fig.~\ref{fig:heightextrusion}a shows an example room with these initial height estimates.  The height estimates of samples within each room are combined to form a single floor height and a single ceiling height.  By taking the median floor and ceiling heights in each room, the resulting model still captures accurate geometry and variations in ceiling heights across the building, but ensures that each room is modeled simply and sharply.  The result of this median filtering is shown in Fig.~\ref{fig:heightextrusion}b.
+
+In many applications, it is useful to reduce the complexity of the floor plan representation, so that each wall is represented by a single line segment.  This step is often desirable in order to attenuate noise in the input wall samples or to classify the walls of a room for application-specific purposes.  We simplify wall segments using a variant of QEM~\cite{QEM,Turner14}. Performing this step after room partitioning allows for the fine details in the doorways between rooms to be preserved, but the large surfaces within a room to be simplified more aggressively.  Fig.~\ref{fig:heightextrusion}c shows the results of this simplification process.  The floor and ceiling mesh is is taken from the simplified 2D triangulation of the floor plan, as shown in Fig.~\ref{fig:heightextrusion}d.
+
+% model improvement through the magic of room labels
+\subsection{Model Refinement using Room Labels}
+\label{ssec:trimming}
+
+% figure showing trimming for floorplans, pointclouds, carvings
+\begin{figure}[t]
+
+	% top row: floorplan
+	\centerline{\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[height=4.0cm]{joint/office/floorplan_notrim}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[height=3.7cm]{joint/office/floorplan_withtrim}}
+		\centerline{(b)}\medskip
+	\end{minipage}}
+	
+	% middle row: pointcloud
+	\centerline{\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[height=4.0cm]{joint/office/pointcloud_notrim}}
+		\centerline{(c)}\medskip
+	\end{minipage}
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[height=4.0cm]{joint/office/pointcloud_withtrim}}
+		\centerline{(d)}\medskip
+	\end{minipage}}
+	
+	% bottom row: carving
+	\centerline{\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[height=4.0cm]{joint/office/carving_notrim}}
+		\centerline{(e)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[height=4.0cm]{joint/office/carving_withtrim}}
+		\centerline{(f)}\medskip
+	\end{minipage}}
+	
+	\caption{Using room labels to trim and improve models.  Top-down view of: (a) Floor plan before room trimming; (b) floor plan after trimming; (c) point cloud before trimming; (d) point cloud after trimming; (e) surface carving before trimming; (f) surface carving after trimming.}
+	\label{fig:trimming}
+
+\end{figure}
+
+% trimming and improving floorplan by rooms
+Room labeling within a model provides an effective mechanism to prevent misrepresentation of poorly scanned areas.  The mobile scanning system does not necessarily traverse every room and may only take superficial scans of room geometry while passing by a room's open doorway.  When a room is not entered, the model is unlikely to capture sufficient geometry and therefore it is necessary to remove this poorly scanned area from the model.  If none of the triangles for a room within the floor plan are intersected by the scanner's path, we can infer the room is never entered.  The room's triangles are then relabeled from interior to exterior, removing it from the floor plan.  Figs.~\ref{fig:trimming}a and~\ref{fig:trimming}b show an example floor plan before and after such trimming occurs, respectively.  Note the removal of a sharp extrusion in the bottom-right corner, which was a partial scan through a window.
+
+% removing explosions in 3d carving using floorplans
+Similar refinement can be used to improve the 3D carving method described in Sec.~\ref{sec:carving}.  Due to the nature of voxel carving, laser scans that pass through a building window or open doorway can capture geometry outside of the desired scanned area.  Since the outside volume is only observed from a few angles, the resulting carving produces undesirable artifacts.  Using the 2.5D extruded floor plan, we can automatically remove scans from the input point cloud that fall outside our desired area.  Figs.~\ref{fig:trimming}c and~\ref{fig:trimming}d show the corresponding point clouds before and after the result of this trimming, colored by height with the ceiling points removed.  Any scans that pass through windows or doorways are removed.  As a result, the surface carving of these point clouds, as shown in Figs.~\ref{fig:trimming}e and~\ref{fig:trimming}f respectively, can be improved by reducing these undesirable artifacts.
+
+\section{Texture Mapping}
+\label{sec:texture}
+
+% Desired input:  models with planar regions
+Texture-mapping virtual models provides enhanced realism for visualization purposes and allows for finer detail to be represented in the final product.  A main challenge of texture mapping models from mobile scanning platforms is the presence of increased noise and uncertainty in camera poses.  As a result, common texture mapping methods produce poor results.  One of the most prominent challenges is to ensure texture continuity along large uniform areas, while allowing texture boundaries to fall along natural geometric boundaries~\cite{Cheng14}.  The surface reconstruction methods described in this paper are designed to aid in minimizing the visibility of discontinuities in applied texture.  Each region in the geometric model is textured independently.  For the surface carved models discussed in Sec.~\ref{sec:carving}, these planar regions are fit explicitly to the voxel carving.  For the extruded floor plan models described in Sec.~\ref{sec:floorplan}, these planar regions are each extruded wall, as well as the floor and ceiling surfaces from each room.
+
+% texture source:  imagery with noisy positions
+\begin{figure*}
+	\begin{minipage}[t]{0.95\linewidth}
+		\centering
+		\includegraphics[width=0.95\linewidth]{texture/graphApproach}
+		\centerline{(a)}\medskip
+  	\end{minipage}
+	\begin{minipage}[t]{0.95\linewidth}
+		\centering
+		\includegraphics[width=0.95\linewidth]{texture/autostitchResult}
+		\centerline{(b)}\medskip
+  	\end{minipage}
+	\begin{minipage}[t]{0.95\linewidth}
+		\centering
+		\includegraphics[width=0.95\linewidth]{texture/finalLong_compressed}
+		\centerline{(c)}\medskip
+  	\end{minipage}
+  \caption{Texture alignment via (a) the graph-based localization
+    refinement algorithm; (b) the AutoStitch software package; (c)
+    the method proposed in this paper.}
+  \label{fig:mosaic3D}
+\end{figure*}
+
+% texture-mapping flowchart figure
+\begin{figure*}
+	\centerline{\includegraphics[width=0.95\linewidth]{texture/flowchart2.jpg}}
+	\caption{The proposed texture-mapping procedure}
+	\label{fig:textureflowchart}
+\end{figure*}
+
+Our datasets often contain long 1-dimensional
+chains of images, such as in Fig.~\ref{fig:mosaic3D}, which frequently
+lead to error accumulation in the form of translational drift. Fig.~\ref{fig:mosaic3D}a depicts an integration of image stitching with the iterative global localization algorithm applied to estimate the movement of the mobile system~\cite{liu2010indoor}. Fig.~\ref{fig:mosaic3D}b depicts an output image from AutoStitch, which is software based on research in the related area of panorama generation~\cite{panorama2d,autostitch}. Both methods were thoroughly tuned for the shown example, but due to the factors mentioned in the previous paragraph, they still show significant amounts of drift and distortion, as well as loss of alignment to the environment geometry. Fig.~\ref{fig:mosaic3D}c shows the output of the method described in this paper~\cite{Cheng14}.
+
+% outline of texturing procedure
+The overall block diagram for the proposed texture-mapping procedure is shown in Fig.~\ref{fig:textureflowchart}. The details of image selection and alignment are described in Subsect.~\ref{ssec:image_selection}.  The techniques used for image compositing and generating the final texture maps for each surface are described in Subsect.~\ref{ssec:image_compositing}.
+
+% Image selection and Manipulation
+\subsection{Image Selection and Alignment}
+\label{ssec:image_selection}
+
+% image selection
+The cameras on the mobile scanning hardware typically take several images a second for the entire duration of the data acquisition process.  This capture results in thousands of potential images to be used to texture any given surface in the 3D geometry. Our objective when texture-mapping each surface is to determine which images will contribute to the surface's texture.  Each of those selected images is projected onto the surface and blended together to form the surface's final texture.
+
+To begin generating a texture, we first obtain a suitable set of images for each surface, which together form a desirable set of candidate images for use in texturing that surface. This selection process is depicted in box~(a) of Fig.~\ref{fig:textureflowchart}. These images are selected in order to satisfy three criteria respective to their surface. First, each selected image must have unoccluded line-of-sight from its camera location to the surface, which can be verified with ray-polygon intersection tests using the surface geometry~\cite{rayintersection}. Second, the set of images selected for a surface must together contain imagery that spans the entirety of the surface. Third, images should be selected such that all areas on the target surface have at least one image with a highly optimal viewing angle to it. These three criteria are satisfied by discretizing each surface into small rectangular tiles. All images with a clear line-of-sight to each surface tile are considered, and out of that set, the image with the best viewing angle is selected. The process of removing images whose lines-of-sight to the surface are occluded is depicted in box~(c) of Fig.~\ref{fig:textureflowchart}. Optimal viewing angle can be objectively defined by maximizing the scoring function $\frac{1}{d} (-1 \cdot \vec{c}) \cdot \vec{n}$ as shown in Fig.~\ref{fig:scoringFunction}, where $d$ is the distance between the camera center and position on region surface, $\vec{n}$ is the surface's normal vector, and $\vec{c}$ is the camera's look axis~\cite{Cheng14}. By collecting the optimal image selected for each tile on a surface, we produce the set of candidate images that will be used for texturing that surface. Once this set of candidate images is selected for a surface, the images can be directly projected onto the surface's geometry using their noisy recovered camera poses, resulting in a complete texture. This projection process occurs in box~(b) of Fig.~\ref{fig:textureflowchart}. Due to noise in the estimates of camera positions, the image projections line up poorly, resulting in highly visible discontinuities at the boundaries between images.
+
+The first mechanism used to align the projected images is to detect edges in images, and match them to their counterparts in surface geometry. Edges in images are found using Hough Transforms, whereas edges in geometry are the triangulation edges that occur between planar regions. For each edge detected in an image, potential matches in geometry are found within a distance and orientation threshold. Using a RANSAC framework, a rigid transformation is calculated that maximally aligns as many of these potential matches as possible within each image~\cite{Cheng14,fischler1981random,linebased,rectangularstructures}.  Applying these transformations to images ensures that each surface's texture consists only of the correct imagery for that surface, as boundaries of regions are usually clearly visible in images, and can be successfully aligned. This results in sharp, continuous borders at the boundaries of textures, which indirectly improves alignment between images both within a region and across different regions as well.  If only one edge match is present, or all edge matches are parallel, then the transformation has one degree of freedom, which will be handled in the optimization step below.
+
+% figure for scoring function for texturing
+\begin{figure}
+  \begin{minipage}[b]{0.9\linewidth}
+    \centering
+    \includegraphics[height=1.3in]{texture/scoringFunction}
+    \caption{Camera angle $\alpha$ and distance $d$ are minimized by
+      maximizing the scoring function $\frac{1}{d} (-1 \cdot \vec{c})
+      \cdot \vec{n}$}
+    \label{fig:scoringFunction}
+  \end{minipage}
+\end{figure}
+
+% figure for texture projections
+%\begin{figure}
+%  \begin{minipage}[b]{0.9\linewidth}
+%    \centering
+%    \includegraphics[height=1.5in]{texture/Projection}
+%    \caption{Potential images are projected onto each surface from the recovered camera position and orientation. }
+%    \label{fig:projection}
+%  \end{minipage}
+%\end{figure}
+
+To further refine image locations, we directly improve inter-image alignment by performing pairwise matching of SIFT features across all pairs of overlapping images on a surface. This step is depicted in box~(d) of Fig.~\ref{fig:textureflowchart}.  For each pair of images, their SIFT matches are input into a RANSAC framework in order to compute a single transformation to robustly match feature points between each pair of overlapping images~\cite{siftgpu,fischler1981random}.
+
+% shortest path texturing
+In order to reconcile all image-geometry transformations as well as relative pairwise image transformations, a weighted linear least squares optimization problem is solved~\cite{Cheng14}. This step is depicted in box~(e) of Fig.~\ref{fig:textureflowchart}.  An example setup $\textrm{min}_{\vec{\beta}}||W^\frac{1}{2}(A \vec{\beta} - \vec{\gamma})||_2^2 $ with 3 images is as follows:
+
+\begin{equation}
+\resizebox{0.9\linewidth}{!}{%
+$
+A =
+\begin{pmatrix}
+  -1 & 1 & 0 & 0 & 0 & 0\\
+  0 & 0 & 0 & -1 & 1 & 0\\
+  0 & -1 & 1 & 0 & 0 & 0\\
+  0 & 0 & 0 & 0 & -1 & 1\\
+  0 & -m_2 & 0 & 0 & 1 & 0\\
+  1 & 0 & 0 & 0 & 0 & 0\\
+  0 & 0 & 0 & 1 & 0 & 0\\
+  1 & 0 & 0 & 0 & 0 & 0\\
+  0 & 0 & 0 & 1 & 0 & 0\\
+  0 & 1 & 0 & 0 & 0 & 0\\
+  0 & 0 & 0 & 0 & 1 & 0\\
+  0 & 0 & 1 & 0 & 0 & 0\\
+  0 & 0 & 0 & 0 & 0 & 1\\
+
+\end{pmatrix}\quad
+\vec{\beta} =
+\begin{pmatrix}
+  x_1, \\ x_2, \\ x_3, \\ y_1, \\ y_2, \\ y_3
+\end{pmatrix}
+\vec{\gamma} =
+\begin{pmatrix}
+  dx_{1,2}, \\ dy_{1,2}, \\ dx_{2,3}, \\ dy_{2,3}, \\ -m_2gx_2 + gy_2,
+  \\ gx_1, \\ gy_1, \\ tx_1, \\ ty_1, \\ tx_2, \\ ty_2, \\ tx_3, \\
+  ty_3
+  
+\end{pmatrix}
+\vec{W} =
+\begin{pmatrix}
+  1, \\ 1, \\ 1, \\ 1, \\ 1, \\ 1, \\ 1, \\ 0.01, \\ 0.01, \\ 0.01, \\
+  0.01, \\ 0.01, \\ 0.01
+\end{pmatrix}
+$
+}
+\label{eq:textureopt}
+\end{equation}
+The variables we wish to solve for are the $x_i$ and $y_i$ positions of images and the system of equations constrain the feature-based distances between pairs of images, images to geometry edges, and the original noisy camera poses.  In Eq.~\ref{eq:textureopt}, a feature-based displacement of $(dx_{1,2},dy_{1,2})$ was calculated between images 1 and 2.  This displacement corresponds to the first and second row of $A$, whereas the third and fourth row of $A$ represent the same for images 2 and 3.  Rows 5 through 7 correspond to the earlier geometry-based transformations.  Specifically, row 5 corresponds to a geometry-based constraint of image 2's location to a line of slope $m_2$, passing through point $(gx_2,gy_2)$, while rows 6 and 7 correspond to a fixed location for image 1 without any degrees of freedom.  Rows 8 through 13 correspond to the original camera locations for each image $(tx_i,ty_i)$.
+
+The original camera poses are needed due to a potential lack of feature matches in all images or a lack of geometry alignment constraints to generate a non-degenerate solution.  We assign the original noisy poses a weighting factor of $0.01$, whereas all other equations are weighted at $1$.  Since this problem is linear, it can be solved efficiently.  After applying these resulting positions, the alignment of the projection of all images onto a surface results is significantly improved, with any visible image transitions mostly due to brightness differences or more significant 3D geometry errors.
+
+% image manipulation and final texture map generation
+\subsection{Image Compositing}
+\label{ssec:image_compositing}
+
+% exposure compensation and blending
+Brightness differences in images occur because our cameras have variable exposure settings. This can result in significant brightness changes across adjacent images, particularly in areas near light sources. To adjust for these discontinuities in intensity, a relative gain is computed between each pair of overlapping images. Depicted as box~(g) in Fig.~\ref{fig:textureflowchart}, this relative gain is obtained by calculating the scaling factor between the average intensity of the region of pixels common to both images.  These pair-wise relative gains are then used as observations in a least-squares optimization problem, whose solutions results in a single gain for each image that minimizes brightness differences between all adjacent images~\cite{Cheng14}.
+
+Now that images are well-aligned and their brightness has been equalized, the final step is to combine them into a single texture. Earlier, when each region's set of images was selected, a scoring function was used to determine the optimal image for each tiled area on a region. This scheme can be reused as a simple and efficient texturing method by texturing each tile with the image selected for it. This method can be further improved by employing a spatial cache and blending adjacent tiles in order to encourage adjacent tiles to share the same image where possible and reduce the visibility of seams otherwise. This step is indicated as box~(h) in Fig.~\ref{fig:textureflowchart}.  This method can be applied to any type of surface geometry and successfully utilizes images taken from all arbitrary poses. Unfortunately, this approach tends to use a large number of images, which increases the probability that image seams will be visible in the final texture, due to imperfect matching.
+
+In the context of indoor environments and side-facing cameras, a large number of surfaces are long and planar, with a high density of images taken side-by-side. This situation occurs for nearly all wall surfaces. As a result, selecting images for texturing is often a 1-dimensional problem. For these cases, rather than selecting images that are independently optimal for their own areas, we instead obtain a set of images with the goal of minimizing the visibility of image boundaries overall. The visibility of a boundary between a pair of images can be simply calculated as the sum of squared distances of pixel values in their overlapping area. Using these values as edge costs, and each image as a node, a shortest-path problem can be constructed where the solution represents a set of images that spans the surface while still containing minimally visible image boundaries. This special case is depicted in box~(f) of Fig.~\ref{fig:textureflowchart}. These images are then mapped onto the surface and blended together to form a texture. This method gives preference to images that have a wide coverage, and encourages image boundaries to occur only where adjacent images are most well-aligned. This texturing method provides superior results, and is the preferred method for applicable surfaces.
+
+\section{Results}
+\label{sec:results}
+
+% figure with third-party comparison
+\begin{figure*}[t]
+
+	\begin{minipage}[b]{0.58\linewidth}
+		\centerline{\includegraphics[height=4.3cm]{compare/pointcloud_bright}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.4\linewidth}
+		\centerline{\includegraphics[height=4.3cm]{compare/mura13_triangles.png}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.58\linewidth}
+		\centerline{\includegraphics[height=4.3cm]{compare/carving_triangles_bright}}
+		\centerline{(c)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.4\linewidth}
+		\centerline{\includegraphics[height=4.3cm]{compare/floorplan_triangles_bright}}
+		\centerline{(d)}\medskip
+	\end{minipage}
+
+	\caption{Comparison to state-of-the-art method: (a) Static point-cloud scans from VmmlLab set of~\cite{Mattausch14}; (b) reconstruction of dataset using method described in~\cite{Mura13}; (c) reconstruction of dataset using method from Sec.~\ref{sec:carving}; (d) reconstruction of dataset using method from Sec.~\ref{sec:floorplan}.}
+	\label{fig:stateofartcompare}
+
+\end{figure*}
+
+% topic sentence for this section
+In this section, we show example results of our techniques in Fig.~\ref{fig:stateofartcompare},~\ref{fig:pier15},~\ref{fig:missionbay}, and~\ref{fig:houston}.  In doing so, we analyze the size of the produced models and associated run times, compare our results to state-of-the-art methods, and discuss limitations.
+
+% show pictures of results of each section: pointclouds, 3D, 2D, textured
+
+% discuss data product size (compare output of 2D vs 3D meshing)
+The resulting meshes of the methods described in Sec.~\ref{sec:carving} and~\ref{sec:floorplan} are each useful for different applications.  Fig.~\ref{fig:houston} shows the results of modeling the scans collected in a hotel lobby.  The input point clouds for this model consisted of 70.4 million points, which comprised 5.16 GB on disk.  The generated models cover 2,317 square meters, or about 25,000 square feet.  The surface carving model, as shown in Figs.~\ref{fig:houston}a and~\ref{fig:houston}e, is represented by 2.65 million triangles.  The extruded floor plan, as shown in Figs.~\ref{fig:houston}c and~\ref{fig:houston}g, is modeled with 2,944 triangles.  This reduction by a factor of a thousand means that finer details in the model such as furniture or drop ceilings are not present, but can aid in many applications, including texture-mapping.
+
+% talk about size of textured models
+The size of the resulting texture-mapped models, using the method discussed in Sec.~\ref{sec:texture}, is much larger due to the generated high-resolution textures from camera imagery.  The texture-mapping of the surface carving model, as shown in Figs.~\ref{fig:houston}b and~\ref{fig:houston}d, is 1.45 GB on disk comprised of textures for 1,277 distinct surfaces.  The texture-mapping of the extruded floor plan depicted in Figs.~\ref{fig:houston}f and~\ref{fig:houston}h takes up 488 MB on disk with 566 surfaces.  The largest surface for texturing is the floor of the main lobby area, whose texture is represented by a $14210 \times 10555$ image.  A video fly-through of these models can be found online~\cite{video}.
+
+% pier 15
+\begin{figure*}[t]
+
+	% top row
+	\begin{minipage}[t]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.5cm]{joint/pier15/pier15_camera}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.5cm]{joint/pier15/pier15_carving01}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.5cm]{joint/pier15/pier15_carving00_compressed}}
+		\centerline{(c)}\medskip
+	\end{minipage}
+	
+	% bottom row
+	\begin{minipage}[b]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.5cm]{joint/pier15/pier15_pointcloud00_compressed}}
+		\centerline{(d)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.5cm]{joint/pier15/pier15_floorplan01}}
+		\centerline{(e)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.5cm]{joint/pier15/pier15_floorplan00_compressed}}
+		\centerline{(f)}\medskip
+	\end{minipage}
+	
+	\caption{Close-up of models generated with the techniques described in this paper:  (a) photograph of scanned area; (b) surface carving model from Sec.~\ref{sec:carving}; (c) surface carving with textures from Sec.~\ref{sec:texture}; (d) point-cloud of scanned area; (e) extruded floor plan model from Sec.~\ref{sec:floorplan}; (f) extruded floor plan with texturing.}
+	\label{fig:pier15}
+
+\end{figure*}
+
+% discuss runtime and memory usage of each process
+
+Run-time analysis was performed on the dataset shown in Fig.~\ref{fig:pier15}.  The input to this dataset contains 25 million points.  The code was run on a laptop with an Intel i7-2620M processor with 8 GB of RAM.  All approaches presented in this paper were implemented in C++ as single-threaded programs.  The voxel carving method described in Sec.~\ref{sec:carving}, at 5~cm resolution, took 55 minutes of processing.  The surface reconstruction of these voxels took 1 minute and 2 seconds.  Previous voxel carving schemes processed similar models of 15 million points in 16 hours at the same resolution~\cite{Carving}.  Computation time was recorded for this same dataset with a resolution of 2~cm.  Voxel carving took 12 hours and 10 minutes at this resolution and surface meshing took 9.5 minutes.
+
+The same input point-cloud was processed using the 2.5D modeling approach described in Sec.~\ref{sec:floorplan} on the same hardware.  The processing step of extracting wall samples from the input point-cloud took 84.3 seconds.  Once these wall samples were generated, the process of generating the mesh took a total of 3.5 seconds.  This step includes data i/o, the floor plan generation, and the 3D extrusion of the floor plan.  While our surface carving routine is efficient when compared to other similar techniques, generating a model using 2D information is orders of magnitude quicker.  Since the floor plan generation technique can be applied in a streaming fashion to input grid-map data, it could be able to run in real-time for compatible SLAM systems.
+
+The texture-mapping process requires more computation time than the surface reconstruction schemes.  Using a single-threaded implementation on the same hardware, texturing the output surface of the voxel carving method as shown in Fig.~\ref{fig:pier15} took 10 hours and 44 minutes.  The texture-mapping of the surface generated from the floor plan extrusion approach took 113 minutes. The shorter time to texture-map this surface is due to the far fewer number of elements in the output mesh.
+
+% compare to third-party reconstruction techniques
+In our earlier work~\cite{Turner13}, we compared the results shown in Sec.~\ref{sec:carving} with the method presented in~\cite{Carving}, which performs Marching Cubes on a voxel grid.  Here, we compare our reconstruction scheme from Sec.~\ref{sec:carving} to static scanning systems, even though they were originally designed to work with ambulatory acquisition systems~\cite{Backpack}.  As shown in Fig.~\ref{fig:stateofartcompare}, point-clouds generated from traditional static-scanning technologies can be used as inputs for our reconstruction techniques. The represented scans in Fig.~\ref{fig:stateofartcompare}a are taken from the VmmlLab dataset of~\cite{Mattausch14}.  The original paper for this dataset details segmentation of point-clouds, and not surface reconstruction, but the same group has also developed surface reconstruction approaches~\cite{Mura13,Mura14}. This dataset contains 133 million points from three scan locations, representing a 20 foot $\times$ 30 foot room.  We can convert these data to be used by our techniques by treating each scan location as a pose in the path of an assumed mobile system.  A comparison to a state-of-the-art method is shown in Fig.~\ref{fig:stateofartcompare}b, which generates a model of floors, walls, and ceilings also using floor plan generation techniques~\cite{Mura13}.  This model is represented with 12 triangles.  The models shown in Figs.~\ref{fig:stateofartcompare}c and~\ref{fig:stateofartcompare}d are constructed from the methods described in Sections~\ref{sec:carving} and~\ref{sec:floorplan}, respectively.  The detailed model in Fig.~\ref{fig:stateofartcompare}c is represented by 6.6 million triangles, while the simple model shown in Fig.~\ref{fig:stateofartcompare}d is represented by 124 triangles.  The remainder of the examples shown in this section are generated from our ambulatory system.  Note that the main difference between these two sources of scans is the level of mis-registration noise. Unlike ambulatory systems, which can result in mis-registration up to 27~cm~\cite{NickJournal}, static scanning systems can be accurate to 0.25~cm~\cite{Mura13}.
+
+% Mission bay figure, showing limitation of texture projection
+\begin{figure*}[t]
+	\centerline{\includegraphics[width=0.82\linewidth]{joint/missionbay/OR_comparison}}
+	\caption{Example of limitations of texture-mapping:  (a) Floor plan of environment generated using method from Sec.~\ref{sec:floorplan}; (b) surface carving model from Sec.~\ref{sec:carving}; (c) surface carving with textures from Sec.~\ref{sec:texture}; (d) extruded floor plan model from Sec.~\ref{sec:floorplan}; (e) extruded floor plan with textures.  Note that the objects in the environment are not represented in the mesh of the extruded floor plan, so their texture is projected to the back wall of the room.}
+	\label{fig:missionbay}
+\end{figure*}
+
+While using an extruded floor plan mesh to generate a texture-mapped model is far more computationally efficient, this method has its own set of limitations.  By effectively removing the geometry for furniture and other objects in the environment, this method creates a disparity between what is seen in the camera imagery and the reconstructed mesh.  As such, the texture for these objects is incorrectly projected onto the wall surfaces behind the objects, as shown in Fig.~\ref{fig:missionbay}.  The advantage of a fully-3D meshing method is the preservation of fine detail in the geometry, while the advantage of the floor plan extrusion method is speed, simplicity, and a higher proportion of large, planar surfaces that allow for efficient texturing.
+
+% houston figure
+\begin{figure*}[t]
+
+	% top row
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[height=4.7cm]{joint/houston/houston_3D_interior_2}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[height=4.7cm]{joint/houston/results_houston_2_3d_compressed}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[height=4.7cm]{joint/houston/houston_2D_interior_2}}
+		\centerline{(c)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[height=4.7cm]{joint/houston/results_houston_2_2d_compressed}}
+		\centerline{(d)}\medskip
+	\end{minipage}
+	
+	% bottom row
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[height=4.7cm]{joint/houston/houston_3D_interior_3}}
+		\centerline{(e)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[height=4.7cm]{joint/houston/results_houston_3_3d_compressed}}
+		\centerline{(f)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[height=4.7cm]{joint/houston/houston_2D_interior_3}}
+		\centerline{(g)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[height=4.7cm]{joint/houston/houston3_2_compressed}}
+		\centerline{(h)}\medskip
+	\end{minipage}
+
+	\caption{Modeling results of hotel lobby: (a) Desk area modeled with method from Sec.~\ref{sec:carving}; (b) texture-mapping from Sec.~\ref{sec:texture} applied; (c) area modeled with method from Sec.~\ref{sec:floorplan}; (d) texture-mapping from Sec.~\ref{sec:texture} applied; (e) main lobby area modeled with method from Sec.~\ref{sec:carving}; (f) texture-mapping applied; (g) area modeled with method from Sec.~\ref{sec:floorplan}; (h) texture-mapping applied.}
+	\label{fig:houston}
+
+\end{figure*}
+
+% short conclusion section
+\section{Conclusion}
+\label{sec:conclusion}
+
+Ambulatory systems for mapping building interiors provide advantages in speed and flexibility.  They can scan a building area in minutes what would take days with traditional static scanners.  The challenge presented is to generate models with the increased noise produced by the localization process for these systems.  The modeling approaches presented in this paper are designed to mitigate this noise and to produce results with computational efficiency.  Errors in the scans of walls can be reduced by generating floor plans before performing 3D modeling.  Uncertainty in the positions of cameras can be counter-acted by refining image locations during texture-mapping.  The resulting models are suitable for visualization, simulation, and navigation applications.
+
+% references section
+
+% can use a bibliography generated by BibTeX as a .bbl file
+% BibTeX documentation can be easily obtained at:
+% http://www.ctan.org/tex-archive/biblio/bibtex/contrib/doc/
+% The IEEEtran BibTeX style support page is at:
+% http://www.michaelshell.org/tex/ieeetran/bibtex/
+\bibliographystyle{IEEEtran}
+% argument is your BibTeX string definitions and bibliography database(s)
+%\bibliography{IEEEabrv,../bib/paper}
+\bibliography{elturner}
+\vfill
+
+% that's all folks
+\end{document}
