@@ -1,0 +1,21 @@
+The proper organization and page order for your manuscript is as follows:
+
+    Title Page
+    Copyright page or a blank page
+    Optional preliminary pages such as:
+        Abstract
+        Dedication page
+        Table of contents
+        List of figures, list of tables, list of symbols
+        Preface or introduction
+        Acknowledgements
+        Curriculum Vitae
+    Main text
+    References or Bibliography
+    Appendices
+
+
+
+see:
+
+http://grad.berkeley.edu/academic-progress/dissertation/#formatting-your-manuscript

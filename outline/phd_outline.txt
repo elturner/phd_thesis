@@ -36,12 +36,12 @@ Thesis outline :
 		- motivation
 		- overview
 		- background
-			- surface reconstruction in general
-			- talk about ICIP 2012?
-			- indoor scanning
-				- the need for volumetric approaches
-				- backpack systems
-				- quadrotor systems
+		- surface reconstruction in general
+		- talk about ICIP 2012?
+		- indoor scanning
+			- the need for volumetric approaches
+			- backpack systems
+			- quadrotor systems
 		- organization of thesis
 
 	harware description (5-10 pages)
@@ -53,8 +53,10 @@ Thesis outline :
 		- alignment of path to compass north
 
 	Pointcloud generation
+		- coordinate system (ENU), units (meters)
 		- color by camera via time window
 		- partition pointcloud by levels
+		- scalability of scanning system
 	
 	Floorplan generation
 		- wall sampling techniques
