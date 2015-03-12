@@ -13,6 +13,9 @@
 *.dvi
 *.out
 *.aux
+*.lof
+*.lot
+*.toc
 
 # ignore images
 *.jpg

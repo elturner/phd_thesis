@@ -1,3 +1,10 @@
+
+----------------------------------------------
+----------------------------------------------
+----------------------------------------------
+
+
+
 The proper organization and page order for your manuscript is as follows:
 
     Title Page
@@ -13,6 +20,343 @@ The proper organization and page order for your manuscript is as follows:
     Main text
     References or Bibliography
     Appendices
+
+
+
+----------------------------------------------
+----------------------------------------------
+----------------------------------------------
+
+Formatting your manuscript
+
+All manuscripts must be submitted electronically in a traditional PDF format.
+
+    Page Size: The standard for a document’s page size is 8.5 x 11 inches. If compelling reasons exist to use a larger page size, you must contact the Graduate Division for prior approval.
+
+    Appearance & Typeface:
+        Basic manuscript text must  be a non-italic type font and at a size of 12-point or larger. Whatever typeface and size you choose for the basic text, use it consistently throughout your entire manuscript. For footnotes, figures, captions, tables, charts, and graphs, a font size of 8-point or larger is to be used.
+        You may include color in your dissertation, but your basic manuscript text must be black.
+        For quotations, words in a foreign language, occasional emphasis, book titles, captions, and footnotes, you may use italics. A font different from that used for your basic manuscript may be used for appendices, charts, drawings, graphs, and tables.
+
+    Pagination: Your manuscript is composed of preliminary pages and the main body of text and references. Page numbers must be positioned either in the upper right corner, lower right corner, or the bottom center and must be at least ¾ of an inch from the edges. The placement of the page numbers in your document must be consistent throughout.
+        Do not count or number the title page, the approval (signature) page, or the copyright page. All other pages must have numbers. DO NOT SKIP PAGE ” 1 “.
+        The remaining preliminary pages may include a table of contents, a dedication, a list of figures, tables, symbols, illustrations, or photographs, a preface, your introduction, acknowledgments, and curriculum vitae. You must number these preliminary pages using lower case Roman numerals beginning with the number “i” and continue in sequence to the end of the preliminary pages (i, ii, iii, iv, v, etc.).
+        Your abstract must have Arabic numeral page numbers. Start numbering your abstract with the number “1” and continue in sequence (1, 2, 3, etc.)
+        The main body of your text and your references also use Arabic numerals. Start the numbering of the main body with the number “1” and continue in sequence (1, 2, 3, etc.), numbering consecutively throughout the rest of the text, including illustrative materials, bibliography, and appendices.
+
+Yes! The first page of your abstract and the first page of your main text both start with ‘1’
+
+    Margins: For the manuscript material, including headers, footers, tables, illustrations, and photographs, all margins must be at least 1 inch from the edges of the paper. Page numbers must be ¾ of an inch from the edge.
+    Spacing: Your manuscript must be single-spaced throughout, including the abstract, dedication, acknowledgments, and introduction.
+    Tables, charts, and graphs may be presented horizontally or vertically and must fit within the required margins. Labels or symbols are preferred rather than colors for identifying lines on a graph.
+
+You may choose to reduce the size of a page to fit within the required margins, but be sure that the resulting page is clear and legible.
+
+    Guidelines for Mixed Media: please see Appendix B for details.
+
+Special Page Formats
+
+Certain pages need to be formatted in a very specific way. Links are included here for examples of these pages.
+
+    Abstract (PDF)
+        As noted in the above section on pagination, the abstract must be numbered separately with arabic numerals starting with ’1′
+    Signature Page (PDF)
+        The signature page must not contain any page numbers or extra notations beyond what is shown in the sample.
+        Doctoral students can print the signature page on regular paper. Archival paper is not required. However, all signatures must be authentic (no stamps, electronic signatures, cut-and-paste, etc.) and must all appear on a single page.
+        The name and title listed in the sample is for illustrative purposes only, you must include your name andyour title.
+    Title Page (PDF)
+        The title page does not contain page numbers.
+        The term and year listed on the title page must be the term of your degree. Do not write Summer. Dissertations filed in the summer must say Fall since that is when it will be conferred.
+        The yellow bubbles in the sample are included for explanatory purposes only. Do not include them in your submission.
+        If you have a Designated Emphasis, it must be listed on your title page (DE Title Page Sample)
+        If you are receiving a joint degree, it must be listed on your title page (Joint Title Page Sample)
+
+Organizing your manuscript
+
+The proper organization and page order for your manuscript is as follows:
+
+    Title Page
+    Copyright page or a blank page
+    Abstract
+    Optional preliminary pages such as:
+        Dedication page
+        Table of contents
+        List of figures, list of tables, list of symbols
+        Preface or introduction
+        Acknowledgements
+        Curriculum Vitae
+    Main text
+    References
+    Bibliography
+    Appendices
+
+Please do not include an approval/signature page in your electronic document.
+
+Procedure for filing your dissertation
+
+After you have written your dissertation, formatted it correctly, assembled the pages into the correct organization, and obtained your signatures, you are ready to file it with UC Berkeley’s Graduate Division.
+
+    Step 1: Convert your dissertation in to a standard PDF file.
+    Step 2: Upload your PDF to ProQuest/UMI (http://www.etdadmin.com) Follow the instructions on the site.NOTE: DO NOT UPLOAD A DRAFT. Once your dissertation has been submitted, you will not be allowed to make changes. Be sure that it is in its final form!
+    Step 3: When you have successfully submitted the document, a message will be sent to the Graduate Degrees Office to review it on-line.  After Degrees staff has reviewed it you will either receive a message that the manuscript has been accepted or that you need to make further changes. If you need to make more changes, you will need to edit your manuscript, create a new PDF, and resubmit it to ProQuest.  Degrees staff will then need to review it again. An email approval will be sent to you once the manuscript is accepted.
+    Step 4: Complete 2 surveys:
+        The online Survey of Earned Doctorates (https://sed.norc.org/). Print out the receipt to verify your completion.
+        The Survey of Doctoral Student Opinion. Print out the completed survey.
+    Step 5: Submit the following final documents to the Graduate Degrees Office at 318 Sproul Hall.
+        Your signed approval page (may be printed on normal paper)
+        A copy of the approval letter for your study protocol from the Committee for Protection of Human Subjects, or the Animal Care and Use Committee if your research involved human or animal subjects.
+        Completed Survey of Doctoral Students’ Opinions
+        Receipt from the Survey of Earned Doctorates.
+        Dissertation Release Form. Keep in mind regarding your selections on this document:
+
+*If you chose to embargo your dissertation, you will not receive any copies you order from ProQuest until the embargo is lifted.
+
+*Once your paperwork has been filed, you may not make any changes to your embargo selections.
+
+If you wish, you may have a friend or colleague submit these required documents on your behalf. Please note that all documents should be submitted together (e.g we will not accept lone signature pages!)
+
+A Note on Deadlines
+
+You must your upload your electronic dissertation AND bring your final documents to 318 Sproul Hall before 5pm on the last day of the term. We can not provide a receipt of filing until your dissertation has been reviewed and accepted (which can take up to 3 days), but you will get credit for the date of first submission.
+
+ 
+Permission to Include Previously Published or Co-Authored Material
+
+Policy
+
+If you plan use of your own previously published and/or co-authored material in your dissertation or thesis you must request permission to do so from the Dean of the Graduate Division.
+
+To be approved, previously published material must be incorporated into a larger argument that binds together the whole dissertation or thesis. The common thread linking various parts of the research, represented by individual papers incorporated in the dissertation, must be made explicit, and you must join the papers into a coherent unit. You are required to prepare introductory, transitional, and concluding sections. Previously published material must be acknowledged appropriately, as established for your discipline or as requested in the original publication agreement (e.g. through a note in acknowledgements, a footnote, or the like).
+
+If co-authored material is to be incorporated (whether published or unpublished), statements granting you permission to use and reproduce the material as part of your dissertation must be obtained from all co-authors, or reasons for inability to obtain permission must be provided. Emails from co-authors giving permission will be accepted. All co-authors should be credited in the dissertation according to the norms of the field.
+
+Requests to incorporate material written and/or published prior to graduate enrollment at Berkeley will not be considered.
+
+Procedure
+
+To request permission to use previously published and/or co-authored material the dissertation chair should submit a letter following the template provided on the Graduate Division website. The letter from the dissertation chair should identify those co-authors who had central roles in the research and writing, from whom written permission normally must be obtained. The dissertation chair should provide explanation when some co-authors’ permissions have not been provided.
+
+Submit the chair’s letter; the first page of each article (showing title and all authors); and permissions received as a single package. Permissions received as email are acceptable.
+
+Template letter for use by your dissertation chair (.DOC)
+
+The request must be received by Graduate Services Degrees office at 318 Sproul Hall no later than three weeks before the intended filing date.
+Inclusion of Publishable Papers or Article-Length Essays
+
+Publishable papers and article-length essays arising from your research project are acceptable only if you incorporate that text into a larger argument that binds together the whole dissertation or thesis. Include introductory, transitional, and concluding sections with the papers or essays.
+Withholding Your Dissertation
+
+UC Berkeley’s Graduate Council regulations stipulate that you have an obligation to make your research available to other scholars as part of the degree requirement.  This is done when the Graduate Division submits your manuscript to the University Library and ProQuest/UMI.
+
+Occasionally, there are circumstances in which you prefer that your dissertation not be published immediately. Such circumstances may include the disclosure of patentable rights in the work before a patent can be granted, similar disclosures detrimental to the rights of the author, or disclosures of facts about persons or institutions before professional ethics would permit.
+
+The Dean of the Graduate Division may permit the dissertation to be held without shelving for a specified and limited period of time. An embargo of up to 2 years can be indicated on the Dissertation Release Form. Embargoes beyond 2 years must be requested under substantiated circumstances of the kind indicated above and with the endorsement of and an explanatory letter from the chair of the dissertation committee. Once you make a selection regarding an embargo, it may not be changed. Discuss the pros and cons of withholding your dissertation with your faculty committee and departmental advisors.
+
+Changes to a Dissertation After Filing
+
+Changes are normally not allowed after a manuscript has been filed.  In exceptional circumstances, changes may be requested by having the chair of your dissertation committee submit a memo to the Associate Dean and sent to Graduate Services: Degrees, 318 Sproul Hall.  The memo must describe in detail the specific changes requested and must justify the reason for the request. Such requests will not be approved for typographical errors, acknowledgements, or other minor revisions. It is your responsibility to ensure that your manuscript is in its final form before submitting. If such a request is approved, the changes must be made prior to the official awarding of the degree. Once your degree has been awarded, you may not make changes to the manuscript.
+
+After your dissertation is accepted by Graduate Services: Degrees, it is held here until the official awarding of the degree by the Academic Senate has occurred. This occurs approximately two months after the end of the term. After the degree has officially been awarded, the manuscripts transmitted to the University Library and to ProQuest Dissertations Publishing.
+Diploma, Transcript, and Certificate of Completion
+
+Posting the Degree to Your Transcript
+
+Your degree will be posted to your transcript approximately 10 weeks after the conferral date of your degree. You can order a transcript from the Office of the Registrar (http://registrar.berkeley.edu/Records/transcripts.html).
+
+Diploma
+
+Your diploma will be available from the Office of the Registrar approximately 4 months after the conferral date of your degree. For more information on obtaining your diploma, visit the Registrar’s Web site (http://registrar.berkeley.edu/Records/diplomas.html). You can obtain your diploma in person at the Office of the Registrar, 120 Sproul Hall, or submit a form and pay the current mailing fees to have it mailed to you.
+
+Unclaimed diplomas are retained for a period of five (5) years only, after which they are destroyed.
+Certificate of Completion
+
+If you require evidence that you have completed your degree requirements prior to the degree being posted to your transcript, request a Certificate of Degree Completion.
+
+Please note that we will not issue a Certificate of Completion after the degree has been posted to your transcript.
+
+Appendix A: Common Mistakes
+
+    The most common mistake is following a fellow (or previous) student’s example. Read the current guidelines carefully!
+    An incorrect committee — the committee listed on your title page (and the signatures you submit to the Graduate Division) must match your currently approved committee. If you have made any changes to your committee since Advancement to Candidacy, you must request an official change from the Graduate Division. Consult your departmental adviser for details.
+    Do not use a different name than that which is officially recognized by UC Berkeley (i.e. the name on your transcript and Bearfacts). For example, do note use only a middle initial when your record shows a full middle name. To correct this, petition to change your name with the Registrar’s Office before the last day of the semester.
+
+    Page numbers — Read the section on pagination carefully. Many students do not paginate their document correctly.
+    Page rotation — some pages may be rotated to a landscape orientation. However, page numbers must appear in the same place throughout the document (as if it were bound like a book).
+    If you have an approved designated emphasis, it must be listed on your title page and your abstract.
+    Do not include the signature/approval page in your electronic dissertation. The abstract must be unsigned.
+    Do not include previous degrees on your title page.
+
+Appendix B: Mixed Media Guidelines
+
+In May, 2005, the Graduate Council established new guidelines for the inclusion of mixed media content in dissertations. It was considered crucial that the guidelines allow dissertations to remain as accessible as possible and for the longest period possible while balancing the extraordinary academic potential of these new technologies.
+Definitions and Standards
+
+The dissertation has three components: a core thesis, essential supporting material, and non-essential supplementary material.
+
+Core Thesis. The core thesis must be a self-contained, narrative description of the argument, methods, and evidence used in the dissertation project. Despite the ability to present evidence more directly and with greater sophistication using mixed media, the core thesis must provide an accessible textual description of the whole project.
+
+The core thesis must stand alone and be printable on paper, meeting the formatting requirements described in this document. The electronic version of the thesis must be provided in the most stable and universal format available — currently Portable Document Format (PDF) for textual materials. These files may also include embedded visual images in TIFF (.tif) or JPEG (.jpg) format.
+
+Essential Supporting Material. Essential supporting material is defined as mixed media content that cannot be integrated into the core thesis, i.e., material that cannot be adequately expressed as text. Your faculty committee is responsible for deciding whether this material is essential to the thesis. Essential supporting material does notinclude the actual project data. Supporting material is essential if it is necessary for the actual argument of the thesis, and cannot be integrated into a traditional textual narrative.
+
+Essential supporting material must be submitted in the most stable and least risky format consistent with its representation (see below), so as to allow the widest accessibility and greatest chance of preservation into the future.
+
+Non-essential Supplementary Material. Supplementary material includes any supporting content that is useful for understanding the thesis, but is not essential to the argument. This might include, for example, electronic files of the works analyzed in the dissertation (films, musical works, etc.) or additional support for the argument (simulations, samples of experimental situations, etc.).
+
+Supplementary material is to be submitted in the most stable and most accessible format, depending on the relative importance of the material (see below). Any supplemental material must be uploaded to the ProQuest website under the “Supplemental Files” section.
+
+Note. ProQuest and the Library will require any necessary 3rd party software licenses and reprint permission letters for any copyrighted materials included in these electronic files.
+Electronic Formats and Risk Categories
+
+The following is a list of file formats in descending order of stability and accessibility. This list is provisional, and will be updated as technologies change. Faculty and students should refer to the Graduate Division website for current information on formats and risk categories.
+
+Category A:
+
+    PDF (.pdf)
+    TIFF (.tif) image files
+    WAV (.wav) audio files
+
+Category B:
+
+    JPEG, JPEG 2000 (.jpg) image files
+    GIF (.gif) image files
+
+Category C:
+
+    device independent audio files (e.g., AIFF, MIDI, SND, MP3, WMA, QTA)
+    note-based digital music composition files (e.g., XMA, SMF, RMID)
+    MPEG video
+
+Category D:
+
+    other device independent video formats (e.g., QuickTime, AVI, WMV)
+    encoded animations (e.g., FLA or SWF Macromedia Flash, SVG)
+
+For detailed guidelines on the use of these media, please refer to the Library of Congress website for digital formats at http://www.digitalpreservation.gov/formats/index.shtml.
+
+    Using a different name than that which is officially recognized on by UC Berkeley (i.e. the name on your transcript, and Bearfacts). For example, using only a middle initial when your record shows a full middle name.
+
+    Page numbers — Read the section on pagination carefully. Many students do not paginate their document correctly.
+
+Appendix C: Frequently Asked Questions
+Eligibility
+
+Q1: Can I file my dissertation during the summer?
+
+A1: Yes. There are 2 ways to file during the summer:
+
+1)     Register for at least 3.0 through Berkeley Summer Sessions. With this option, you can file any time before the summer deadline.
+
+2)     Apply for Filing Fee. If you are eligible, you will be placed on Filing Fee status for the Fall semester. While on this status, you will be allowed to file during the summer.
+
+Q2: If I chose that option, does it matter which session I register in during the summer session?
+
+A2: No. You can register for any of the sessions (at least 3.0 units). The deadline will always be the last day of the last session.
+
+Q3: If I file during the summer, will I receive a summer degree?
+
+A3: No. Any student that files after the spring deadline in May, will receive a fall degree. If you file during the summer, remember to write “Fall” on your title page!
+Formatting
+
+Q1: I’ve seen other dissertations from former students that were / that had  __________, should I follow that format?
+
+A1: No. The formatting guidelines can be changed from time to time, so you should always consult the most current guidelines available on our website. This question is most frequently asked in regard to the issue of double vs. single spacing.
+
+Q2: I want to make sure that my dissertation follows the formatting rules. What’s the best way to do this?
+
+A2: If you’ve read and followed the current guidelines available on our website, there shouldn’t be any problems. You can upload your dissertation as soon as it is in its final form. If any changes are necessary, you will be given the opportunity to make them without penalties. If you’ve heard horror stories from other students about formatting changes in their manuscripts, you’ve likely been talking to past students who didn’t follow the directions and had to print out their dissertations on expensive, archival paper. Current students submit their dissertations electronically and, as such, it’s much easier and more painless to make changes!
+
+You are also always welcome to bring sample pages into the Graduate Degrees Office at 318 Sproul Hall to have a staff member look over your manuscript.
+
+Q3:  Does my signature page need to be printed on some special paper?
+
+A3: No. Regular printer paper is fine for the signature page, as long as it follows the specified format.
+Process
+
+Q1: I’m away from Berkeley. Is there any way to file my dissertation remotely?
+
+A1: Your manuscript will be uploaded to the ProQuest website, which can obviously be done from anywhere there is an internet connection. You will also need to submit the remaining documents (signature page, surveys, and release form). Most students who are unable to bring these to our office in person will have a friend or colleague drop them off instead. Barring that, it is acceptable to mail your documents to our office. However, it would be prudent to use a trackable courier service (like FedEx, DHL, etc) as regular mail may be unreliable. Furthermore, the documents must be received in our office by the stated deadline (not postmarked). Extensions will not be granted for transit delays.
+
+Q2: Can I have a friend bring my dissertation materials for me?
+
+A2: Yes. Please see the answer above regarding filing remotely.
+
+Q3: I read something about needing to allow 3 days to review my dissertation. So what is the actual deadline?
+
+A3: Two things must happen before the end of the business day on the stated deadline: 1) you must have uploaded your dissertation to the ProQuest website and 2) you must have submitted the remaining forms to the Graduate Degrees Office at 318 Sproul Hall. Though it is not recommended, you can do both of these things on the very last day.
+
+Q4: So what’s this thing about the 3 days?
+
+A4: As you might expect, the Degrees Office receives hundreds of dissertations near the end of the term (in fact, half of all dissertations are submitted during the final week). This means that it may take several days for us to review your dissertation. Don’t worry. You’ll get credit for the date that you uploaded your dissertation. However, it may take up to 3 business days review your submission and, if everything is acceptable, provide you a Receipt of Filing.
+
+Q5: Can I bring in my signature page and other materials before I upload my dissertation?
+
+A5: Yes. We won’t be able to finalize your filing both your paperwork has been turned in and your dissertation uploaded, but you are welcome to do those in any order.
+
+Q6: What’s a Receipt of Filing? Do I need one?
+
+A6: The Receipt of Filing is an official document that we produce that certifies that you have successfully filed your dissertation on the specified day and that, if all other requirements are met, the date of the degree conferral.
+
+Some students may need the receipt in order to prove to an outside agency that they have officially filed their dissertation. Many students simply keep the receipt as a memento. Picking up your receipt is not required.
+
+Q7: What’s the difference between a Receipt of Filing and a Certificate of Completion?
+
+A7: A Receipt of Filing is automatically produced for all students upon successful filing of their dissertation. However, it only certifies that the dissertation has been accepted. The Certificate of Degree Completion must be requested. It will state that all requirements have been met and notes the date that the degree will be conferred. This is a useful document for students who file early in the semester and need some verification of their degree in advance of its conferral (note: degrees are only conferred twice each year).
+
+Q8: How to I know if I’m eligible for a Certificate of Completion?
+
+A8: In order to be eligible to receive a Certificate of Completion, you must:
+
+1) Successfully file your dissertation (your online submission accepted as well as paperwork turned in)
+
+2) Have a Final Report on file. Departments sign off on a document called the Final Report which certifies that you have completed all departmental requirements. Most departments sign the Final Report when a student advances to candidacy, but a few will only sign after a dissertation is filed.
+
+3) Pay all of your registration fees. If you have a balance on your CARS account, we will be unable to provide a Certificate of Completion.
+
+Q9: I’m supposed to bring in my approval letter for research with human subjects or vertebrate animals, but it turns out my research didn’t use this after all. What should I do?
+
+A9 If you’re research protocol has changed since you advanced to candidacy for your degree, you’ll need to ask you dissertation chair to write a letter to the Graduate Division explaining the change. It would be best to submit this in advance of filing.
+
+Q10: My dissertation uses copyrighted or previously published material. How to I get approval?
+
+A10: Read the relevant section in the dissertation filing guide carefully. There is a template letter for permission from co-authors available. You must submit this documentation to the Graduate Degrees Office in advance of when you intend to file. Do not wait until the last minute!
+
+Q11: Can my co-author email his or her permission for inclusion of this material?
+
+A11: Yes. It is better to use the provided form/template, but if they are unable to sign, an email is acceptable.
+
+Q12: I uploaded my dissertation on the last day. What if I’m told I need to make changes?
+
+A12: This won’t be a problem. If there are formatting issues that need to be resolved, you will be notified and be given the opportunity to make revisions – even if it is a few days after the deadline. As long as your dissertation was originally uploaded before the deadline. Obviously, we won’t be able to provide you a receipt (see Q above on Receipt of Filing) until everything has been finalized.
+
+Q13: I found a typo in dissertation that has already been accepted! What do I do?
+
+A13: Once a dissertation has been submitted and accepted, no further changes will be permitted. Proofread your document carefully. Do not upload a draft. In extreme circumstances, your dissertation chair may write a letter to the Graduate Division requesting additional changes to be made.
+
+Q14: Oh no! A serious emergency has caused me to miss the filing deadline! What do I do? Are extensions ever granted?
+
+A14: In general, no. In exceptional circumstances, the Head Graduate Advisor for your program may write to the Graduate Division requesting an extension. Requests of this type are considered on a case by case basis and, if granted, may allow you to file after the deadline. However, even if such an exception is granted you will receive the degree for the subsequent term. Your first step is to consult with your department if an emergency arises.
+Academic Progress
+
+    Pre-Candidacy
+    Advancing to Candidacy
+    Dissertation Writing and Filing
+    Thesis Writing and Filing
+    Degree Deadlines
+    Forms & Applications
+    Academic Progress Advisors
+
+Questions?
+
+Degrees Office
+Visit: 318 Sproul Hall
+Phone: (510) 642-7330
+Email us
+Support Graduate Education
+
+Learn more about the Campaign for Berkeley and Graduate Fellowships.
+
+
 
 
 
