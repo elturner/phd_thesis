@@ -23,4 +23,4 @@ todo:
 
 # clean all temporary files
 clean:
-	rm -f $(R).log $(R).aux $(R).bbl $(R).blg $(R).out $(R).dvi
+	rm -f $(R).log $(R).aux $(R).bbl $(R).blg $(R).out $(R).dvi $(R).toc $(R).lof $(R).lot

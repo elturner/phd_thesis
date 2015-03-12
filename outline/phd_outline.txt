@@ -33,32 +33,33 @@ Thesis outline :
 	Acknowledgements (1 page)
 
 	Introduction (10-15 pages)
-		- motivation
+		- motivation					\label{ch:introduction}
 		- overview
 		- background
-		- surface reconstruction in general
-		- talk about ICIP 2012?
-		- indoor scanning
+		- surface reconstruction in general		\label{sec:surf_recon_background}
+		- talk about ICIP 2012?				\label{sec:outdoor_scanning}
+		- indoor scanning				\label{sec:indoor_scanning}
 			- backpack systems
 			- quadrotor systems
 			- the need for volumetric approaches
-		- organization of thesis
+		- organization of thesis			\label{sec:organization}
 
-	harware description (5-10 pages)
+	harware description (5-10 pages)			\label{ch:hardware}
 		- mechanical specs
 		- sweeping orientation of scanners
+		- error characteristics of sensors
 		- data acquisition software		
 		- time synchronization between sensors
 		- scalability of scanning system
 
-	Pointcloud generation (5-10 pages)
-		- background on localization
+x	Pointcloud generation (5-10 pages)			\label{ch:preprocessing}
+		- background on localization  			\label{sec:localization}
 		- coordinate system (ENU), units (meters)
-		- alignment of path to compass north
-		- color by camera via time window
-		- partition pointcloud by levels
+		- alignment of path to compass north		\label{sec:align_path}
+		- color by camera via time window		\label{sec:pointcloud}
+		- partition pointcloud by levels		\label{sec:pointcloud_level_split}
 	
-	Floorplan generation
+	Floorplan generation					\label{ch:floorplan}
 		- wall sampling techniques
 			- histogram binning of pointclouds
 				(with and without normal analysis)
@@ -81,7 +82,7 @@ Thesis outline :
 			- everything regarding the wedge model
 			- chunking of scans
 
-	Improving floorplans with carving
+	Improving floorplans with carving  (ch:better_floorplans)
 		- level-splitting with octree, improves on pointcloud level split
 		- wall sample generation via procarve
 		- include optimization of fp alignment

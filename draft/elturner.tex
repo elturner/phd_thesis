@@ -1,7 +1,8 @@
 %\documentclass[journal]{IEEEtran}
 %\documentclass[11pt,draftcls,onecolumn]{IEEEtran}
 %\documentclass[10pt,twocolumn,twoside]{report}
-\documentclass[10pt,onecolumn,oneside]{book}
+\documentclass[12pt,onecolumn,oneside]{book}
+\usepackage[margin=1.0in]{geometry}
 \usepackage{cite}
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
@@ -28,6 +29,14 @@
 
 % *** PDF, URL AND HYPERLINK PACKAGES ***
 \usepackage{url}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=blue,
+    urlcolor=blue
+}
 
 % Force headers and page numbers to always be on the upper right
 \usepackage[nouppercase,automark]{scrpage2}
@@ -47,7 +56,7 @@
 
 % TODO deal with title and author pages, which have special requirements
 
-\title{Fast, Automated, Scalable Generation of Textured 3D Models of Indoor Environments}
+\title{Eric's Ph.D. Thesis}
 
 % author names and IEEE memberships
 % note positions of commas and nonbreaking spaces ( ~ ) LaTeX will not break
@@ -94,14 +103,21 @@ This is where the abstract will go.
 
 % TODO dedication page
 
+% table of contents
 \addcontentsline{toc}{chapter}{Table of Contents}
-\addcontentsline{toc}{chapter}{List of Figures}
-\addcontentsline{toc}{chapter}{List of Tables}
 \tableofcontents{}
-\listoffigures{}
-\listoftables{}
 
-% TODO list of figures
+% list of figures
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{\listfigurename}
+\listoffigures{}
+
+% list of tables
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{\listtablename}
+\listoftables{}
 
 % TODO acknowledgements
 
@@ -143,8 +159,222 @@ Smooth introduction to dealing with large pointclouds.
 \section{Indoor Building Scanning}
 \label{sec:indoor_scanning}
 
+% TODO discuss hardware (briefly reference backpack, but don't go into details)
+% also mention quadrotors and carts (see quals)
+% also mention that most of my work is hardware agnostic
+
+% TODO explaing why volumetic approaches are important
+
+\section{Thesis Organization}
+\label{sec:organization}
+
+% TODO organize remaining paper
+
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+% CHAPTER:  Hardware Description
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+
+\chapter{Hardware Description}
+\label{ch:hardware}
+
 % TODO LEFT OFF HERE
-TODO left off here
+%		- mechanical specs
+%		- sweeping orientation of scanners
+%		- error characteristics of sensors
+%		- data acquisition software		
+%		- time synchronization between sensors
+%		- scalability of scanning system
+
+% this figure shows side-by-side backpacks
+\begin{figure}
+
+	\centering
+	\begin{minipage}[c]{0.32\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{hardware/gen_1}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[c]{0.32\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{hardware/gen_2}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[c]{0.32\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{hardware/gen_3}}
+		\centerline{(c)}\medskip
+	\end{minipage}	
+
+	\caption[The three backpack scanning systems developed by our lab.]{The three backpack scanning systems developed by our lab:  (a) First generation, weighing 80 pounds; (b) second generation, weighing 32.5 pounds, developed in 2013; (c) third generation, weighing 35 pounds, developed in 2014.}
+	\label{fig:all_backpacks}
+
+\end{figure}
+
+% figure of backpack hardware
+\begin{figure}[t]
+	\centerline{\includegraphics[width=0.5\linewidth]{procarve/hardware/backpack_annotated}}
+	\caption[Annotated scanning hardware system.]{Annotated scanning hardware system, worn as a backpack.  The operator walks through the indoor building area as the system scans the surroundings.  Our method combines the LiDAR and inertial measurements in order to form a virtual 3D model for the observed space.}
+	\label{fig:backpack}
+\end{figure}
+
+% start description of the pipeline, talk about backpack
+The input scans for our modeling approach come from an ambulatory indoor scanning system~\cite{Backpack}.  As shown in Figure~\ref{fig:backpack}, our hardware is a collection of sensors worn as a backpack.  By walking through the indoor environment at normal speeds, we can accurately estimate the trajectory of the system over time and localize the system~\cite{NickJournal}.  Subsequently, we automatically generate a 3D model of the environment with the method described in this paper.  This procedure allows us to rapidly move through a large environment, spending only a few seconds in each room yet capturing full geometry information.
+
+% briefly describe the type of scans we use as input
+Once the system is localized in the environment, our proposed algorithm uses the retrieved laser range data as input.  These scans are taken with time-of-flight laser scanners that capture 3D geometry of the environment.  We use multiple 2D laser scanners mounted at different orientations to capture all observed geometry in the environment.  Since our system is mobile and ambulatory, the resulting point clouds have higher noise than traditional static scanners due to natural variability in human gait.  As such, our approach needs to be robust to motion induced scan-level noise and its associated artifacts.  We use these scans to form watertight models of the indoor building environment and the contained objects.
+
+
+
+% TODO go over different versions of backpack (show pics!).  List sensors and why they are there
+
+% TODO mechanical specs (discuss sweeping geometry idea)
+% also discuss extrinsic calibration of sensors, and show diagram of system common coordinate frame
+
+% TODO (very) brief overview of data acquisition software
+
+% TODO discuss time synchronization, both during collection and processing
+
+% TODO scalability of system (size on disk, possible sizes for buildings
+
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+% CHAPTER:  Preprocessing and Conventions
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+
+\chapter{Preprocessing and Conventions}
+\label{ch:preprocessing}
+
+This chapter details processing steps that are required before any model generation can occur.  All approaches discussed in this dissertation require a reconstructed path of how the system moved through the environment.  Such a path trajectory is required in order to estimate the position of each scanner at any given time, so that the geometry readings can be placed in global coordinates.  The details of how the localization data are used are described in Sections~\ref{sec:localization} and~\ref{sec:align_path}.
+
+Some methods discussed in this dissertation also require a consolidated 3D point cloud of the scanned environment.  Unlike most geometry products discussed, a point cloud contains no topology information.  Instead, a point cloud is a concatenation of the raw laser range data, transformed into the global coordinate frame.  Specifics on how these values are generated and what conventions are used are discussed in Section~\ref{sec:pointcloud}.
+
+\section{Localization}
+\label{sec:localization}
+
+% Nick's localization procedure
+Before models of the building geometry can be generated, we must first determine how the operator traversed the environment.  Indoor building environments are typically GPS-denied areas, so local observations are required in order to track the path walked~\cite{Backpack,Localization,NickJournal}.  The process of recovering the 3D trajectory of the system is especially difficult for our backpack hardware, since a human operator can experience six degrees of freedom in movement ($x$, $y$, $z$, $\theta$, $\phi$, $\psi$), whereas the sensors used in the system can only observe a 2D slice of the environment.  As such, multiple laser scanners are mounted at different orientations on the backpack hardware to ensure that full 3D movement can be observed~\cite{NickJournal}.  These incremental changes in pose are refined by a global graph optimization step that constrains the system path whenever an area is revisited~\cite{toro07}.  These revisits are automatically detected and constrained in order to produce an accurate 2D trajectory of the system.  The elevation of the system is computed using a similar technique with a vertically mounted scanner~\cite{Backpack}.
+
+% coordinate systems used:  sensor, backpack, model
+The localization procedure is complete, we have full mapping between three coordinate systems for each recorded frame for each hardware sensor.  The internal coordinate frame of the sensor, which is specific to the make and model of the sensor hardware, can be converted to the system common coordinate frame based on the extrinsic calibration of each sensor's rigid position and orientation on the backpack system.  This rigid affine transformation for a given sensor $s$ is represented by the $3 \times 3$ rotation matrix $R_{s\rightarrow c}$ and the $3 \times 1$ translation vector $T_{s\rightarrow c}$.  The localization procedure provides an output path of the system, so that each pose of the system can be transformed from the system common coordinate frame to the world coordinate frame.  At a given time $t$, the affine transformation from the system common coordinates to the model coordinates is given by $3 \times 3$ rotation matrix $R_{c\rightarrow m}(t)$ and $3 \times 1$ translation vector $T_{c\rightarrow m}(t)$.  With these transformations, any sensor reading can be placed in global coordinates.
+
+% discuss output model frame of localization, and units
+The localization output path provides the output model coordinate frame in a locally consistent coordinate frame based on the starting position of the operator during a scan.  This starting position is used as the origin point of the model.  By convention, the heading vector of the first pose is used as the $+X$-direction of the model coordinate frame.  The direction of gravity is used as the $-Z$-direction of the model coordinate frame.  The $Y$-direction of the model coordinate frame is chosen such that the coordinate system is right-handed.  Although this procedure produces a common set of coordinates for the model, we apply an additional step in order to align the model with the global coordinate frame, as discussed in Section~\ref{sec:align_path}.  Once this step is complete, the model uses East-North-Up (ENU) coordinates.  For the rest of this dissertation, all output models are expressed in units of meters.
+
+% TODO show figure of backpack coordinate frame and model coordinate frame
+
+% noise models of localization output (e.g. double-surfacing)
+Since the localization procedure used is performed in an integrative fashion, the expected error in the reported position and orientation of the system at any pose is higher than in competing technologies, such as static scan systems~\cite{NickJournal}.  Static systems often utilize markers or control points within the environment to ensure manual alignment of scans, allowing for positional accuracy of within $1~mm$~\cite{Li97,Karimi00}.  By contrast, the mean positional accuracy of the output poses in the backpack localization procedure is typically $10~cm$.  Additionally, the errors in successive poses are highly correlated.  Typically a local set of scan points captured within a few seconds of one another are highly accurate, yet if the same features in the environment are scanned twice with a long interval between scans, then the scans are likely to be mis-matched.  This behavior leads to the presence of ``double-surfacing'' in the output scans, which can be observed in the generated point cloud of the environment.
+
+% TODO show figure of double surfacing.
+
+In order to provide consistent output geometry, the modeling techniques described in this dissertation are designed to prevent such ``double-surfacing'' from occurring in the output meshes.  This trait is accomplished by performing volumetric analysis of the input scans, as discussed later in this document. 
+
+\section{Aligning Model Coordinates}
+\label{sec:align_path}
+
+As discussed in Section~\ref{sec:localization}, the system path generated by the localization procedure is initially oriented using the heading vector of the first pose.  In order to keep the orientation of model coordinate frames consistent between separate scans of the same environment, and to ensure that output geometry is easily recognizable, we perform an additional orientation step that aligns the path to the East-North-Up (ENU) coordinate frame.
+
+One of the on-board sensors of the backpack hardware system is a 3D magnetometer, which is built into the Inertial Measurement Unit (IMU).  Individual readings from a 3D compass are typically noisy when indoors, due to nearby ferrous building elements that interfere with hard and soft iron calibration~\cite{Caruso00,Guo08}.  As such, these readings are not reliable during the localization process.  Once the final, consistent path is generated we are able to generate a least-squares estimate of compass north and reorient the path so that North is aligned with the $+Y$-direction.
+
+First, the 3D magnetometer reading is recorded at each pose during the data acquisition.  These vector readings represent the magnetic field at that location.  The direction of each reading is used as a noisy estimate of the direction of magnetic South.  Let $\vec{m}_i \in \mathbb{R}^3$ be the magnetometer reading at pose $i$, in the coordinate frame of the magnetometer sensor $\texttt{mag}$.  The rotation required to orient the model coordinate frame to ENU coordinates is given by:
+
+\begin{equation}
+	\label{eq:align_path}
+	\texttt{argmin}_{\theta \in [0,2\pi]} \; \sum \limits_{i} 
+		\; \left| \left( R_{z}(\theta) \, R_{c\rightarrow m} (t_i) \,
+			R_{\texttt{mag} \rightarrow c} \, m_i \right) - \left[ 
+				\begin{array}{c} 0 \\ -1 \\ 0 \end{array} 
+					\right] \right|^2
+\end{equation}
+
+where $t_i$ is the timestamp of pose $i$, and $R_{z}(\theta)$ is the rotation matrix:
+
+\begin{equation}
+	\label{eq:rotation_matrix}
+	R_{z}(\theta) = \left[ \begin{array}{ccc}
+				\texttt{cos}(\theta) & -\texttt{sin}(\theta) & 0 \\
+				\texttt{sin}(\theta) & \texttt{cos}(\theta) & 0 \\
+				0 & 0 & 1 \end{array} \right]
+\end{equation}
+
+This optimization rigidly rotates the model coordinate frame about the $z$-axis in order to best align all magnetometer readings with the direction we wish to denote south:  the $-Y$-direction.  This procedure ensures that all output models are aligned with magnetic North, in ENU coordinates.  While not applied in the current configuration, it is possible to also align the model to true North if given the latitude and longitude coordinates of the scanning location, by performing a look-up of magnetic declination~\cite{MagDec}.
+
+% TODO show figure of align_path rotation
+
+\section{Point Cloud Generation}
+\label{sec:pointcloud}
+
+When a finalized path and coordinate frame is produced, we can immediately generate a point cloud of the raw scans taken in the environment.  This point cloud allows visualization of observed building geometry.  Each point can be computed independently by transforming its position from its sensor frame to the model coordinate frame.  An example point cloud of an indoor environment is shown in Figure~\ref{fig:pointcloud_nocolor}.  This scene shows a corner of a room, with a lamp to the left of a TV on a table.
+
+% show example pointcloud
+\begin{figure}
+	\centerline{\includegraphics[width=1.0\linewidth]{pointcloud/gradlounge/pointcloud_nocolor}}
+	\caption{An example point cloud of an indoor building environment.}
+	\label{fig:pointcloud_nocolor}
+\end{figure}
+
+We also have the capability to export point clouds in color.  The coloration is taken from camera imagery taken temporally close to when the range points were acquired.  For a given point $\vec{x}$ taken at time $t$, the point color is determined by querying all available cameras for any images within $\Delta t$ seconds of time $t$.  Typically, we use a window size of $\Delta t = 2$~seconds.  For each reported camera, we project the position $\vec{x}$ onto the camera image plane, and determine the pixel color at that position.  This projection is demonstrated in Figure~\ref{fig:pointcloud_color_diagram}.  In addition to color, we also compute a quality measure $q_x = (\vec{x} - \vec{c})^T \vec{n}$, where $\vec{c}$ is the camera position and $\vec{n}$ is the optical axis of the camera.  The quality $q_x$ is $1.0$ if $\vec{x}$ projects into the center of the image, and decreases as the projected location moves away from the center of image.  For all images within the time window $[t - \Delta t, t + \Delta t]$, the pixel color associated with the highest quality meaure is used to color the point.
+
+The resulting point cloud is colored based on all available imagery in the dataset.  Figure~\ref{fig:pointcloud_color}a shows a camera image of an example seen and Figure~\ref{fig:pointcloud_color}b shows the colored point cloud of the same environment.
+
+% figure showing projection of points onto images
+\begin{figure}
+	\centerline{\includegraphics[width=0.5\linewidth]{pointcloud/gradlounge/pointcloud_color_diagram}}
+	\caption{Determining the color of point $x$ based on camera imagery.}
+	\label{fig:pointcloud_color_diagram}
+\end{figure}
+
+% show color pointcloud compared to camera image
+\begin{figure}
+	\begin{minipage}[t]{0.5\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{pointcloud/gradlounge/camera}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.5\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{pointcloud/gradlounge/pointcloud_color}}
+		\centerline{(b)}
+	\end{minipage}
+
+	\caption{An example point cloud colored by nearby camera imagery.}
+	\label{fig:pointcloud_color}
+\end{figure}
+
+% partitioning pointclouds into separate levels
+\section{Partitioning Point Cloud by Building Levels}
+\label{sec:pointcloud_level_split}
+
+Many methods described in this dissertation require explicit detection and partitioning of the different levels, or stories, in a scanned building.  Since our hardware system is human-mounted, the operator can walk up and down stairs during the data acquistion process, facilitating scans of multiple stories at once.  
+
+Some localization systems that rely on 2D grid maps of wall samples are capable of detecting when the operator moves from one level to another and automatically partition their output grid maps accordingly~\cite{MITBackpack}.  We do not just want the elevation of each level, but the vertical extent as well.  In order to detect and separate building levels, we identify the primary floor and ceiling surfaces for each level.  This identification can be done either in the point cloud domain or after a full model has been generated.  The latter method is discussed in Chapter~\ref{ch:better_floorplans}.  Here, we discuss how level splitting can be accomplished via point clouds, which offers a faster if less accurate partitioning.
+
+A histogram approach can be used to separate the point cloud by levels~\cite{Turner12,Turner14Journal}. Figure~\ref{fig:heighthist}a shows an example point cloud, colored by height, which contains multiple levels.  By computing a histogram along the vertical-axis of the point-cloud, it is possible to find heights with high point density, which indicates the presence of a large horizontal surface.  An example of this process is shown in Figure~\ref{fig:heighthist}b, where peaks in the histogram correspond to the floors and ceilings of each scanned level in the building.  Points scanned from above, in a downward direction, are used to populate a histogram to estimate the position of each floor, and the histogram used to estimate the position of each ceiling is populated by points scanned from below.  The local maxima of these two histograms show locations of likely candidates for floor and ceiling positions, which are used to estimate the number of scanned levels and the vertical extent of each level.  The candidate floor and ceiling heights are pruned by first taking the lowest floor maxima as the elevation of the first level's floor.  The first level's ceiling elevation is determined by the most populated ceiling maxima position that resides below the next maximal floor elevation.  This process is repeated for all levels, which allows for detection of both number of levels and their range extents.  Once levels are separated, they can be processed and analyzed separately.  Figure~\ref{fig:heighthist}c shows the final extruded mesh with all three scanned levels.
+
+% show example histogram and partitioning
+\begin{figure}
+
+	\centerline{\begin{minipage}[c]{0.5\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{jstsp2014/floorplan/cory3story/points_LEFT}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[c]{0.35\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{jstsp2014/floorplan/cory3story/hist}}
+		\centerline{(b)}\medskip
+	\end{minipage}}
+	\begin{minipage}[c]{0.9\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{jstsp2014/floorplan/cory3story/mesh}}
+		\centerline{(c)}
+	\end{minipage}
+	
+	\caption[An example point-cloud partitioning by height.]{An example point-cloud partitioning by height: (a) the input point-cloud, showing geometry for three levels; (b) the vertical histogram showing estimates of each building level height; (c) the produced mesh of this building scan using method from Chapter~\ref{ch:floorplan}.}
+	\label{fig:heighthist}
+
+\end{figure}
+
+
 
 % http://www.ctan.org/tex-archive/biblio/bibtex/contrib/doc/
 % The IEEEtran BibTeX style support page is at:
