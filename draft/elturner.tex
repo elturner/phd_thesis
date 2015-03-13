@@ -179,13 +179,12 @@ Smooth introduction to dealing with large pointclouds.
 \chapter{Hardware Description}
 \label{ch:hardware}
 
-% TODO LEFT OFF HERE
-%		- mechanical specs
-%		- sweeping orientation of scanners
-%		- error characteristics of sensors
-%		- data acquisition software		
-%		- time synchronization between sensors
-%		- scalability of scanning system
+The surface reconstruction algorithms described in this dissertation can be applied on any indoor scanning data.  For practicality purposes, we have developed our own scanning system, and all examples shown in this document are generated with our custom hardware (unless otherwise stated).
+
+We developed a human-mounted ambulatory scanning system, worn as a backpack.  As the human operator walks through the building environment, at normal speed, this system collects data from a variety of sensors on-board.  These data products are logged and then processed offline.  Our developed software can accurately estimate the trajectory of the system over time and localize the system~\cite{NickJournal}.  This procedure allows us to rapidly move through a large environment, spending only a few seconds in each room yet capturing full geometry information.
+
+\section{Mechanical Specification}
+\label{sec:mechanical}
 
 % this figure shows side-by-side backpacks
 \begin{figure}
@@ -211,6 +210,14 @@ Smooth introduction to dealing with large pointclouds.
 
 \end{figure}
 
+% different backpack models
+As shown in Figure~\ref{fig:all_backpacks}, our lab has developed three generations of the backpack hardware.  The first generation system, shown in Figure~\ref{fig:all_backpacks}a, was built as a prototype system~\cite{Backpack}.  It contains five Hokuyo laser scanners, two cameras, and an Internal Measurement Unit (IMU).  Since 2012, it has been augmented with WiFi antennas and infrared cameras.  The WiFi antennas are used to record signal-strength of nearby access points, which is useful for indoor localization techniques~\cite{Levchev14}.  The infrared cameras are useful for energy-efficiency analysis of building environments.  These data products are discussed further in Chapter~\ref{ch:applications}.
+
+The second generation backpack, as shown in Figure~\ref{fig:all_backpacks}b, was constructed in 2013.  It contains all sensors available on the first backpack, except for the infrared cameras.  It also has a barometer and a set of 3D magnetometers.  The main modification of the second generation was to reduce the size.  The first generation is about 80 pounds, whereas the second generation is only 32.5 pounds.  The third generation, shown in Figure~\ref{fig:all_backpacks}c, backpack is almost identical to the second generation, but with the addition of infrared cameras.
+
+\section{Sensor Characteristics}
+\label{sec:sensor_specs}
+
 % figure of backpack hardware
 \begin{figure}[t]
 	\centerline{\includegraphics[width=0.5\linewidth]{procarve/hardware/backpack_annotated}}
@@ -218,15 +225,10 @@ Smooth introduction to dealing with large pointclouds.
 	\label{fig:backpack}
 \end{figure}
 
-% start description of the pipeline, talk about backpack
-The input scans for our modeling approach come from an ambulatory indoor scanning system~\cite{Backpack}.  As shown in Figure~\ref{fig:backpack}, our hardware is a collection of sensors worn as a backpack.  By walking through the indoor environment at normal speeds, we can accurately estimate the trajectory of the system over time and localize the system~\cite{NickJournal}.  Subsequently, we automatically generate a 3D model of the environment with the method described in this paper.  This procedure allows us to rapidly move through a large environment, spending only a few seconds in each room yet capturing full geometry information.
-
 % briefly describe the type of scans we use as input
-Once the system is localized in the environment, our proposed algorithm uses the retrieved laser range data as input.  These scans are taken with time-of-flight laser scanners that capture 3D geometry of the environment.  We use multiple 2D laser scanners mounted at different orientations to capture all observed geometry in the environment.  Since our system is mobile and ambulatory, the resulting point clouds have higher noise than traditional static scanners due to natural variability in human gait.  As such, our approach needs to be robust to motion induced scan-level noise and its associated artifacts.  We use these scans to form watertight models of the indoor building environment and the contained objects.
+Our geometry reconstruction algorithms use the retrieved laser range data as input.  These scans are taken with time-of-flight laser scanners that capture 3D geometry of the environment.  We use multiple 2D laser scanners mounted at different orientations to capture all observed geometry in the environment.  Since our system is mobile and ambulatory, the resulting point clouds have higher noise than traditional static scanners due to natural variability in human gait.  As such, our approach needs to be robust to motion induced scan-level noise and its associated artifacts.  We use these scans to form watertight models of the indoor building environment and the contained objects.
 
-
-
-% TODO go over different versions of backpack (show pics!).  List sensors and why they are there
+% TODO LEFT OFF HERE
 
 % TODO mechanical specs (discuss sweeping geometry idea)
 % also discuss extrinsic calibration of sensors, and show diagram of system common coordinate frame

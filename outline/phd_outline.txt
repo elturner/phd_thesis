@@ -45,8 +45,8 @@ Thesis outline :
 		- organization of thesis			\label{sec:organization}
 
 	harware description (5-10 pages)			\label{ch:hardware}
-		- mechanical specs
-		- sweeping orientation of scanners
+		- mechanical specs				\label{sec:mechanical}
+		- sweeping orientation of scanners		\label{sec:sensor_specs}
 		- error characteristics of sensors
 		- data acquisition software		
 		- time synchronization between sensors
@@ -94,7 +94,7 @@ x	Pointcloud generation (5-10 pages)			\label{ch:preprocessing}
 		- refining furniture
 		- representing furniture and building separately
 
-	Applications and Analysis
+	Applications and Analysis				\label{ch:applications}
 		- error analysis of meshes to pointclouds?
 		- Energy related
 			- discuss failed attempt to simplify voxel carving
