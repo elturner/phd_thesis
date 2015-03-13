@@ -1,0 +1,404 @@
+\documentclass[a4paper,twoside]{article}
+
+% avideh formatting
+%\documentclass[letter]{article}
+%\usepackage{setspace}
+%\doublespacing
+%\onecolumn
+% end avideh formatting
+
+\usepackage{epsfig}
+\usepackage{subfigure}
+\usepackage{calc}
+\usepackage{amssymb}
+\usepackage{amstext}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{multicol}
+\usepackage{pslatex}
+\usepackage{apalike}
+\usepackage{SCITEPRESS}
+\usepackage[small]{caption}
+
+\special{papersize=210mm,297mm}
+\usepackage[top=3.3cm, bottom=4.2cm, left=2.6cm, right=2.6cm]{geometry}
+
+\subfigtopskip=0pt
+\subfigcapskip=0pt
+\subfigbottomskip=0pt
+
+\begin{document}
+
+\title{Floor Plan Generation and Room Labeling of Indoor Environments from Laser Range Data}
+
+\author{
+\authorname{Eric Turner\sup{1} and Avideh Zakhor\sup{1}}
+\affiliation{\sup{1}Department of Electrical Engineering and Computer Sciences, University of California, Berkeley, CA, United States}
+\email{\{elturner, avz\}@eecs.berkeley.edu}
+}
+
+\keywords{Floor Plan, Watertight Modeling, Range Data, LiDAR}
+
+\abstract{Automatic generation of building floor plans is useful in many emerging applications, including indoor navigation, augmented and virtual reality, as well as building energy simulation software.  These applications require watertight models with limited complexity.  In this paper, we present an approach that produces 2.5D extruded watertight models of building interiors from either 2D particle filter grid maps or full 3D point-clouds captured by mobile mapping systems.  Our approach is to triangulate a 2D sampling of wall positions and separate these triangles into interior and exterior sets.  We partition the interior volume of the building model by rooms, then simplify the model to reduce noise.  Such labels are useful for building energy simulations involving thermal models, as well as for ensuring geometric accuracy of the resulting 3D model.  We experimentally verify the performance of our proposed approach on a wide variety of buildings.  Our approach is efficient enough to be used in real-time in conjunction with Simultaneous Localization and Mapping (SLAM) applications.}
+
+\onecolumn \maketitle \normalsize \vfill
+
+\section{\uppercase{Introduction}}
+\label{sec:introduction}
+
+% motivation - energy plus
+\noindent Indoor building modeling and floor plan generation are useful in many fields such as architecture and civil engineering.  Green buildings and sustainable construction have increased the use of building energy simulation and analysis software, requiring building geometry as input.  Even though existing energy simulation tools can accurately model the thermodynamic properties of building interiors, their performance is hindered by overly complex geometry models~\cite{EnergyPlus}.  Indoor models can also be used for positioning in wide-area augmented reality applications, whereby low-complexity models enable low memory use for mobile client-side processing.
+
+% small, simple models
+In this paper, we present a technique for generating aesthetically pleasing, minimalist 2.5D models of indoor building environments.  Such models are intended to capture the architectural elements of a building such as floors, walls, and ceilings while ignoring transient objects such as furniture.  We generate our models by first computing a 2D floor-plan of the environment, then using estimated height information to extrude the floor-plan into a 3D building model.  
+
+% 2.5D extrusion process
+Generating 3D models by extruding 2D floor-plans typically yield clean and aesthetically pleasing results.  Even though such models may not capture the fine details of the environment, they still offer many advantages.  As shown later, it is possible to generate sizable 2.5D extruded models at real-time speeds, enabling human operators to capture and navigate environments thoroughly and adaptively.
+%Complex meshes also require the classification and removal of furniture or other clutter in the mesh, whereas a computed floor-plan will only represent the primary features of the environment.
+
+We also propose a technique to partition the interior environment rooms, yielding secondary features of buildings, such as locations of doorways.  Room labeling is useful for many applications, such as fast rendering of models~\cite{WalkthroughRendering}.  Furthermore, since energy simulation engines model heat and air flow within the building environment, they need accurate partitions of the interior spaces to represent distinct thermal zones~\cite{EnergyPlus}.  
+
+% room labels for other applications
+In addition to exporting room labels, our proposed technique uses the computed labels to further improve the geometry of the model.  Specifically, knowledge of room partitions can be exploited to reduce noise in the computed geometry while preserving fine details in doorways.  Furthermore, since input height estimates are often noisy, using room labels to group these heights can provide substantial error reduction in the resulting extruded 3D meshes.
+
+% overview of paper
+This paper is organized as follows.  In Section~\ref{sec:background}, we describe related work to this research.  Section~\ref{sec:approach} describes our proposed algorithm to generate floor plans from the specified input.  In Section~\ref{sec:roomlabeling}, we describe our approach to room labeling. In Section~\ref{sec:simplification}, we show how room labeling is used to reduce noise in the model.  Section~\ref{sec:heightextrusion} describes how 2D floor plans are extruded into 2.5D models with height information.  Section~\ref{sec:results} demonstrates experimental results on a wide variety of building models.  Lastly, in Section~\ref{sec:conclusion} we describe potential future work in this area.
+
+\section{\uppercase{Background}}
+\label{sec:background}
+
+\noindent Modeling and navigation of indoor environments is a well-studied field.  Due to cost of full 3D laser range finders, the majority of indoor modeling systems use 2D LiDAR scanners.  Examples of such systems include autonomous unmanned vehicles~\cite{Quadrotor,SpectralClustering} or systems worn by a human operator~\cite{Backpack,MITBackpack}.
+%The ability to extract 3D information of the environment from these 2D scanners is crucial for navigation and modeling purposes.
+
+% ~\cite{Localization}
+% Particle filtering and gridmaps
+Most simultaneous localization and mapping (SLAM) systems use a horizontally-oriented 2D LiDAR scanner, which estimates the trajectory of the system, creating a 2D map of the environment~\cite{ProbabilisticRobotics}.  The constructed 2D grid map is stored as a set of points in $\mathbb{R}^2$ that represent the primary features of the environment, such as walls and building architecture.  Particle filtering approaches to localization typically result in real-time mapping~\cite{fastslam03,toro07} and can therefore benefit from a real-time floor plan generation algorithm that delivers a live map of the environment. 
+
+% pointclouds and 3d reconstruction
+These mapping systems can also use additional scanners to create a dense 3D point-cloud representation of the environment geometry~\cite{Sweep,Localization}, which can be used to develop full 3D models~\cite{Pons10,Carving}.  Many applications are unable to use these 3D models due to their complexity and number of elements.  For example, building energy simulations require watertight meshes that are also highly simplified in order to perform effectively~\cite{EnergyPlus}.
+
+%Recent advances have focused on using template matching to yield accurate 3D representations of the environment from dense scans~\cite{Shao12,Kim12}.  Such approaches have the advantage of yielding aesthetically pleasing results, since the geometry of the generated model is derived from a list of pre-generated templates of common building furniture and features.  These classification schemes partition the model based on furniture, which would be useful to applications that require model furniture to be removed.  Additionally, this classification can be performed very quickly.  The downside to these approaches is the reliance on a library of models.  Such a library may not contain the observed geometry, which can lead to misclassification and errors in the output geometry.
+
+To address this issue, a number of simplified building modeling algorithms have been developed, most of which assume vertical walls, rectified rooms, and axis-alignment~\cite{Museums}.  Under these assumptions, fundamental features of the building can be identified, while ignoring minor details such as furniture or other clutter~\cite{WallFinder}.  One of the major limitations of these techniques is that they are developed only for axis-aligned models.  Often, such techniques correctly reconstruct major rooms while fundamentally changing the topology of minor areas, such as ignoring doorways, shapes of rooms, or small rooms entirely.
+
+In this paper, we show that simple models can be generated with only 2.5D information, while preserving connectivity and geometry of building features, including doorways.  Our approach generates a 2D floor plan of the building, then uses wall height information to generate a 3D extrusion of this floor plan.  Such blueprint-to-model techniques have been well-studied~\cite{Or05,Lewis98}, but rely on the original building blueprints as input.  Our technique automatically generates the floor plan of the building and uses this information to create a 2.5D model of the environment.
+
+Prior work on automatic floor plan generation use dense 3D point-clouds as input, and take advantage of the verticality of walls to perform histogram analysis to sample wall position estimates~\cite{Okorn09,Eigencrust}, which are in the same format as a grid map for particle filtering~\cite{toro05}.  In situations where dense 3D point-clouds are available, we apply similar techniques to convert them to a 2D wall sampling.
+
+A novel contribution of this paper is the use of room labeling to enhance building models, e.g.\ for thermal simulations of interior environments~\cite{EnergyPlus}.  One motivation for existing work has been to capture line-of-sight information for fast rendering of building environments~\cite{WalkthroughRendering}.  This technique requires axis-aligned rectilinear building geometry, which often is not a valid assumption.  Others have partitioned building environments into submap segments with the goal of efficient localization and tracking~\cite{SpectralClustering}.  This approach is meant to create easily recognizable subsections of the environment, whereas our proposed room labeling technique uses geometric features to capture semantic room definitions for both architectural and building energy simulation applications.
+
+\section{\uppercase{Floor Plan Generation}}
+\label{sec:approach}
+
+\noindent In this section, we present a technique to automatically generate accurate floor plan models at real-time speeds for indoor building environments.  Section~\ref{sec:inputdata} describes the type of input for our approach, which can be generated from either 2D mapping systems or dense 3D point-clouds of environments.  In Section~\ref{sec:floorplancreation}, we discuss the way these input data are used to compute the interior space of the 2D floor-plan, which defines the resultant building geometry.
+%The partitioning of this interior space into separate rooms is then considered in Section~\ref{sec:roomlabeling}.  Using these room labels, the geometry can be simplified, as described in Section~\ref{sec:simplification}.  In Section~\ref{sec:heightextrusion}, the final 2D geometry is extruded into an exported 3D model.
+
+\subsection{Input Data}
+\label{sec:inputdata}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\linewidth]{figures/algorithm/input_points/houston_wall_samples_with_labels.png}
+  \caption{Example input wall samples of hotel hallways and lobby generated from a particle filter system. (a) Wall samples of full model; (b) close up of wall in model.}
+  \label{fig:inputdata}
+\end{figure}
+
+The input data used during floor plan generation consist of points in the ($x$,$y$) horizontal plane, which we call wall samples.  These points depict locations of walls or vertical objects in the environment.  We assume that interior environments satisfy ``2.5-Dimensional'' geometry:  all walls are vertically aligned, while floors and ceilings are perfectly horizontal.  In many application scenarios only 2D scanners operating in one plane are used, so this assumption is needed to extract 3D information about the environment.  Many mapping systems use a horizontal LiDAR scanner to estimate a map of the area as a set of wall sample positions, while refining estimates for scanner poses.  These mobile mapping systems often have additional sensors capable of estimating floor and ceiling heights at each pose~\cite{Backpack,Quadrotor}.  The input to our algorithm is a set of 2D wall samples, where each sample is associated with the scanner pose that observed it, as well as estimates of the floor and ceiling heights at the wall sample location.
+
+An alternate method of computing wall samples is to subsample a full 3D point-cloud to a set of representative 2D points~\cite{Eigencrust,Okorn09}.  This process cannot be done in a streaming fashion, but can provide more accurate estimates for wall positions than a real-time particle filter.  Such an approach is useful when representing dense, highly complex point clouds with simple geometry.  Under the 2.5D assumption of the environment, wall samples can be detected by projecting 3D points onto the horizontal plane.  Horizontal areas with a high density of projected points are likely to correspond to vertical surfaces.  Wall samples are classified by storing these projected points in a quadtree structure with resolution $r$.  A resolution of $5$ cm typically results in sufficient detail in even the most cluttered environments.  Each leaf node in this quadtree contains the 3D points that are projected onto its $r \times r$ area.  A vertical histogram is computed using the original heights of these points.  This histogram has bin-size $r$, and if a sufficient vertical coverage $H$ is represented by at least $\texttt{ceil}(H/r)$ bins, then the average $(x,y)$ position of the leaf is considered a wall sample.  The value of $H$ may vary depending on application, but a length of $2$ meters works well to capture permanent wall features while ignoring furniture and other interior clutter.
+
+The result is a set of wall samples $P \subseteq \mathbb{R}^2$, where each wall sample $p \in P$ is represented by its 2D position, the minimum and maximum height values of the points that sample represents, and the poses of the scanners that observed the sample location.  As we discuss later, these scanner poses provide crucial line-of-sight information that facilitate floor plan reconstruction.  An example of such input for a hotel hallway is shown in Figure~\ref{fig:inputdata}.  As shown, even though the walls are well sampled, noise in the localization estimate causes noisy wall samples with outliers.
+
+\subsection{Triangulation}
+\label{sec:floorplancreation}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.98\linewidth]{figures/algorithm/carving/carving_full_figure.png}
+  \caption{Example of carving process to find interior triangles:  (a) wall samples (in blue) with path of scanner (in green); (b) Delaunay Triangulation of wall samples; (c) laser scans from each pose (in red); (d) triangles that intersect with laser scans (in pink), used as interior triangles, with building model border (in blue).}
+  \label{fig:floorplan_creation}
+\end{figure*}
+
+%The interior space of the floor plan is computed using the input wall samples.  The desired output consists of not only the architectural features such as walls, but also a volumetric representation of the environment.  As such, 
+We generate a floor plan by partitioning space into {\it interior} and {\it exterior} domains.  The interior represents all open space in the environment, such as rooms and hallways, while the exterior represents all space outside of the building, space occupied by solid objects, or space that is unobservable.  Once this partitioning is completed, as described below, the boundary lines between the interior and exterior are used to represent the exported walls of the floor plan.
+
+%, and the set of all interior triangles represents the building model.  
+The input samples are used to define a volumetric representation by generating a Delaunay Triangulation on the plane.  Each triangle is labeled either interior or exterior by analyzing the line-of-sight information of each wall sample.  Initially, all triangles are considered exterior.  Each input wall sample, $p \in P$, is viewed by a set of scanner positions, $S_p \subseteq \mathbb{R}^2$.  For every scanner position $s \in S_p$, the line segment $(s,p)$ denotes the line-of-sight occurring from the scanner to the scanned point during data collection.  No solid object can possibly intersect this line, since otherwise the scan would have been occluded.  Thus, all triangles intersected by the line segment $(s,p)$ are relabeled to be interior.
+
+In order to prevent fine details from being removed, we check for occlusions when carving each line segment $(s,p)$.  If another wall sample $p'$ is located in between the positions of $s$ and $p$, then the line segment is truncated to $(s,p')$.  Thus, no features captured by wall samples are ever fully carved away, preserving environment details.  This process carves away the interior triangles with each captured scan.  Since these scans are captured on a mobile scanner, the scanner poses are ordered in time.  In order for the system to traverse the environment, the line segment between adjacent scanner poses must also intersect only interior space.  In addition to carving via scanner-to-scan lines, the same carving process is performed with scanner-to-scanner line segments.
+
+Figure~\ref{fig:floorplan_creation} demonstrates an example of this process.  Figure~\ref{fig:floorplan_creation}a shows the input wall samples, in blue, as well as the path of the mobile mapping system, in green.  These points are triangulated, as shown in Figure~\ref{fig:floorplan_creation}b.  The line-of-sight information is analyzed from each pose of the system, demonstrated by the laser scans from each pose to its observed wall samples in Figure~\ref{fig:floorplan_creation}c.  The subset of triangles that are intersected by these laser scans are considered interior.  The interior triangles are shown in pink in Figure~\ref{fig:floorplan_creation}d, denoting the interior volume of the reconstructed building model.  The border of this building model is shown in blue, denoting the estimated walls of the floor plan.
+
+%The above method may result in errors if there is misregistration in the localization of the poses of the scanners during the data collection.  For instance, if opposite sides of the same wall are scanned, this wall appears in the output with some thickness, $t$.  If the estimated positions of the scanners on either side of the wall are inaccurate, the observed wall thickness varies by the component of this localization error orthogonal to the wall plane.  If this error is greater than $t$, then every triangle associated with the wall may be labeled interior, and the wall is carved away entirely from the output.  In order to prevent these topological errors, we check for occlusions when carving each line segment $(s,p)$.  If another wall sample $p'$ is located in between the positions of $s$ and $p$, then the line segment is truncated to $(s,p')$.  Thus, no features captured by wall samples are ever fully carved away, which preserves the details of the environment.
+
+\section{\uppercase{Room Labeling}}
+\label{sec:roomlabeling}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.98\linewidth]{figures/algorithm/room_seeds/room_seeds_full_figure.png}
+  \caption{Example room seed partitioning: (a) interior triangulation; (b) the room seed triangles, and their corresponding circumcircles; (c) room labels propagated to all other triangles.}
+  \label{fig:roomlabeling}
+\end{figure*}
+
+\noindent Once the volume has been partitioned into interior and exterior domains, the boundary between these domains can be exported as a valid floor plan of the environment.  Keeping volumetric information can also yield useful information, such as a partitioning of the interior into separate rooms.
+
+We define a {\it room} to be a connected subset of the interior triangles in the building model.  Ideally, a room is a large open space with small shared boundaries to the rest of the model.  Detected rooms should match with real-world architecture, where separations between labeled rooms are located at doorways in the building.  Since doors are often difficult to detect, or not even present, there is no strict mathematical definition for a room, so this labeling is heuristic in nature.
+
+We model room labeling as a graph-cut problem.  First, a rough estimate for the number of rooms and a seed triangle for each room is computed.  A seed triangle is representative of a room, where every room to be modeled has one seed triangle.  These seeds are used to partition the remainder of interior triangles into rooms.  This process typically over-estimates the number of rooms, so prior knowledge of architectural compliance standards is used to evaluate each estimated room geometry.  Using this analysis, the number of ill-formed rooms is reduced, providing an update on the original seed points.  This process is repeated until the set of room seeds converges.
+
+\subsection{Forming Room Seeds}
+\label{ssec:room_seeds}
+
+%As mentioned above, the interior building model geometry is formed by labeling the elements of a Delaunay Triangulation as interior or exterior triangles, an example of which is shown in Figure~\ref{fig:roomlabeling}a.  We use the Delaunay property of the triangulation elements to identify likely seed triangle locations for room labels, which states that no vertex is strictly inside the circumcircle of any triangle in this triangulation.  If we assume that the input wall samples represent a dense sampling of the building geometry, this property implies that the circumcircles of none of the interior triangles intersect the boundary walls of the carved floor plan, forcing these circles to represent only interior area.  This make-up allows each triangle's circumradius to provide an easy estimate of the local feature size at its location on the floor plan boundary polygon.  The highlighted triangles in Figure~\ref{fig:roomlabeling}b show this property.
+We use the Delaunay property of the triangulation to identify likely seed triangle locations for room labels.  If we assume that the input wall samples represent a dense sampling of the building geometry, this property implies that the circumcircles of none of the interior triangles intersect the boundary walls of the carved floor plan, forcing these circles to represent only interior area.  This make-up allows each triangle's circumradius to provide an estimate of the local feature size at its location on the floor plan boundary polygon.  Given the example interior triangulation shown in Figure~\ref{fig:roomlabeling}a, the highlighted triangles in Figure~\ref{fig:roomlabeling}b show the chosen seed locations.
+
+Triangles with larger circumradii are likely to be more representative of their rooms than those with smaller circumradii.  We form the initial set of room seeds by finding all triangles whose circumcircles are local maxima.  Specifically, given the set of interior triangles $T$, each triangle $t \in T$ has circumcircle $c_t$, which is tested against every other circumcircle in $T$ that is intersected by $c_t$.  If $c_t$ has the largest radius of any intersecting circumcircle, then $t$ is considered a seed for the room labeling.  This process selects the largest triangles that encompass the space of rooms as the seeds for room labeling.  Figure~\ref{fig:roomlabeling}b shows example seed triangles and their corresponding circumcircles.  The result is an estimate of the number of rooms and a rough location for each room.
+
+\subsection{Partitioning Room Labels}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.95\linewidth]{figures/algorithm/room_merging/room_merging_full_figure.png}
+  \caption{Room labeling refinement example:  (a) initial room labels; (b) converged room labels}
+  \label{fig:roommerging}
+\end{figure*}
+
+Let $K$ be the number of room seeds found, with the seed triangles denoted as $t_1,\,t_2,\,...,\,t_K$.  We wish to partition all triangles in $T$ into $K$ rooms.  This step can be performed as a graph-cut on the dual of the triangulation.  Specifically, each triangle $t \in T$ is a node in the graph, and the edge weight between two abutting triangles is the length of their shared side.  Performing a min-cut on this graph partitions rooms to minimize inter-room boundary length.  In other words, rooms are defined to minimize the size of doors.  This process propagates the room labels to every triangle, and the boundaries between rooms are composed of only the smallest edges in the triangulation $T$.  The result of this process is shown in Figure~\ref{fig:roomlabeling}c.
+
+%A greedy algorithm can alternatively be employed to flood-fill rooms.  To do so, we initialize the labeling so that each seed triangle $t_i$ has a unique label, while all non-seed triangles are unlabeled.  We then construct a priority queue of all edges in $T$ that separate a labeled triangle from an unlabeled triangle, sorted by decreasing edge length.  Iterating through this queue, the top value represents the longest edge in the queue, adjoining a labeled triangle $u \in T$ and unlabeled triangle $v \in T$.  We then pop this edge, propagate the label from $u$ to $v$, then push all edges of $v$ adjoining unlabeled triangles onto the queue.  
+
+\subsection{Refining Rooms}
+\label{sec:refiningrooms}
+
+Room labels partition $T$ into a set of rooms $R = \{R_1,\,R_2,\,...,\,R_K\}$, where each room $R_i$ contains a disjoint subset of $T$ and has seed triangle $t_i$.  The initial room seeds over-estimate the number of rooms, since a room may have multiple local maxima.  This case is especially true for long hallways, where the assumption that one triangle dominates the area of the room is invalid.  An example is shown in Figure~\ref{fig:roomlabeling}c, where two lower rooms, shown in green and purple, are properly labeled, but their adjoining hallway is broken into three subsections.  The solution is to selectively remove room seeds and redefine the partition.
+
+A room is considered a candidate for merging if it shares a large perimeter with another room.  Ideally, two rooms sharing a border too large to be a door should be considered the same room.  By Americans with Disabilities Act Compliance Standards, a swinging door cannot exceed 48 inches in width~\cite{ADACompliance}.  Accounting for the possibility of double-doors, we use a threshold of 2.44 meters, or 96 inches, when considering boundaries between rooms.  If two rooms share a border greater than this threshold, then the seed triangle with the smaller circumradius is discarded.  This process reduces the value of $K$, the number of rooms, while keeping the interior triangulation $T$ unchanged.  With a reduced set of room seeds, existing room labels are discarded and the process of room partitioning is repeated.  This iteration repeats until the room labeling converges.
+%In this sense, room labeling is analogous to a K-means clustering approach, where initial estimates for room seeds are made, the set of triangles is partitioned, and the partition is used to refine the original set of room seeds.
+
+Another way room labels are refined is by comparing the path of the mobile mapping system to the current room labeling for each iteration.  The mobile scanning system does not necessarily traverse every room, and may only take superficial scans of room geometry passing by a room's open doorway.  Since the room is not actually entered, the model is unlikely to capture sufficient geometry, and so only a small handful of wall samples are acquired for such a room.  It is desirable to remove this poorly scanned area from the model rather than keeping it as part of the output.  After each round of room partitioning, if none of the triangles in a room $R_i$ are intersected by the scanner's path, then we infer that room has not been entered.  The elements of $R_i$ are removed from the interior triangulation $T$.  Since the topology of the building model is changed, the set of room seeds is recomputed in this event and room labeling is restarted.  This process will also remove areas that are falsely identified as rooms, such as ghost geometry generated by windows and reflective surfaces, which cause rooms to be replicated outside the actual model.
+
+Figure~\ref{fig:roommerging} shows an example of the room refinement process for the hallways and classrooms in an academic building. Figure~\ref{fig:roommerging}a shows the initial room seeds that were found based on circumcircle analysis of Section~\ref{ssec:room_seeds}.  The hallways of this building are represented by several room labels, but after room label refinement as shown in Figure~\ref{fig:roommerging}b, the hallways are appropriately classified.  Additionally, rooms that are insufficiently scanned and represented with triangulation artifacts are removed from the model in the manner described above.
+
+\section{\uppercase{Simplification}}
+\label{sec:simplification}
+
+\noindent The interior building model is represented as a triangulation of wall samples, which densely represent the building geometry.  In many applications, it is useful to reduce the complexity of this representation, so that each wall is represented by a single line segment.  This step is often desirable in order to attenuate noise in the input wall samples or to classify the walls of a room for application-specific purposes.  The goal is to simplify the wall geometry while preserving the general shape and features of the building model.
+
+We opt to simplify walls using a variant of QEM~\cite{QEM}.  Since this mesh is in the plane, only vertices incident to the model boundary are considered for simplification.  The error matrix $Q_v$ of each boundary vertex $v$ is used to compute the sum of squared displacement error from each adjoining line along the boundary polygon.  Since error is measured via distance away from a line in 2D, each $Q_v$ has size $3 \times 3$, and is defined as:
+
+\begin{equation}
+Q_v = \sum_{l \in lines(v)} E_l
+\end{equation}
+
+where $E_l$ is defined from the line equation $ax + by + c = 0$, with $a^2 + b^2 = 1$:
+
+\begin{equation}
+E_l = \left[ \begin{array}{c c c}
+a^2 & ab & ac \\
+ab & b^2 & bc \\
+ac & bc & c^2 \end{array} \right]
+\end{equation}
+
+The simplification of the boundary proceeds in a similar manner to QEM, but if a wall vertex $v$ is contained in multiple rooms or if it is connected by an edge to a vertex that is contained in multiple rooms, then it is not simplified.  This constraint is used to preserve the fine details of doorways between rooms, while freely simplifying walls that are fully contained within one room.  Wall edges are iteratively simplified until no simplification produces error of less than the original wall sampling resolution, $r$.  Thus, walls are simplified while preserving any geometry features of the building interior.
+
+Since we are interested in preserving the 2D triangulation $T$ of the building model, in addition to the boundary polygon, every edge simplification is performed by collapsing an interior triangle.  This computation simplifies the boundary polygon of the model while still preserving the room labeling of the model's volume.  These triangle collapses do not preserve the Delaunay property of the triangulation, but do preserve the boundaries between room volumes, which is more desirable in the output.
+
+\section{\uppercase{Height Extrusion}}
+\label{sec:heightextrusion}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.98\linewidth]{figures/algorithm/height_extrusion/height_extrusion_full.png}
+  \caption{Example of creating a 3D extruded mesh from 2D wall samples:  (a) walls of generated floor plan with estimated height ranges; (b) floor and ceiling heights are grouped by room; (c) simplification performed on walls; (d) floor and ceiling triangles added to create a watertight mesh. }
+  \label{fig:heightextrusion}
+\end{figure*}
+
+\noindent As mentioned in Section~\ref{sec:inputdata}, each input wall sample also references the vertical extent for the observed scans at that location.  This information can be used to convert the labeled 2D interior building model to a 2.5D extruded model, by using the minimum and maximum height values for each scan as an estimate of the floor and ceiling heights, respectively.
+
+Since these wall samples are collected using 2D planar scanners in an environment containing clutter, the minimum and maximum heights associated with each point are noisy.  Figure~\ref{fig:heightextrusion}a shows an example room with these initial heights.  To produce aesthetically-pleasing models, each room uses a single floor height and a single ceiling height.  This assumption is reasonable since the goal of this processing is to produce a simplified building mesh.  This step demonstrates the utility of room labeling to modeling.  The height range for each room is computed from the median floor and ceiling height values of that room's vertices.  An example is shown in Figure~\ref{fig:heightextrusion}b and the corresponding result from the simplification process from Section~\ref{sec:simplification} is demonstrated in Figure~\ref{fig:heightextrusion}c.
+
+The 2D triangulation of a room is then used to create the floor and ceiling mesh for that room, with the boundary edges of the triangulation extruded to create rectangular vertical wall segments.  The result is a watertight 3D mesh of the building, capturing the permanent geometry in an efficient number of triangles.  Figure~\ref{fig:heightextrusion}d shows an example of this watertight extruded geometry, including the effects of wall boundary simplification on the resulting extruded mesh.
+
+\section{\uppercase{Results}}
+\label{sec:results}
+
+\noindent Our approach works well on a variety of test cases, spanning several model types including offices, hotels, and university buildings.  For the largest models, total processing time to compute an extruded 3D model from 2D wall samples is under 10 seconds.  Most of this time is spent on carving interior triangles, which can be performed real-time in a streaming manner during data acquisition, which typically lasts several minutes.
+
+Our 2.5D approach produces simplified models when compared to surface reconstruction techniques that preserve fine detail with more complex output.  Specifically, our method omits interior clutter such as furniture since it uses wall samples as input.  Figure~\ref{fig:compare_to_carving} compares the models resulting from our 2.5D method with that of an existing 3D building modeling technique~\cite{Turner13} for the hotel hallways shown in Figure~\ref{fig:inputdata}.  The two methods result in 2,944 triangles and 4.1 millions triangles, respectively.
+
+\begin{figure}[t]
+   \centering
+   \includegraphics[width=0.95\linewidth]{figures/results/compare/snapshot10.png}
+   \centerline{(a)}
+   \hfill
+   \includegraphics[width=0.95\linewidth]{figures/results/compare/snapshot09.png}
+   \centerline{(b)}
+   \caption{Comparison of models from (a) our approach with (b) existing approach~\cite{Turner13}.}
+   \label{fig:compare_to_carving}
+\end{figure}
+
+Next, we show sample models resulting from our proposed method in five different environments.  For all the models shown in Figures~\ref{fig:results_a} through~\ref{fig:results_e}, the scale is in units of meters, and the resolution is 5 cm.  Figure~\ref{fig:results_a} corresponds to an office building, including cubicles and individual offices.  The largest room in this model, shown in teal, primarily contains cubicles.  The cubicle walls do not meet our height threshold of $H=2$ meters, so they are not captured by the wall samples.  Since cubicles are not an architectural feature of the environment, this effect is desirable.  The room shown in purple in the lower-left corner of this model also shows an example error in the building reconstruction.  The adjacent room to the right was briefly seen through a window, but its area was considered part of this purple room rather than being removed in the manner described in Section~\ref{sec:refiningrooms}, resulting in a small extrusion remaining in the model.
+Figure~\ref{fig:results_d} shows a small test model of an apartment office complex and Figure~\ref{fig:results_b} denotes a hotel lobby, hallways, and side rooms.  The vast majority of this model is labeled as one room, consisting of the hallways of the building.  Since no part of these hallways are separated by doors, this result is desirable.  This model is also the largest example output, covering over 260 meters of hallways. An interior of the 3D extruded model for this dataset is shown in Figure~\ref{fig:compare_to_carving}a.  Figure~\ref{fig:results_c} represents an academic research lab, including conference rooms and student cubicles.  The upper portion of the center room, shown in blue, is a kitchenette area, with a counter-top.  Since the counter was not sufficiently captured by the wall samples, it is not represented in the 2.5D extrusion of the model. Figure~\ref{fig:results_e} shows the hallways of an academic building.
+
+
+% lbnl results
+\begin{figure*}[t]
+	\centering
+	
+	\begin{minipage}[b]{0.495\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{figures/results/models/dq/lbnl.png}}
+	\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.495\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{figures/results/models/2d/snapshot_lbnl00.png}}
+	\centerline{(b)}
+	\end{minipage}
+	%\hfill
+	%\begin{minipage}[b]{0.95\linewidth}
+	%\centerline{\includegraphics[width=1.0\linewidth]{figures/results/models/3d/snapshot_lbnl00_cropped.png}}
+	%\centerline{(c)}
+	%\end{minipage}
+
+	\caption{Office building: (a) Input represented by 12,823 wall samples; (b) generates floor plan with 19 rooms. Extruded 3D mesh represented with 6,084 triangles.  Total processing time required is 7.5 seconds.}
+	\label{fig:results_a}
+\end{figure*}
+%(a) This building is represented by 12,823 wall samples, which are used to generated a 3D extruded mesh of 6,084 triangles with 19 rooms.  Total run-time for this model was 7.5 seconds.  
+
+% oceanview office results
+\begin{figure*}[t]
+	\centering
+	
+	\begin{minipage}[b]{0.50\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{figures/results/models/dq/oceanview_office_pf_dq.png}}
+	\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{figures/results/models/2d/oceanview_office_pf_floorplan.png}}
+	\centerline{(b)}
+	\end{minipage}
+	%\hfill
+	%\begin{minipage}[b]{0.95\linewidth}
+	%\centerline{\includegraphics[width=1.0\linewidth]{figures/results/models/3d/snapshot_oceanview_office00.png}}
+	%\centerline{(c)}
+	%\end{minipage}
+
+	\caption{Apartment complex office: (a) Input represented by 3,462 wall samples; (b) generates floor plan with 5 rooms. Extruded 3D mesh represented with 512 triangles.  Total processing time required is 1.2 seconds.}
+	\label{fig:results_d}
+\end{figure*}
+%(d) This input has 2,957 wall samples that generated a 3D model of 844 triangles with five labeled rooms, generated in 1.2 seconds.
+
+% houston results
+\begin{figure}[t]
+	\centering
+	
+	\begin{minipage}[b]{0.950\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{figures/results/models/dq/houston.png}}
+	\centerline{(a)}
+	\end{minipage}
+	%\hfill
+	\begin{minipage}[b]{0.950\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{figures/results/models/2d/snapshot_houston00.png}}
+	\centerline{(b)}
+	\end{minipage}
+	%\hfill
+	%\begin{minipage}[b]{0.95\linewidth}
+	%\centerline{\includegraphics[width=1.0\linewidth]{figures/results/models/3d/snapshot_houston00.png}}
+	%\centerline{(c)}
+	%\end{minipage}
+
+	\caption{Hotel lobby and hallways: (a) Input represented by 33,582 wall samples; (b) generates floor plan with 5 rooms. Extruded 3D mesh represented with 5,012 triangles.  Total processing time required is 8.5 seconds.}
+	\label{fig:results_b}
+\end{figure}
+%(b) The input for this model has 33,582 wall samples, which produced a 3D mesh with 5,012 triangles composing 5 rooms in 8.5 seconds.  
+%This model is also the largest example output, covering over 260 meters of hallways. 
+
+% trust results
+\begin{figure}[t]
+	\centering
+	
+	\begin{minipage}[b]{0.95\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{figures/results/models/dq/trust.png}}
+	\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.95\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{figures/results/models/2d/snapshot_trust00.png}}
+	\centerline{(b)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.95\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{figures/results/models/3d/snapshot_trust00_cropped.png}}
+	\centerline{(c)}
+	\end{minipage}
+
+	\caption{University office area: (a) Input represented by 12,183 wall samples; (b) generates floor plan with 4 rooms; (c) extruded 3D mesh represented with 4,912 triangles.  Total processing time required is 7 seconds.}
+	\label{fig:results_c}
+\end{figure}
+%(c) The input data for this area have 12,183 wall samples, which generated a 3D model with 4,912 triangles and 4 labeled rooms in 7 seconds.  
+
+% cory 307 results
+\begin{figure}[t]
+	\centering
+	
+	\begin{minipage}[b]{0.75\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{figures/results/models/dq/cory307.png}}
+	\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.75\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{figures/results/models/2d/snapshot_cory30700.png}}
+	\centerline{(b)}
+	\end{minipage}
+	%\hfill
+	%\begin{minipage}[b]{0.95\linewidth}
+	%\centerline{\includegraphics[width=1.0\linewidth]{figures/results/models/3d/snapshot_cory30700.png}}
+	%\centerline{(c)}
+	%\end{minipage}
+
+	\caption{University office building: (a) Input represented by 12,125 wall samples; (b) generates floor plan with 7 rooms. Extruded 3D mesh represented with 3,604 triangles.  Total processing time required is 4.5 seconds.}
+	\label{fig:results_e}
+\end{figure}
+%(e) with 12,125 wall samples.  The computed model contains 3,604 triangles depicting 7 rooms, and was generated in 4.5 seconds.
+
+%\begin{figure*}[t]
+%   \centering
+%   \includegraphics[width=0.95\linewidth]{figures/results/results_table.png}
+%   \caption{Example results of our approach.  The left and middle columns show the input wall samples and the generated floor plan and room labeling, respectively.  The right column shows a view of the interior of the extruded 3D model.  Each row is labeled with the number of input samples, output triangles and rooms, as well as the total processing time to generate the model from data acquisitions that took several minutes to capture.}
+%   \label{fig:results}
+%\end{figure*}
+
+% show example textured model
+Since these models were generated with a system that captures imagery in addition to laser range points, these models can also be texture-mapped with the scenery of the environment~\cite{Cheng13}.  Figure~\ref{fig:texture} depicts the hallways of an academic building with and without texturing.
+
+\begin{figure*}[t]
+   \centering
+   \frame{\includegraphics[width=0.95\linewidth]{figures/results/coryf2_2d_texture_pics/snapshot05.png}}
+   \centerline{(a)}
+   \hfill
+   \frame{\includegraphics[width=0.95\linewidth]{figures/results/coryf2_2d_texture_pics/snapshot03.png}}
+   \centerline{(b)}
+   \caption{Interior view of 3D extruded reconstructed model: (a) without and (b) with texture-mapping~\cite{Cheng13}.}
+   \label{fig:texture}
+\end{figure*}
+
+
+\section{\uppercase{Conclusion}}
+\label{sec:conclusion}
+
+\noindent We demonstrate an efficient approach to automatically generate floor plans of building interiors at real-time speeds.  Classifying and labeling the rooms within each generated floor plan allows for simplification schemes that can preserve fine details at doorways.  These room labels allow for accurate 2.5D extrusion from noisy floor and ceiling height estimates of the input points.  The resulting model is suitable for visualization, simulation, and navigation applications.  Current limitations of this algorithm include the verticality assumption made about observed building features.  If the horizontal cross-section of an environment changes dramatically between different heights, the modeling techniques presented in this paper does not accurately portray the actual geometry.  Such limitations could be overcome by observing more information about each wall sample than just $(x,y)$ position and height ranges.  If 3D normal estimates could be made about surfaces, this information may allow better filtering of outlier wall samples, or to infer building geometry that was poorly scanned.
+
+%\section*{\uppercase{Acknowledgements}}
+% TODO
+%\textit{$\backslash$section*\{ACKNOWLEDGEMENTS\}}
+
+
+%\vfill
+\bibliographystyle{apalike}
+{\small
+\bibliography{elturner}}
+
+\vfill
+\end{document}

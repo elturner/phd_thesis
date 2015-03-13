@@ -1,0 +1,666 @@
+%%% template.tex
+%%%
+%%% This LaTeX source document can be used as the basis for your technical
+%%% paper or abstract. Intentionally stripped of annotation, the parameters
+%%% and commands should be adjusted for your particular paper - title, 
+%%% author, article DOI, etc.
+%%% The accompanying ``template.annotated.tex'' provides copious annotation
+%%% for the commands and parameters found in the source document. (The code
+%%% is identical in ``template.tex'' and ``template.annotated.tex.'')
+
+\documentclass[review]{acmsiggraph}
+%TODO uncomment after double-blind
+%\documentclass[conference]{acmsiggraph}
+
+% need backward compatibility to old versions of pdf readers
+\pdfminorversion=4
+
+% avideh formatting
+%\usepackage{setspace}
+%\doublespacing
+%\onecolumn
+% end avideh formatting
+
+% TOG related fields
+\TOGonlineid{0621}
+\TOGvolume{0}
+\TOGnumber{0}
+\TOGarticleDOI{1111111.2222222}
+\TOGprojectURL{}
+\TOGvideoURL{}
+\TOGdataURL{}
+\TOGcodeURL{}
+
+% Graphics Related Packages
+\graphicspath{{../figures/}}
+\DeclareGraphicsExtensions{.pdf,.jpg,.jpeg,.png}
+
+% math packages
+\usepackage{amsmath}
+\usepackage{amsfonts}
+
+% table packages
+\usepackage{booktabs}
+\newcommand{\ra}[1]{\renewcommand{\arraystretch}{#1}}
+
+%
+% TITLE
+%
+\title{Automatic Indoor 3D Surface Reconstruction with Segmented Building and Object Elements}
+
+% TODO uncomment after double-blind is over
+%\author{Eric Turner\thanks{e-mail:elturner@eecs.berkeley.edu}\,\, and Avideh Zakhor\thanks{e-mail:avz@eecs.berkeley.edu}\\University of California Berkeley}
+%\pdfauthor{Eric Turner}
+\author{Paper 0621}
+\pdfauthor{Paper 0621}
+
+\keywords{Surface Reconstruction, LiDAR, Indoor Modeling, Floorplan}
+
+\begin{document}
+
+% the teaser banner across front page
+\teaser
+{
+	% show the area
+	\begin{minipage}[c]{0.24\linewidth}
+		\centerline{\includegraphics[height=1.15in]{gradlounge/gradlounge_pic}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[c]{0.24\linewidth}
+		\centerline{\includegraphics[height=1.15in]{gradlounge/gradlounge_nodestris}}
+		\centerline{(b)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[c]{0.24\linewidth}
+		\centerline{\includegraphics[height=1.15in]{gradlounge/gradlounge_mesh_all}}
+		\centerline{(c)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[c]{0.24\linewidth}
+		\centerline{\includegraphics[height=1.15in]{gradlounge/gradlounge_mesh_room}}
+		\centerline{(d)}
+	\end{minipage}
+	\hfill
+
+	% make a caption
+	\caption{An area modeled by our technique: (a) a photo of the room; (b) the volumetric boundary of room; (c) final mesh with room and objects modeled; (d) final mesh of room only, colored by planar region.}
+	\label{fig:banner}
+}
+
+% make the title, authors, thanks, etc.
+\maketitle
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+
+Automatic generation of indoor building models is important for applications in augmented and virtual reality, indoor navigation, and building simulation software.  This paper presents a method to generate high-detail watertight models from laser range data taken by an ambulatory scanning device.  Our approach can be used to model the permanent structure of the building in addition to and separate from the objects within the building, such as furniture or light fixtures.  We use distinct techniques to mesh the building structure and the furniture objects in order to efficiently represent large planar surfaces, such as walls and floors, and still preserve the fine detail of segmented objects, such as furniture or light fixtures.  Our approach is scalable enough to be applied on large models composed of several dozen rooms, spanning over 14,000 square feet.  We experimentally verify this method on several datasets from diverse building environments.
+
+\end{abstract}
+
+\begin{CRcatlist}
+  \CRcat{I.3.5}{Computer Graphics}{Computational Geometry and Object Modeling}{Curve, surface, solid, and object representations};
+\end{CRcatlist}
+
+\keywordlist
+
+%% Use this only if you're preparing a technical paper to be published in the 
+%% ACM 'Transactions on Graphics' journal.
+
+\TOGlinkslist
+
+%% Required for all content. 
+
+\copyrightspace
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+\label{sec:introduction}
+
+% what are we trying to accomplish
+% what is the motivation for this: architecture,engineering,AR,VR,nav,tours
+The ability to automatically and rapidly generate a mesh of building surfaces is important to many fields, such as augmented and virtual reality, gaming, simulation, architecture, engineering, construction, and emergency response services.  There are an increasing number of emerging entities that provide virtual tours of museums, real-estate properties, and public venues.  The ability to accurately capture the 3D geometry of an area greatly aids in the visualization and rendering of the environment.  Another application of such 3D models is navigation in GPS-denied areas~\cite{Liang13}, where the 3D models are used for the indoor positioning of cellphones.  As-built models are also used for construction scheduling, architectural retrofitting, and Building Information Modeling (BIM).  In this paper, our goal is to generate information-rich virtual models of indoor building environments.  These models contain 3D geometry for the interior surfaces of buildings, from large-scale features such as the primary walls in a building, to small-scale features such as furniture or objects in each room.
+
+% why is our approach unique?
+We aim to improve on existing methods by combining two fundamentally different surface reconstruction techniques for building environments.  We first generate both a fully detailed model of the environment and a highly simplified representation of the same scanned area, using the approaches of~\cite{Turner13,Turner14}.  We then combine these models to segment volumetric representations of the interior objects in the environment, such as furniture or light fixtures, from the permanent surfaces of the building such as floors, walls, and ceilings. These steps allow us to generate accurate, watertight models of objects in the building distinct from the building model itself, as demonstrated in Figure~\ref{fig:banner}.  We first produce a volumetric representation of the entire space, stored in an octree, as shown in Figure~\ref{fig:banner}b.  We use this representation to produce a rich model of the environment, as shown in Figure~\ref{fig:banner}c.  The objects of the environment, shown in white, can be separated from the building structure, as shown in Figure~\ref{fig:banner}d.  We use different meshing techniques for the objects and the building itself in order to ensure the best representation of each type of surface.  The result is a rich model of the environment that represents a whole building based on level, room, or individual objects.
+
+% figure of backpack hardware
+\begin{figure}[t]
+	\centerline{\includegraphics[height=5.0cm]{hardware/backpack_annotated}}
+	\caption{Scanning hardware system, worn as a backpack.  The operator walks through the indoor building area as the system scans the surroundings.  Our method combines the LiDAR and inertial measurements in order to form a virtual 3D model for the observed space.}
+	\label{fig:backpack}
+\end{figure}
+
+% start description of the pipeline, talk about backpack
+The input scans for our modeling approach come from an ambulatory indoor scanning system~\cite{Backpack}.  As shown in Figure~\ref{fig:backpack}, our hardware is a collection of sensors worn as a backpack.  By walking through the indoor environment at normal speeds, we can accurately estimate the trajectory of the system over time and localize the system~\cite{NickJournal}.  Subsequently, we automatically generate a 3D model of the environment with the method described in this paper.  This procedure allows us to rapidly move through a large environment, spending only a few seconds in each room yet capturing full geometry information.
+
+% briefly describe the type of scans we use as input
+Once the system is localized in the environment, our proposed algorithm uses the retrieved laser range data as input.  These scans are taken with time-of-flight laser scanners that capture 3D geometry of the environment.  We use multiple 2D laser scanners mounted at different orientations to capture all observed geometry in the environment.  Since our system is mobile and ambulatory, the resulting point clouds have higher noise than traditional static scanners due to natural variability in human gait.  As such, our approach needs to be robust to motion induced scan-level noise and its associated artifacts.  We use these scans to form a watertight model of the indoor building environment and the contained objects.
+
+% motivation for splitting model into two parts
+
+The ability to identify and separate the objects within a model from the rest of the building geometry enables a richer representation of the architecture.  One motivating use-case is in the field of building energy simulation, where these models are used to perform simulations of energy consumption and heat flow through building environments.  Furniture tends to have very different thermal characteristics than the permanent building structure, so simulation engines such as EnergyPlus require the furniture in a Building Information Model to be categorized and modeled separately from the building surfaces~\cite{EnergyPlus}.
+
+Segmenting building geometry is also important for visualization purposes.  Architectural surfaces---such as floors, walls, and ceilings---tend to be large, planar, and can be meshed efficiently with few triangles.  For these surfaces, it is most important to preserve the sharp, planar geometry.  On the other hand, the furniture and other objects in the building tend to have high detail and are often more organic in shape.  Thus, it is desirable to mesh these objects with a surface reconstruction scheme that preserves this detail.  Not only do we use separate meshing techniques for each part of the model, but also we represent the geometry of objects in the environment at a finer resolution than the building surfaces, saving on processing and memory.
+
+% outline of paper
+This paper is organized as follows:  Section~\ref{sec:background} provides background information on existing approaches to building modeling.  Section~\ref{sec:overview} gives a high-level overview of our technique.  Section~\ref{sec:approach} discusses the details of each step of our approach.  Section~\ref{sec:results} shows results of our method applied to a variety of building environments, and Section~\ref{sec:conclusion} concludes by highlighting the important aspects of our algorithm.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Related Work}
+\label{sec:background}
+
+% overview
+Generating building models from indoor scans is a growing field.  Input scans in the form of point clouds can consist of hundreds of millions of points and can represent very complex geometries.  Techniques to triangulate watertight meshes of the same building environment allow for more complete visualization and analysis of the scanned area.  Our proposed method exploits two categories of these techniques: those producing simplified meshes of the building structure and those preserving all complex detail observed in the environment.  This section discusses existing methods in each of these categories.
+
+% talk about surface reconstruction in buildings (floorplans)
+Many existing approaches attempt to simplify the output model by representing only the primary building surfaces, such as floors, walls, and ceilings.  Several techniques first generate a 2D floor plan that can then be extruded into a simple 3D model~\cite{Mura14,Turner14,Cabral14}.  These approaches allow for accurate wall geometry and reduce the complexity of the output model. Extruded floor plans also allow for models to explicitly define floors, walls, and ceiling surfaces.
+
+% surface reconstruction in buildings (complex)
+% talk about kinfu
+There are several alternate approaches that attempt to capture full geometry detail of the area scanned~\cite{Pons10,Carving,Turner13}.  These methods include detail of all objects from the scene, not just the primary building elements.  Another popular approach is to employ Kinect Fusion on large datasets~\cite{Kintinuous,Zhou13}.  This method represents a model with voxel data using a Truncated Signed Distance Function (TSDF) in order to generate a mesh using Marching Cubes~\cite{MarchingCubes}.  It has the advantage of generating watertight models with high levels of detail and also allows for 3D localization using the same depth sensor.  
+
+% talk about why we don't use kinect hardware
+% talk about limitations of hokuyos (sparse, 2D)
+% talk about why we don't use signed distance fields
+In this paper we use a probabilistic field function on octrees, similar to~\cite{Octomap}, to represent our volumetric model.  We choose this representation over TSDF because it allows for greater flexibility in the characteristics of input sensors with fewer set parameters.  We use 2D Time-Of-Flight (TOF) laser scanners mounted on a backpack system, which means we have sparser scan information per frame and traverse each area of the environment much faster than when scanning the equivalent area with a Kinect or Google Tango.  Since our system produces much sparser point clouds than Kinect-based scanning, it is not feasible to employ the same averaging techniques that allow for high-quality Kinect scans.  The advantage of these 2D TOF sensors is that they are less noisy, have a longer range, and a wider field of view.  The result is that much larger environments can be covered in significantly less time when using these sensors in a sweeping motion~\cite{Sweep}.  For instance, a backpack-mounted system allows an unskilled operator to rapidly walk through an environment to acquire data.
+
+% classification schemes
+Another important meshing technique is to detect and classify objects in laser scans~\cite{Cadena14}.  Understanding the semantics of a scene can enable more sophisticated modeling of detected objects.  Many existing techniques segment objects in the environment by explicitly detecting furniture geometry in the scanned data, matching that geometry to a database of known furniture shapes, and retrieving template geometry for the detected item~\cite{Kim12,SearchClassifyPointcloud}.  This approach produces high-quality meshes, since each exported object is represented by a hand-modeled template.  It also has the advantage of modeling hidden surfaces in the model.  This approach results in incorrect representations of scanned objects that are not present in the database.  This situation can occur when scanning especially complex or unusual scenes, or if an object is in an unexpected orientation.  In Section~\ref{sec:results}, we show scans of medical equipment in Figure~\ref{fig:hybrid} that would not likely pre-exist in shape databases.
+
+% object/room detection in buildings
+Recently, object detection methods from indoor scans have been proposed without the use of a training dataset~\cite{Mattausch14}.  They segment point clouds using a bottom-up approach to fit rectangular patches on to the scans, then find clusters of patches that are repeated often.  Even though this approach can be applied to large datasets, it assumes very basic building geometry in order to segment objects.  Additionally, it only detects objects of certain complexity, is unable to detect very small objects, and requires objects to be repeated often in the environment.  We expand on this work by segmenting objects volumetrically, rather than in the point cloud domain.
+
+% wrap-up meshing types
+The proposed method described in our paper uses both extruded floor plans and complex 3D models to combine them into one model.  Our output contains the building surfaces defined by an extruded model and the interior objects and fine details defined by the complex model.  The interior objects are segmented volumetrically without the use of a classification scheme, which allows for meshing of more complex or unusual objects.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Method Overview}
+\label{sec:overview}
+
+% display cartoon of set difference method
+\begin{figure}[t]
+	\centerline{\includegraphics[width=1.0\linewidth]{mainidea/cartoon_flowchart}}
+	\caption{The scanned volume is meshed using two approaches that are combined to separate room geometry and object geometry.  The complex geometry from the octree (upper left, in red) and the simple geometry from the 2.5D model (lower left, in blue) are both volumetric techniques.  They are combined to extract the object volume (upper center, in green) and the building volume (lower center, in grey).  These volumes are meshed separately and exported (right, in black).}
+	\label{fig:mainidea}
+\end{figure}
+
+% high level (and short!) overview of forming the octree
+Our proposed method takes scan data from a set of laser sensors as input.  These sensors are attached to our ambulatory scanning system, shown in Figure~\ref{fig:backpack}.  The uncertainty of the positions of these input scans is affected by the intrinsic noise characteristics of the sensors, the uncertainty of the localization of the system over time, and the timestamp synchronization errors between the different devices on the system.  In order to preserve model detail in the presence of noise, we use a volumetric approach, where each point in space has some probability of being {\it interior} or {\it exterior}.  We define {\it interior} space to be empty or open area that range scans can pass through.  We define {\it exterior} space to be solid material in the environment, including furniture and building structure.  We store this volumetric labeling in an octree.  Initially, all space is assumed to be exterior, but as scans intersect nodes of the octree, the probability value associated with each node is updated.  When all scans are processed, we obtain an accurate model of the volume scanned.
+
+% high level overview of floorplan generation
+The primary goal of our approach is to use this volumetric information to form two watertight meshes of the environment.  The first mesh only represents the building geometry, including floors, walls, ceilings, windows, and doors.  The second mesh represents the objects in the environment such as furniture, light fixtures, or other items.  The block diagram of the method used for this segmentation is shown in Figure~\ref{fig:mainidea}.  We first generate two representations of the same environment.  The populated octree represents a complex model of the volume, as shown by the red graphic in the upper-left of Figure~\ref{fig:mainidea}.  We then generate a simplified 2.5D model of the same volume, as shown by the blue graphic in the lower-left of Figure~\ref{fig:mainidea}.  This simplified model is obtained by first generating a 2D floorplan of the scanned area, then extruding the floorplan to form a 2.5D model that explicitly represents the floors, walls, and ceilings of the model.  This mesh does not represent any interior objects, but is aligned with the major surfaces of the building.
+
+% merging models and getting meshes
+We then perform a set difference between these two volumetric models, keeping the volume that is labeled {\it exterior} by the octree and {\it interior} by the extruded floorplan.  This subset of the volume represents the objects in the environment, and is shown as the green graphic in the upper-center of Figure~\ref{fig:mainidea}.  Similarly, we can denote the union of the {\it interior} space of both models to be the building geometry, as shown in the lower-center of Figure~\ref{fig:mainidea}.  Once the model is segmented into object and building geometry, we can generate meshes for each type.  The object geometry is refined to enhance detail and is meshed uniformly to preserve its fine structure.  The building geometry is split into planar surfaces and each surface is triangulated efficiently, preserving the sharp corners between floors, walls, and ceilings.  We perform this planar meshing on the carved representation of the building geometry, rather than simply using the 2.5D extruded mesh, because it preserves building features such as windows and door-frames.  These two meshes are combined to form the whole environment, shown by the graphic at the right-side of Figure~\ref{fig:mainidea}.  This approach has the added benefit of modeling hidden surfaces, such as the backs of furniture or areas of walls occluded by objects.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Approach}
+\label{sec:approach}
+
+% display the flow chart for this paper
+\begin{figure*}[t]
+	\centerline{\includegraphics[height=2.0cm]{process/flowchart/system_flowchart}}
+	\caption{System flowchart of our approach.  Scan Preprocessing is described in Subsection~\ref{ssec:preprocess}, Carving is detailed in Subsection~\ref{ssec:carving}, Wall Sampling and Floor Plan Generation are discussed in Subsection~\ref{ssec:floorplan}, Merge Models is delineated in Subsection~\ref{ssec:merge}, and Planar and Detailed Meshing are documented in Subsection~\ref{ssec:meshing}.}
+	\label{fig:flowchart}
+\end{figure*}
+
+% basic overview of section
+In Section~\ref{ssec:preprocess}, we discuss how we probabilistically model the input scans in order to produce volumetric estimates of {\it interior}/{\it exterior} occupancy from each scan point.  In Section~\ref{ssec:carving}, we describe how these scans are efficiently combined to generate a unified occupancy estimate for the entire scan volume.  These occupancy estimates are stored in an octree, representing a complex model of the environment.  Section~\ref{ssec:floorplan}, we detail how the octree is used to produce a simplified buidling model by first generating a 2D floorplan and then extruding the floorplan into a 2.5D mesh.  In Section~\ref{ssec:merge}, we discuss how the complex model in the octree and the simplified model in the 2.5D extruded floorplan are merged in order to segment the volume delineating objects such as furniture in the environment.  Lastly, in Section~\ref{ssec:meshing}, we document how we generate two types of watertight surfaces, one to represent the objects in the environment and the other to represent the building constructs.  Each of these surface reconstruction techniques are geared to efficiently characterized their respective parts of the building.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Scan Preprocessing}
+\label{ssec:preprocess}
+
+% carve mapping toy example
+\begin{figure}[t]
+	% point distributions
+	\begin{minipage}[t]{1.0\linewidth}
+		\centerline{\includegraphics[width=0.9\linewidth]{process/carvemap/point_dists}}
+		\centerline{(a)}
+	\end{minipage}
+	
+	% carve map
+	\begin{minipage}[t]{1.0\linewidth}
+		\centerline{\includegraphics[width=0.9\linewidth]{process/carvemap/carve_map}}
+		\centerline{(b)}
+	\end{minipage}
+
+	% caption
+	\caption{Example carve mapping: (a) the spatial distribution of sensor location and scan-point positions; (b) the computed carve mapping, indicating the areas estimated to be interior and exterior based on this scan.}
+	\label{fig:carvemap}
+\end{figure}
+
+% overview of this section
+In this section, we discuss how each input scan point is analyzed in order to generate a volumetric occupancy model of the scanned environment.  Our goal is to convert the input set of laser scan points into a labeling of space where each location $x \in \mathbb{R}^3$ is assigned a likelihood of being {\it interior} or {\it exterior}.  We perform this task in two steps.  The first step is to form a probabilistic model of each scan point's position, coupled with the position of the originating sensor.  The second step is to use this probability model to estimate the scan point's vote for the {\it interior} likelihood of each location in space intersected by its scan ray.  Once we obtain these estimates for each scan point, it is possible to generate an occupancy model of the entire scanned environment, as discussed in Section~\ref{ssec:carving}.
+
+% creating a probabilistic model
+First, we compute an estimate of the 3D positions for each scan point and the point's originating sensor.  These values are represented as two 3D Gaussian distributions.  For each input scan, the sensor position is represented by Gaussian $N(\mu_s,C_s)$ and the scan point position is represented by $N(\mu_p,C_p)$.  For tractability, assume scan frame's distribution is independent from the position of other scan frames.  An example of this sensor/scan-point configuration is given in Figure~\ref{fig:carvemap}a.
+
+% origins of uncertainty: localization
+The uncertainty in the position values of each scan point originate from three independent sources of error: the backpack localization estimate, the timestamp synchronization, and intrinsic sensor noise.  Localization noise arises from errors in the estimate of the system trajectory, as detailed in~\cite{NickJournal}, and is by far the largest source of error, with typical standard deviations on the order of $20$~centimeters.  Variations in uncertainty between poses are due to the optimized constraint-network of loop closures in the estimated path of the system.  For each scan position, we represent the uncertainty caused by localization with a zero-mean Gaussian distribution with the $3 \times 3$ covariance matrix $C_{pose}$. 
+
+% timesync errors
+Timestamp synchronization errors are due to our system combining measurements from several sensors, whose timestamps need to be transformed to a common clock.  This synchronization is done using a linear fitting of the individual sensors' clocks with the common system clock and produces an estimate for the standard deviation of each sensor's synchronization, $\sigma_t$.  Mis-synchronization of timestamps can result in spatial errors of scan points, especially when the system is moving or rotating rapidly while scanning distant objects.  In these cases, an estimate of the scan point's position changes depending on our estimate of when a scan is taken.  However, since our sensors are synchronized to an accuracy of $\sigma_t \approx 1$ millisecond, synchronization error is usually the lowest source of noise in the scan points, contributing uncertainty to scan point positions of under $1$~centimeter.  We represent the uncertainty in the sensor position estimate and the scan-point position estimate caused by the time synchronization process as zero-mean Gaussians with $3 \times 3$ covariance matrices $C_{ts_s}$ and $C_{ts_p}$, respectively.
+
+% fss scan statistics
+The third source of noise depends on the sensor hardware.  Our system uses Hokuyo UTM-30LX sensors, whose intrinsic noise characterization is given in~\cite{Pomerleau12}.  Typically this noise contributes on the order of 1 to 2 centimeters to the standard deviation of the positional estimate of scan points.  This uncertainty value increases as the range of the point increases, with accurate measurements stopping at a range of $30$~meters.  We represent the uncertainty a scan-point position caused by intrinsic sensor noise as a zero-mean Gaussian with covariance $C_{noise}$.  For a sensor $s$ on our scanning system scanning a point $p$, we can model the total estimate of the uncertainties of the positions of $s$ and $p$ with $3 \times 3$ covariance matrices $C_s$ and $C_p$ given by:
+
+\begin{equation}
+	C_s = C_{pose} + C_{ts_s}
+\end{equation}
+\begin{equation}
+	C_p = C_s + C_{ts_p} + C_{noise}
+\end{equation}
+
+% carve map generation
+We now have estimates for the positions of both the sensor and each scan-point, with covariances $C_s$ and $C_p$ respectively.  Next, we use this estimate for each scan point to form a ``carve mapping'' $p(x) : \mathbb{R}^3 \mapsto [0,1]$, which describes the likelihood of any location $x \in \mathbb{R}^3$ of being {\it interior} or {\it exterior} based on the position estimates from a scan point.  For example, if $p(x) \leq 0.5$, then $x$ is more likely in an {\it exterior} location and if $p(x) > 0.5$, then $x$ is more likely to be {\it interior}.  We define $p(x)$ as:
+
+\begin{equation}
+	p(x) = F_s(x_{\parallel}) \, f_{\perp}(x_{\perp}) \, (1 - F_p(x_{\parallel})) + 0.5 (1 - f_{\perp}(x_{\perp}))
+	\label{eq:carvemap}
+\end{equation}
+
+We split a location $x = x_{\parallel} + x_{\perp}$, as shown Figure~\ref{fig:carvemap}b, where $x_{\parallel}$ is the distance along the length of the scan ray, and $x_{\perp}$ is the distance orthogonal to the scan ray.  $F_s(x_{\parallel})$ is the marginal one-dimensional (1D) Cumulative Distribution Function (CDF) of the sensor position along the length of the scan ray, derived from the Gaussian distribution of the sensor position.  Similarly, $F_p(x_{\parallel})$ is the marginal CDF of the scan-point position along the length of the ray.  Lastly, $f_{\perp}(x_{\perp})$ is the marginal 1D Probability Mass Function (PMF) of the lateral position of the scan ray.  The combination of these values in Equation~\ref{eq:carvemap} yields the mapping shown in Figure~\ref{fig:carvemap}b.  Values in blue are less than $0.5$, indicating a likelihood of a location being {\it exterior}.  As shown, these values occur just past the scan position.  Values in red are greater than $0.5$, indicating a likelihood of a location being {\it interior}.  These values occur around the sensor position and along the scan ray.  As the query location $x$ moves away from the scan ray and $x_{\perp}$ increases, then $p(x)$ approaches $0.5$, indicating unknown state.  In other words, locations close to the scanned ray are likely to be {\it interior}, locations past the scan point are likely to be {\it exterior}, and locations far away from the scanned ray are unknown.
+
+The above mapping allows us to use each scan ray to ``carve'' the volume of the model by assigning a probability to all scanned areas indicating the likelihood of areas being interior or exterior.  In the next section, we discuss how the estimates from all input scans are used to generate a model of the entire environment.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Carving}
+\label{ssec:carving}
+
+% data storage in octree
+Given a carving mapping function for each scan point taken during the data acquisition process, we merge all the scans spatially to obtain a fused probabilistic estimate $p_f(x)$ for any point $x \in \mathbb{R}^3$.  The value $p_f(x)$ is computed as the maximum-likelihood estimate based on all nearby scans, where any scan whose mean scan-line position is more than $3$ standard deviations away from $x$ does not contribute to the estimated value at $p_f(x)$.  The final result for the spatial labeling of $\mathbb{R}^3$ is stored in an octree.  The advantage of the octree is that every point in space can be represented, but certain areas can have finer detail than others.  The following process inserts all the scans into an octree in a chunk-wise fashion, so that it can be performed in a parallel- and memory-efficient manner.
+
+% wedge generation
+% (don't need to talk about that)
+
+% chunking
+The scans are originally sorted temporally as the operator moves around the environment.  In order to process the scanned volume in a parallel fashion, we first organize the input scans into spatial chunks.  The environment volume is tessellated into large cubes, and each cube contains a list of all the scans that intersect it.  When we populate the octree, each chunk can be processed independently and concurrently via a thread pool.  The scans are inserted into each chunk, refining the nodes under the chunk node to a fine resolution.  
+
+% interpreting the results information stored at each node, 
+% ...and how to interpret it
+Once all scans for a given chunk are inserted, the leaf nodes of the octree under that chunk contain the compiled probabilistic model of the degree to which that node is labeled as {\it interior} or {\it exterior}.  Each leaf node $L$ contains the fused value of $p_f(x)$ for all $x \in L$, variance of the samples of $p(x)$ from each intersecting scan ray, and the of number of scans that intersect $L$.  All these statistics are used later in the pipeline for analyzing the properties of $L$.  As an example, if $p_f(x)$ is $0.5$ or less, then the node is considered {\it exterior}.  Nodes that are never intersected by scans are assumed to be {\it exterior} and are assigned a value of $p_f(x)=0.5$.  If the value of $p_f(x)$ is strictly greater than $0.5$, then the node is considered {\it interior}.  The faces between {\it interior} nodes and {\it exterior} nodes are considered boundary faces of the octree, and are useful for determining the position of generated meshes.  As we discuss in Section~\ref{ssec:meshing}, the position of the mesh between two such nodes is determined using the means and variances of our estimates of $p_f(x)$ for each node.
+
+% simplification per chunk
+Once each chunk is completely carved, we simplify its tree structure based on the dynamic range of the contained values.  A node is a candidate for simplification only if all of its subnodes are leaf nodes and report the same label, i.e. all are interior or all or exterior.  Additionally, all subnodes must have either been observed at least once or none of the nodes observed.  This condition prevents oversimplification in parts of the volume that may have been only partially scanned.  If these conditions are met, then the subnodes are deleted and their data are averaged and stored into their parent, which is now the new leaf node at that location.  This process is performed recursively in order to produce a minimally populated tree for the building area being modeled.  The size of each chunk can be adjusted to improve processing.  Large chunks mean that more memory is used at a time, but fewer chunks need to be processed overall.  We typically use chunks with side length $2$ meters, with a carving resolution of ~$0.05$ meters.
+
+% wrap up
+The final tree is only generated to full depth in the locations that require it, which are boundaries between interior and exterior spaces.  As we discuss in Section~\ref{ssec:merge}, areas of the environment that are segmented as objects in each room will be re-carved to an even finer resolution, since these locations are likely to contain high detail.
+
+% moving on...
+Once we have a fully populated octree containing interior/exterior values, there is enough information to generate a surface reconstruction of the environment.  Such volumetric representations of building environments can be fed into existing techniques to generate a mesh of the scanned area~\cite{Turner13,Kintinuous,Carving}.  However, these meshes are limited in that they use the same method for meshing all parts of the environment.  In Sections~\ref{ssec:floorplan} and~\ref{ssec:merge}, we discuss how we segment this representation to separate the volume of objects, such as furniture, from the rest of the building geometry and use different meshing techniques on each of these parts separately.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Simplified Model Generation}
+\label{ssec:floorplan}
+
+Several methods of surface reconstruction of building environments ignore low-level detail and aim to only model the primary floors, walls, and ceilings within the environment.  In this section, we describe how we use the populated octree from Section~\ref{ssec:carving} to generate this simplified model.  We use an existing technique that produces a 2D floorplan of the environment and extrudes a 2.5D model using the height information of each room~\cite{Turner14}.  Rather than applying this technique directly on the scans of the environment, we produce the input data for this method from our populated octree.  We show that this approach yields a more accurate model that is well-aligned with our octree.  
+
+This procedure generates a 2.5D model of the environment, which enables us to segment objects, such as furniture or light fixtures, from the rest of the building geometry.  The geometry for these types of objects appear in the complex model defined by the octree, but not in the simplified 2.5D model defined by the floorplan.  They can be detected by searching for locations that are labeled {\it exterior} by the octree, but {\it interior} by the floorplan.  The remainder of this section describes how we produce 2D wall samples from the octree, use these samples to generate a 2D floorplan of the environment, and create a 2.5D simplified model from the floorplan.
+
+\paragraph*{Wall Sampling}
+\label{pg:wallsampling}
+
+In order to generate a floorplan that can be extruded into a simplified 2.5D model, we first need to generate a set of wall samples in the environment.  Wall samples are a set of points in 2D space that are locations with high likelihood of being wall positions.  This set of points is used by the 2D floorplan generation procedure as input data~\cite{Turner14}.  In prior work, these wall samples could be generated either from the output gridmap of a particle filter or by analyzing a 3D point cloud of the environment.  Specifically, the 3D point-cloud was projected onto the XY-plane, which allowed vertical surface locations to be estimated from areas of high density in the projection.  However, this approach may not be consistent with how the geometry is represented in the octree.  In this paper, we use the octree to generate wall samples that are consistently aligned.  We show that this approach not only produces a floorplan better aligned with the complex geometry of the octree, but also one that is less affected by clutter, such as furniture, than when using the point cloud directly to generate the floorplan.
+
+% figure about finding regions and identifying which are walls
+\begin{figure}[t]
+	% region growing
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{process/wall_sampling/original_regions}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{process/wall_sampling/merged_regions}}
+		\centerline{(b)}
+	\end{minipage}
+	
+	% wall sampling
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{process/wall_sampling/wall_regions}}
+		\centerline{(c)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{process/wall_sampling/wall_points_darker}}
+		\centerline{(d)}
+	\end{minipage}
+
+	% caption
+	\caption{Generating wall samples from an octree: (a) initialize regions on the octnodes' boundary faces; (b) perform region growing to form large planar regions; (c) filter out wall regions; (d) generate points along planar regions to make wall samples.}
+	\label{fig:oct2dq}
+\end{figure}
+
+The first step of generating wall samples from the octree is to identify large planar surfaces.  We cluster the boundary faces of the octree into planar regions.  Figure~\ref{fig:oct2dq}a shows the initial boundary regions of a model, with each initial region depicted as a separate color.  These regions are iteratively merged in the process described in~\cite{Turner13}.  The result is a single planar region for each dominant surface of the model, as shown in Figure~\ref{fig:oct2dq}b.  We then filter the regions based on the normal direction of the fitting plane, keeping only the surfaces that are vertically-aligned, as shown in Figure~\ref{fig:oct2dq}c.  This approach makes the reasonable assumption that walls are vertical, which fits almost all building types.  The output regions have gaps corresponding to the portion of the walls hidden behind any furniture in the model.  In order to counteract these occlusions, we expand the represented geometry of each wall to include any {\it exterior} points that are within the 2D convex hull of each wall planar region.  The check for whether points are {\it exterior} is performed using the populated octree.  Figure~\ref{fig:oct2dq}d shows a set of these points, sampled uniformly, across the wall plane.  Once we obtain these 3D wall positions, we can treat these generated points as an input point-cloud for the wall sampling process described in~\cite{Turner14}, which projects the 3D points onto the XY-plane in order to estimate 2D positions of vertical surfaces.  Since the input to this method is a uniformly sampled set of points along the surface, the produced 2D wall samples more faithfully represent the environment, as demonstrated in Figure~\ref{fig:fp_compare}, with fewer artifacts due to clutter and furniture.
+
+\paragraph*{Floor Plan}
+\label{pg:floorplan}
+
+% show figure comparing wall samples and floorplans
+\begin{figure}[t]
+
+	% using pointcloud
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{process/floorplan/original_dq_zoom}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{process/floorplan/original_fp_zoom}}
+		\centerline{(b)}
+	\end{minipage}
+	
+	% using octree
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{process/floorplan/octree_dq_zoom}}
+		\centerline{(c)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{process/floorplan/octree_fp_zoom}}
+		\centerline{(d)}
+	\end{minipage}
+
+	% caption
+	\caption{Comparison of wall samples and floorplans: (a) wall sampling generated from original point cloud; (b) corresponding floorplan; (c) wall sampling generated from octree; (d) corresponding floorplan.  All units are in meters.}
+	\label{fig:fp_compare}
+\end{figure}
+
+Once we use the octree to generate the wall samples for a model, we can feed those samples into the 2D floorplan generation method discussed in~\cite{Turner14}.  This method produces a watertight 2D model that defines the scanned area.  Figure~\ref{fig:fp_compare} shows a comparison of floorplans generated with the octree versus floorplans generated with the raw scan points.  Figures~\ref{fig:fp_compare}a and~\ref{fig:fp_compare}b show the wall samples and the floorplan generated from the raw scan points, respectively.  Obstacles in the environment such as furniture are not properly removed, causing the output walls to be noisy.  Figures~\ref{fig:fp_compare}c and~\ref{fig:fp_compare}d show the wall samples and floorplan generated from the octree.  Since the region merging allows more sophisticated separation of large planar surfaces, the furniture in the environment is properly removed and the output model is cleaner.  As an example, the upper-right corner of this model contains a large bookcase, which appears in the wall sampling in Figure~\ref{fig:fp_compare}a and is propagated to the floorplan in Figure~\ref{fig:fp_compare}b.  This bookcase is correctly removed from the wall samples generated from the octree in Figure~\ref{fig:fp_compare}c, which means the wall is more appropriately represented in the floorplan shown in Figure~\ref{fig:fp_compare}d.
+
+Height information is stored in this floorplan, so a 2.5D model is extruded, resulting in a simplified representation of the floors, walls, and ceilings in the environment.  Since both the 2.5D floorplan and the original octree are volumetric representations of the environment, we can segment the objects in the environment by searching for locations that are {\it interior} in the floorplan, but {\it exterior} in the octree.  These locations coincide with furniture and other objects that were removed by the 2.5D floorplan construction.
+
+This approach is less direct than using the original scans, but it has a number of advantages.  If a wall is partially occluded by a large object, such as a tall bookshelf, then we can use the portions of the wall on either side of the object to confirm that the entirety of the wall is represented.  Using only the raw scans, the portion of the wall behind the bookshelf would be under-represented in the final output, causing errors in the floorplan.  By resampling each wall uniformly, we can also ensure that no areas of the input wall sampling are too sparse or too dense.  This property is especially important when modeling corners of rooms, which are often underrepresented in raw scans.  Finally, by generating these wall samples using the octree as input, we can ensure that the final floorplan is well-aligned with the octree geometry.  This alignment is important for the steps described in Section~\ref{ssec:merge}, where we combine the simplified model back into the octree geometry.  The effect of misalignment can be seen by comparing Figures~\ref{fig:fp_align}b and~\ref{fig:fp_align}c.  In Figure~\ref{fig:fp_align}b, the octree was segmented using a floorplan generated directly from the point cloud and not the octree.  As such, parts of the back wall and window are mislabeled as objects and kept in the output.  However, in Figure~\ref{fig:fp_align}c, the octree was segmented using a floorplan generated via the technique described in this section.  The back wall is no longer mislabeled and only the actual furniture in the environment are segmented as objects.
+
+% fp optimization
+% height extraction
+% merge into octree
+% refining object nodes
+
+% discuss aligning the floorplan to the octree
+% ....on second thought, we can probably skip that part,
+% since the math isn't very pretty
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Merging Models}
+\label{ssec:merge}
+
+% figure about floorplan alignment
+\begin{figure}[t]
+
+	% full nodes
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{process/fp_align/original_octree}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{process/fp_align/furniture_unaligned}}
+		\centerline{(b)}
+	\end{minipage}
+	
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{process/fp_align/furniture_aligned}}
+		\centerline{(c)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{process/fp_align/furniture_aligned_highres}}
+		\centerline{(d)}
+	\end{minipage}
+	
+	% caption
+	\caption{Example of aligning floorplan to segment objects: (a) original octree nodes, at max resolution of $6.25$ cm; (b) segmented objects using unaligned floorplan; (c) segmented objects using aligned floorplan; (d) the segmented objects are recarved to a resolution of $0.8$ cm.}
+	\label{fig:fp_align}
+\end{figure}
+
+Both the extruded floorplan and the original octree are volumetric models of the environment, so we can classify the overlapping volumes into three categories.  First, locations that are {\it exterior} in the octree yet {\it interior} in the extruded floorplan are objects or furniture in the environment.  Locations labeled {\it exterior} by both models are considered part of the building structure.  Lastly, all locations labeled {\it interior} by the octree are considered open space interior to the building, regardless of the extruded floorplan's labeling.  Volume intersected by the boundary of the 2.5D floorplan is considered {\it exterior}, since these represent the primary building surfaces and not objects within the building.  Using this segmentation, we can now consider the objects in the building separately from the 2.5D building structure.  For instance, in Figure~\ref{fig:fp_align}a, we see the original octree leaf nodes of a scanned environment.  By performing a set difference of the octree volume from the volume of the 2.5D model of the environment, we can extract the furniture and other objects.  Figure~\ref{fig:fp_align}b shows the segmentation using an unaligned floorplan and Figure~\ref{fig:fp_align}c shows the result with a fully aligned floorplan.  The unaligned floorplan was generated directly from the raw point cloud of the scans whereas the aligned floorplan was generated with our method described in Section~\ref{ssec:floorplan}.  With a properly segmented representation of the room's objects, we can recarve the nodes of the octree containing object geometry, since these locations tend to have finer detail than the rest of the model.  Figure~\ref{fig:fp_align}d shows an example of this recarving, which has been refined from the original resolution of $6.25$ centimeters to a new resolution of less than a centimeter.
+
+% wrap up
+Once we have fully merged these models, each node of the octree is labeled as either object geometry or room geometry.  In addition to refining the resolution of object nodes, we can use this labeling to adjust how we generate a mesh for each portion of the environment.  
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Meshing}
+\label{ssec:meshing}
+
+% plane intersection diagram
+\begin{figure}
+	\centerline{\includegraphics[width=1.0\linewidth]{process/plane_intersection/plane_xtion_diagram}}
+	\caption{An example of plane intersection in 2D.  Two adjoining regions are shown, with normals $n_1$ and $n_2$.  The naive intersection of the two regions is shown as a black star.  Rather, we join the two regions with a vertex shown at the green star, which prevents sharp discontinuities in the output.}
+	\label{fig:plane_xtion}
+\end{figure}
+
+% figure shows different meshing techniques, and hidden surfaces modeled
+\begin{figure*}[t]
+
+	% picture of kitchen
+	\begin{minipage}[t]{0.3\linewidth}
+		\centerline{\includegraphics[height=4.5cm]{process/meshing/camera_image}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.3\linewidth}
+		\centerline{\includegraphics[height=4.5cm]{process/meshing/kitchen_all}}
+		\centerline{(b)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.3\linewidth}
+		\centerline{\includegraphics[height=4.5cm]{process/meshing/kitchen_room_tris}}
+		\centerline{(c)}
+	\end{minipage}
+	
+	% show the object geometry from various angles
+	\centering
+	\begin{minipage}[t]{0.3\linewidth}
+		\centerline{\includegraphics[height=4.5cm]{process/meshing/kitchen_object_tris}}
+		\centerline{(d)}
+	\end{minipage}
+	\begin{minipage}[t]{0.3\linewidth}
+		\centerline{\includegraphics[height=4.5cm]{process/meshing/kitchen_object_frombehind}}
+		\centerline{(e)}
+	\end{minipage}
+	
+	% caption
+	\caption{Example meshing output of residential area: (a) photo of area; (b) all reconstruction geometry; (c) geometry of room surfaces only, colored by planar region; (d) geometry of objects only; (e) geometry of objects from behind, showing watertightness.}
+	\label{fig:kitchen}
+\end{figure*}
+
+% overview
+After segmenting the octree geometry into objects and rooms, we can mesh each separately.  Objects such as furniture, light fixtures, doors, etc. tend to have higher detail than the room-level geometry.  The room-level geometry tends to be composed of large, planar surfaces.  We use a dense meshing technique to represent the object geometry, which preserves detail and curves in the geometry.  For the room-level geometry, we identify planar regions and mesh each plane with large triangles.  Figure~\ref{fig:kitchen} shows an example of applying both of these methods to a given model.  Figure~\ref{fig:kitchen}a shows a photograph of the scanned area (a kitchen table) and Figure~\ref{fig:kitchen}b shows the final output of all meshing approaches combined.
+
+% planar meshing
+To mesh building geometry, we first partition the boundary faces of the octree into planar regions, in a similar fashion to the method described in Section~\ref{ssec:floorplan} for wall sampling.  As discussed earlier, a boundary face is the surface between two leaf nodes of the octree with opposing labels.  Each planar region represents a set of node faces along with fitting plane geometry.  The fitting plane of each region is formed by running Principal Component Analysis (PCA) on the centers of the boundary faces.  To generate a watertight mesh, we find the intersection points between each pair of neighboring planes and insert vertices for our output mesh.  
+
+Naively intersecting the fitting planes of each region to position the output vertices may result in artifacts or self intersections at locations where two nearly-parallel regions are neighbors.  Figure~\ref{fig:plane_xtion} shows an example of this phenomenon in 2D.  Since the two regions shown are close to parallel, their intersection point shown as the black star is far away from the adjoining endpoints of the regions.  Rather, we use a pseudo-intersection point that is closer to the original corner position, shown as the green star in Figure~\ref{fig:plane_xtion}.  We therefore use the following technique to prevent over-constraining the intersection points of degenerate region neighbors.
+
+These intersection points are represented by corners in the octree that intersect faces from more than one planar region.  For a given node corner with position $\vec{x}_0$ that intersects a set of planar regions $R$, we wish to find a final position of the mesh vertex that corresponds with this node corner.  If we merely took the intersection of all planes, the vertex position may be under-constrained if only two regions are touching the corner, or if some of the regions are close to being planar with each other.  
+We compute this point with the following process.
+
+Let matrix $M$ be defined so that each row $\vec{n}_i^{\,T}$ is the normal vector of the $i^{\textit{th}}$ intersecting planar region, and vector $\vec{p} = \texttt{diag}(P\,M^T)$, where matrix $P$ is defined so that its $i^{\textit{th}}$ row is any point on the $i^{\textit{th}}$ plane.  We compute the desired position of the intersection point $\vec{x}$ with the following:
+
+\begin{equation}
+	\vec{x} = \sum_{i = 0}^{3} \left( \delta_i \dfrac{\vec{p} \cdot \vec{u}_i}{s_i} + (1-\delta_i) ( \vec{x}_0 \cdot \vec{v}_i ) \right) \vec{v}_i
+	\label{eq:plane_xtion}
+\end{equation}
+
+where $\vec{u}_i$ and $\vec{v}_i$ are the $i^{\textit{th}}$ columns of matrices $U$ and $V$ in the SVD decomposition of $M = U \, S \, V^T$, respectively, and $s_i$ is the $i^{\textit{th}}$ singular value of this decomposition.  The term $\delta_i$ is defined as $1$ if $s_i \geq \alpha$ and as $0$ otherwise, for some threshold $\alpha$.  Note this approach finds the intersection of all given planes associated with this corner, but does not incorporate the constraints from two nearly-parallel planes.  Equation~\ref{eq:plane_xtion} sums over all excited dimensions of the set of intersecting regions, and either projects the intersection point along a dimension if it is highly constrained or merely takes the point's original coordinate in that dimension is not well constrained.  In the 2D example in Figure~\ref{fig:plane_xtion}, the normal vectors $\vec{n}_1$ and $\vec{n}_2$ are near enough to parallel to be considered degenerate.  The corresponding nullspace is shown in grey.  As a result, the pseudo-intersection is the original corner position projected onto this nullspace rather than the true intersection shown in black. We use the threshold parameter of $\alpha=0.2 * s_{min}$ for our examples in this paper, where $s_{min}$ is the smallest singular value.
+
+Once the locations of vertices shared by two or more planar regions are computed, then the interior area of each region is triangulated using a 2D variant of isosurface-stuffing~\cite{Isostuffing}, as described in~\cite{Turner13}.  This produces an efficient number of triangles for large, planar areas and preserves the sharp corners at the intersection of these regions.  An example of this meshing technique can be seen in Figure~\ref{fig:kitchen}c.  We perform planar meshing on the octree elements in order to represent building features rather than simply using the 2.5D extruded mesh generated from the floorplan because the latter does not capture sufficient detail of the environment.  Features that do not follow the 2.5D assumption, such as windows or door-frames, are unable to be captured by the extruded floorplan mesh.  As shown in Figures~\ref{fig:banner}d and~\ref{fig:kitchen}c, the planar mesh of the building surface still provide geometry for features such as window recesses.
+
+% detailed meshing
+When meshing object geometry, we use a variant of Dual Contouring~\cite{DualContouring}, since it works well with adaptively-sized nodes in an octree and well-represents both curved and sharp features in the output geometry.  Since our data labels are divided into node centers of the tree, rather than node corners, we perform dual contouring by mapping each boundary face of the octree to a vertex in the mesh and each corner of the octree into a face in the meshed output.  Figure~\ref{fig:kitchen}d shows the object mesh in isolation for an example model.
+
+% watertightness
+An important aspect of meshing these two segments separately is to ensure watertightness of building and object models.  The surfaces of walls hidden behind any occluding objects are still meshed, even though they are never directly scanned.  This effect can be seen in Figure~\ref{fig:kitchen}c.  Similarly, the hidden surfaces of objects are also fully meshed.  Figure~\ref{fig:kitchen}e shows the rear surface of the table, which was filled in based on the wall location.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Results}
+\label{sec:results}
+
+% Hybrid Operating Room table
+\begin{figure}[t]
+
+	% camera photo	
+	\begin{minipage}[t]{0.9\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{HybridORs/camera_photo}}
+		\centerline{(a)}
+	\end{minipage}
+	
+	% full model
+	\begin{minipage}[t]{0.9\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{HybridORs/full}}
+		\centerline{(b)}
+	\end{minipage}
+
+	% foreground object
+	\begin{minipage}[t]{0.9\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{HybridORs/object_foreground}}
+		\centerline{(c)}
+	\end{minipage}
+
+	% caption
+	\caption{Example scan of equipment in hospital's hybrid operating room: (a) picture of scanned area; (b) model of area; (c) object model triangulation of operating table and equipment.}
+	\label{fig:hybrid}
+
+\end{figure}
+
+% fp comparison figure
+\begin{figure}[t]
+
+	\centering
+
+	% floorplan from pointcloud
+	\begin{minipage}[t]{1.0\linewidth}
+		%\centerline{\includegraphics[width=1.0\linewidth]{oceanview-office/oceanview_fp_pc}}
+		\centerline{\includegraphics[width=1.0\linewidth]{mulford/mulford_fp_pc}}
+		\centerline{(a)}
+	\end{minipage}
+
+	% floorplan from octree
+	\begin{minipage}[t]{1.0\linewidth}
+		%\centerline{\includegraphics[width=1.0\linewidth]{oceanview-office/oceanview_fp_oct}}
+		\centerline{\includegraphics[width=1.0\linewidth]{mulford/mulford_fp_oct}}
+		\centerline{(b)}
+	\end{minipage}
+
+	% caption
+	\caption{Comparison of floorplans of large office environment: (a) floorplan generated from raw point cloud scans; (b) floorplan generated from octree proposed here.  The octree floorplan has much fewer artifacts due to clutter or furniture, as shown in areas ``1'' through ``4''.}
+	\label{fig:mulford}
+
+\end{figure}
+
+% overview
+The goal of our technique is to generate models of large scanned environments and still preserve fine detail of objects in those environments.  In this section, we discuss the advantages of our method both with qualitative examples and quantitative results.  All models shown were generated on an Intel Xeon 3.10 GHz processor.
+
+% discuss hybrid OR
+In Figure~\ref{fig:hybrid}, we show results for a scan we generated of several rooms in a hospital operating area.  This model contains four rooms, covering a total of 1,937 square feet, and was scanned using our hardware system in 2 minutes 47 seconds.  Processing this model took a total of 6 hours and 8 minutes.  The room shown in Figure~\ref{fig:hybrid}a is a hybrid operating room, which contains several medical scanners affixed to the ceiling.  As shown in Figure~\ref{fig:hybrid}b, our approach segments the geometry of the scanners from the rest of the building and generates a mesh for the entire environment.  Figure~\ref{fig:hybrid}c shows the geometry of the operating table and medical equipment only.  Note that this object would be difficult to model with techniques that semantically classify geometry to form a mesh, since it is unlikely that shape libraries would have many examples of such an usual device.  Since our technique does not need to classify the shape, we can still generate an accurate representation of its geometry.
+
+% better floorplans
+As shown in Section~\ref{ssec:floorplan}, one of the by-products of our approach is a 2D floorplan of the scanned environment.  When compared to floorplans generated from raw point cloud scans~\cite{Turner14}, our proposed approach results in not only better alignment to the complex geometry, but also a cleaner floorplan.  We demonstrate this contrast with Figure~\ref{fig:mulford}, which represents a scan of a 14,079 square foot office area with over $50$ rooms.  This data acquisition took 25 minutes and processing took 84~processor~hours.  An example floorplan from the previous method is shown in Figure~\ref{fig:mulford}a.  This floorplan has several artifacts caused by clutter and furniture in the environment.  Locations ``1'' and ``3'' show rooms filled with large amounts of objects, causing holes in the floorplan.  Locations ``2'' and ``4'' show rooms with a single large object that occluded part of a wall, causing a incorrect notch in the floorplan.  The floorplan of the same environment generated by our proposed technique is shown in Figure~\ref{fig:mulford}b.  This floorplan correctly separates the rooms of the environment and does not have the same artifacts as in the previous method.  Additionally, long hallways in the building are correctly represented as one room, rather than being split into several small segments.
+
+% limitations
+Our approach does have some limitations.  Since the object segmentation procedure described in Section~\ref{ssec:floorplan} uses volumetric intersections with an extruded 2.5D model based on a floorplan, it relies on assumptions this 2.5D model makes about the scanned environment.  In this approach, each room has fixed floor and ceiling heights.  If a room's ceiling is not horizontal, then it is approximated with a horizontal surface.  Figure~\ref{fig:bookcase} shows a few additional limitations.  This figure shows a set of boxes on top of a raised platform next to a bookcase.  The raised platform is identified as a separate object, even though it is part of the building structure, since it is at a different elevation than the rest of the floor in this room.  Additionally, this figure shows a floor-to-ceiling bookcase.  Since the position of fitted walls is found by looking for vertical surfaces, it is difficult to accurately gauge the depth of the shelves, especially when they are filled.  As a result, the wall is not positioned correctly, and only part of the bookcase is segmented as an object.  It is important to note, however, that all these limitations are highly localized.  Other parts of the model, such as the set of boxes or the coat-rack, are still meshed correctly in the presence of these issues.
+
+% 6th floor
+In order to show the scalability of our approach, we scanned a large office environment, shown in Figure~\ref{fig:6thfloor}.  This model contains a complete scan of 41~rooms as well as the surrounding hallways, totalling 13,048 square feet.  The data acquisition was completed in 17~minutes and processed in 48~processor-hours.  The building geometry is represented by 4~million triangles and the objects are meshed with a total of 13~million triangles.  Even though the building surfaces compose most of the environment, they represent the minority of triangles since those surfaces can be meshed efficiently as planar regions.  By comparison, if the entire model had been meshed using dual contouring, then it would have been composed of 21.5~million triangles.
+
+We show examples of the output model from multiple locations.  Figures~\ref{fig:6thfloor}a-\ref{fig:6thfloor}d show the reception desk located at point ``1'' in the floorplan shown in Figure~\ref{fig:6thfloor}e.  The desk, computers, and sink in this area are correctly segmented as objects and the primary building surfaces are meshed in a planar fashion.  The building surfaces can be seen in Figure~\ref{fig:6thfloor}c and the objects in Figure~\ref{fig:6thfloor}d.  We also show an example resulting mesh from inside one of the rooms, in Figures~\ref{fig:6thfloor}f-\ref{fig:6thfloor}i.  These figures represent location ``2'', as marked on Figure~\ref{fig:6thfloor}e.  Note that the door frame, desks, and other objects in this room are correctly segmented from the model.  Most of the wall fixtures have shapes that are non-planar, so they are more accurately modeled using a dense meshing scheme as discussed in Section~\ref{ssec:meshing} rather than a planar meshing scheme.  The primary building surfaces are still meshed in a planar fashion, resulting in a model that preserves the sharp edges and flat surfaces of the floors, walls, and ceilings.
+
+% figure of Eric's apt bookcase and ledge, showing limitations
+\begin{figure}[t]
+
+	% camera photo	
+	\begin{minipage}[t]{0.9\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{erics_apt/bookshelf/camera_image}}
+		\centerline{(a)}
+	\end{minipage}
+
+	% mesh
+	\begin{minipage}[t]{0.9\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{erics_apt/bookshelf/mesh}}
+		\centerline{(a)}
+	\end{minipage}
+	
+	% caption
+	\caption{Example mesh of bookcase and boxes: (a) photograph of scanned area; (b) generated mesh, showing both building and object geometry.}
+	\label{fig:bookcase}
+\end{figure}
+
+% mega-figure of 6thfloor mission bay UCSF
+\begin{figure*}[t]
+
+	% Close-up of reception desk
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{6thfloor/reception_desk_north/camera_image}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{6thfloor/reception_desk_north/mesh_all_color}}
+		\centerline{(b)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{6thfloor/reception_desk_north/mesh_room_tris}}
+		\centerline{(c)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{6thfloor/reception_desk_north/mesh_objects_tris}}
+		\centerline{(d)}
+	\end{minipage}
+
+	% floorplan
+	\begin{minipage}[t]{1.0\linewidth}
+		\centerline{\includegraphics[width=0.5\linewidth]{6thfloor/floorplan/6thfloor_all}}
+		\centerline{(e)}
+	\end{minipage}
+
+	% close up of room
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{6thfloor/room_next_to_skipped/camera_image}}
+		\centerline{(f)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{6thfloor/room_next_to_skipped/mesh_all_color}}
+		\centerline{(g)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{6thfloor/room_next_to_skipped/mesh_room_tri}}
+		\centerline{(h)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{6thfloor/room_next_to_skipped/mesh_object_tri}}
+		\centerline{(i)}
+	\end{minipage}	
+
+	% caption
+	\caption{Example model of large office environment:  (a) Photo of area ``1'' in model; (b) full mesh of area ``1''; (c) triangulation of room geometry in area ``1''; (d) triangulation of object geometry in area ``1''; (e) generated floorplan of scanned environment, colored by room; (f) photo of area ``2'' in model; (g) full mesh of area ``2''; (h) triangulation of room geometry in area ``2''; (i) triangulation of object geometry in area ``2''.}
+	\label{fig:6thfloor}
+
+\end{figure*}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusion}
+\label{sec:conclusion}
+
+% summarize above
+We present a robust method of surface reconstruction designed for indoor building environments.  Our method can take input scans with high noise typically observed in mobile ambulatory acquisition systems.  These scans are used to form detailed models of the objects in the scanned area, as well as models of the building structure itself.  The models are generated to take advantage of the level of detail for each type of geometry.  We also show that our method can handle diverse building environments, including residential apartments, office areas, and hospital operating rooms.
+
+% conclusion
+Our approach allows partitioning of building geometry into levels, rooms, and individual objects.  This degree of segmentation is an important step to automatically generating richly defined Building Information Models that represent all aspects of the environment. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% TODO uncomment this after double-blind is over
+%\section*{Acknowledgements}
+
+%Models shown in Figures~\ref{fig:hybrid} and~\ref{fig:6thfloor} were taken at UCSF Mission Bay Hospital.  This research was conducted with Government support under and awarded by DoD, Air Force Office of Scientific Research, National Defense Science and Engineering Graduate (NDSEG) Fellowship, 32 CFR 168a 
+
+\bibliographystyle{acmsiggraph}
+\bibliography{elturner}
+\end{document}

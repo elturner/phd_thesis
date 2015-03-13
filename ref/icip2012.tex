@@ -1,0 +1,351 @@
+% Template for ICIP-2012 paper; to be used with:
+%          spconf.sty  - ICASSP/ICIP LaTeX style file, and
+%          IEEEbib.bst - IEEE bibliography style file.
+% --------------------------------------------------------------------------
+\documentclass{article}
+\usepackage{spconf,amsmath,graphicx}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+
+% Example definitions.
+% --------------------
+\def\x{{\mathbf x}}
+\def\L{{\cal L}}
+
+% Title.
+% ------
+\title{SHARP GEOMETRY RECONSTRUCTION OF BUILDING FACADES USING RANGE DATA}
+%
+% Single address.
+% ---------------
+\name{Eric Turner and Avideh Zakhor\thanks{This work was supported by Army Research Office under contract W911NF-07-1-0471.  Additional funding from Navteq and Intel Visual Computing.}}
+%\name{Eric Turner and Avideh Zakhor}
+\address{University of California Berkeley\\
+		Department of Electrical Engineering and Computer Science\\
+		\{elturner,avz\}@eecs.berkeley.edu}
+%
+% For example:
+% ------------
+%\address{School\\
+%	Department\\
+%	Address}
+%
+% Two addresses (uncomment and modify for two-address case).
+% ----------------------------------------------------------
+%\twoauthors
+%  {A. Author-one, B. Author-two\sthanks{Thanks to XYZ agency for funding.}}
+%	{School A-B\\
+%	Department A-B\\
+%	Address A-B}
+%  {C. Author-three, D. Author-four\sthanks{The fourth author performed the work
+%	while at ...}}
+%	{School C-D\\
+%	Department C-D\\
+%	Address C-D}
+%
+\begin{document}
+%\ninept
+%
+\maketitle
+%
+\begin{abstract}
+In this paper we describe a method for detailed geometry reconstruction of building fa\c{c}ades in an urban environment, given a 3D point-cloud of LiDAR range data.  Our approach separates planar faces and interpolates their shape with Moving Least-Squares (MLS) sampling.  A method is then proposed to reconstruct occluded areas of the building whereby gaps in the building surface are modeled with axis-aligned planes fit to the gap boundary vertices.  This approach reconstructs unsampled areas of building surfaces under the assumption that buildings have 3D rectilinear, axis-aligned features.  We demonstrate the effectiveness of our approach on a number of building fa\c{c}ades.
+\end{abstract}
+%
+\begin{keywords}
+Laser radar, Urban areas, Least squares approximation, Clustering methods, Signal processing algorithms
+\end{keywords}
+%
+\section{INTRODUCTION}
+\label{sec:intro}
+
+There has been a growing interest in generating realistic 3D models for existing buildings.  This technology would be applicable to industries such as GPS navigation devices, video games, and Computer-Generated Imagery \cite{Zakhor07}.  The current method of collection requires an acquisition vehicle to drive down a street while taking Light Detection And Ranging (LiDAR) scans and panoramic photographs of the surround area.
+
+This process results in an incomplete 3D point-cloud of exterior building fa\c{c}ades.  Buildings are only partially captured because these scans are typically taken from street-level.  Gaps in the LiDAR point-cloud can be caused by obstructions from the building or surrounding clutter.  Figure~\ref{fig:rush_points} shows an example point-cloud where window ledges and columns cause occlusion.  Parts of the building that are transparent to LiDAR, such as window glass, also result in holes.
+
+In many applications, it is desirable to generate a triangulated geometry for a collected point-cloud.  This geometry needs to be accurate to the original architecture.  In this paper, we propose an approach for rectilinear surface reconstruction of building fa\c{c}ades with incomplete 3D point-clouds.  Specifically, our proposed algorithm generates geometry for any holes in the point-cloud while preserving flat planes and sharp corners, which are common in modern architecture.
+
+\begin{figure}[t]
+
+\begin{minipage}[b]{1.0\linewidth}
+  \centering
+  \centerline{\includegraphics[width=8.5cm]{figures/rush_pointcloud00.png}}
+\end{minipage}
+
+\caption{An example point-cloud of a fa\c{c}ade. Note gaps near windows, ledges, and columns.}
+\label{fig:rush_points}
+
+\end{figure}
+
+For buildings of an appreciable height, the street-level LiDAR scans are taken at a very acute angle with respect to the surface of the building.  Any protrusions from the building cause shadows in the LiDAR and therefore the building is not collected in its entirety, as shown in Figure~\ref{fig:truck_lidar}.  For many applications, a typical solution would be to gather scans from multiple angles \cite{Tang10, Curless96}.  For the urban reconstruction problem, this tactic cannot be used since the scanner is restricted to street-level.
+
+\begin{figure}[t]
+
+\begin{minipage}[b]{1.0\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{figures/truck_lidar.png}}
+\end{minipage}
+
+\caption{Locations on the building A, B, C are occluded from the LiDAR collector on the vehicle.}
+\label{fig:truck_lidar}
+
+\end{figure}
+
+The LiDAR scans occur at uniformly spaced angles, so as the scans move higher up the building the resulting points are spread further apart. The final point-cloud becomes sparser, and with lower sampling density of these areas, any error that exists in the position measurements has a greater impact on the resulting geometry.
+
+Previous attempts to model buildings have assumed that architecture takes a simple polyhedron geometry. This approach ignores minor details of a building fa\c{c}ade, such as windows and ledges when applied on a large scale \cite{Chauve10, Chen07}.  The goal of this paper is to preserve as much detail as possible in the reconstructed model geometry.  Any interpolation must preserve the sharp edges of corners that occur within these holes.  This requirement diverges from the typical assumptions of most surface completion methods, which usually result in smoothed surfaces \cite{Kazhdan06, Kawai11}.  While developing 3D models with sharp features is a well-explored topic, most current approaches require a sufficient density of points near regions of high curvature, which would not be applicable here \cite{Bernardini04, Mhatre06}.  By contrast, our goal is to generate sharp, axis-aligned, planar features in locations where the point-cloud is sparse or not sampled at all.
+
+\section{MLS INTERPOLATION}
+\label{sec:mls}
+
+\begin{figure}[t]
+
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=4.0cm]{figures/set1-face800.png}}
+  \centerline{(a)}\medskip
+\end{minipage}
+\hfill
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=4.0cm]{figures/set1-face801.png}}
+  \centerline{(b)}\medskip
+\end{minipage}
+%\hfill
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=4.0cm]{figures/set1-face802.png}}
+  \centerline{(c)}\medskip
+\end{minipage}
+\hfill
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=4.0cm]{figures/set1-face803.png}}
+  \centerline{(d)}\medskip
+\end{minipage}
+%
+\caption{Demonstration of two-plane sharp hole-filling; (a) point-cloud; (b) MLS sampling; (c) planes used to fit hole; (d) sharp hole-filling.}
+\label{fig:face8-sharp}
+%
+\end{figure}
+
+Our approach to geometry reconstruction considers only a single building fa\c{c}ade at a time.  This simplification allows us to assume a relatively flat point-cloud while creating a triangulated geometry.  First we determine the dominant plane of this fa\c{c}ade, then by treating the original points as a height map on this plane, we uniformly resample these heights over the entire surface using Moving Least-Squares (MLS) smoothing in order to mitigate noise in areas of high sampling, interpolate the areas corresponding to gaps in the point-cloud, and guarantee uniformity of resulting geometry \cite{Nealen04}.
+
+\begin{figure}[t]
+
+\begin{minipage}[b]{1.0\linewidth}
+  \centering
+  \centerline{\includegraphics[width=8.5cm]{figures/sharp_filling_diagram.png}}
+\end{minipage}
+%
+\caption{Diagram of how a window ledge is sharpened; (a) MLS sampling points around hole; (b) the edge points used to fit axis-aligned planes; (c) sampling after snapping hole positions to axis-aligned planes.}
+\label{fig:sharp-plane-fitting}
+%
+\end{figure}
+
+Let matrix $P \in \mathbb{R} ^{3 \times M}$ be the point-set of a fa\c{c}ade, with $M$ samples, where each column is expressed in ENU coordinates centered at the origin.  Using Principle Components Analysis (PCA), let $ E \Lambda E^T = PP^T $ be the eigenvalue decomposition of this point-set, and $e_{min}$ be the column of $E$ that corresponds to the minimum eigenvalue entry of $\Lambda$.  Defining $\hat{z} = [0\,0\,1]^T$, the dominant normal of the fa\c{c}ade is given by:
+
+\begin{equation}
+\hat{n} = \dfrac{( I_3 - \hat{z} \hat{z}^T ) e_{min} } {|| (I_3 - \hat{z} \hat{z}^T) e_{min} ||}
+\end{equation}
+
+with identity matrix $I_3$.  For ease of computation, we perform a coordinate transform of the point-set to the orthonormal basis $\{ \hat{a}, \hat{z}, \hat{n} \}$, where $\hat{a} = \hat{z} \times \hat{n}$.  Under this coordinate system, the height of a MLS sampling of the point-cloud along $\hat{n}$ can be expressed as
+
+\begin{equation}
+\sum_{p \in P} (p^T \hat{n}) \; exp\Big( - \dfrac{\big( (p-s)^T \hat{a} \big)^2 + \big( (p-s)^T \hat{z} \big)^2 }{h^2} \Big)
+\end{equation}
+
+where $s$ is the sampling position and $h$ is the rate of decay for the MLS estimate.  We chose $h$ to be 20 to 40 cm.  We resample the heights of $P$ uniformly along the dominant plane, defined by the $\{\hat{a},\hat{z}\}$ subspace. The sampling distance chosen is of the order of 1 to 10 cm.
+
+For any MLS sample $s$, if the distance $|s-p|$ is large compared to $h$ for all original points $p \in P$, then the interpolation asymptotically approaches a nearest-neighbor interpolation.  This property yields undesirable discontinuities in the geometry and these holes require additional post-processing in order to accurately model original architecture.
+
+% \begin{figure}[t]
+
+% \begin{minipage}[b]{.48\linewidth}
+%  \centering
+%   \centerline{\includegraphics[width=4.0cm]{figures/set1-face8-points-small00.png}}
+%   \centerline{(a)}\medskip
+% \end{minipage}
+% \hfill
+% \begin{minipage}[b]{.48\linewidth}
+%   \centering
+%   \centerline{\includegraphics[width=4.0cm]{figures/set1-face8-no-fill00.png}}
+%   \centerline{(b)}\medskip
+% \end{minipage}
+%
+% \caption{When using MLS to interpolate large gaps, the interior points have heights of equivalent to nearest-neighbor interpolation. (a) Point-cloud with gaps (b) Geometry, with no sharp hole-filling}
+% \label{fig:mls_nn}
+%
+% \end{figure}
+
+\section{SHARP HOLE FILLING}
+\label{sec:holes}
+
+\begin{figure}[t]
+
+\begin{minipage}[b]{1\linewidth}
+  \centering
+  \centerline{\includegraphics[width=8.5cm]{figures/rush_mls_basic_ledges00.png}}
+  \centerline{(a)}\medskip
+\end{minipage}
+%\hfill
+\begin{minipage}[b]{1\linewidth}
+  \centering
+  \centerline{\includegraphics[width=8.5cm]{figures/rush_sharp_ledges00.png}}
+  \centerline{(b)}\medskip
+\end{minipage}
+%
+\caption{Window ledge before and after sharp reconstruction for fa\c{c}ade from Figure~\ref{fig:rush_points}; (a) MLS sampling; (b) with sharp hole-filling. }
+\label{fig:rush-sharp}
+%
+\end{figure}
+
+\begin{figure}[t]
+
+\begin{minipage}[b]{1\linewidth}
+  \centering
+  \centerline{\includegraphics[width=8.2cm]{figures/rush_windows00.png}}
+  \centerline{(a)}\medskip
+\end{minipage}
+%\hfill
+\begin{minipage}[b]{1\linewidth}
+  \centering
+  \centerline{\includegraphics[width=8.2cm]{figures/rush_windows01.png}}
+  \centerline{(b)}\medskip
+\end{minipage}
+%
+\caption{Sharp reconstruction on windows, viewed from below; (a) MLS sampling; (b) with sharp hole-filling. }
+\label{fig:rush-windows}
+%
+\end{figure}
+
+To determine whether an interpolation sample occurs in a gap area of the point-cloud, we use its distance from the nearest LiDAR point.  This distance threshold is dependent on the sampling density of the LiDAR.  As discussed above, these gaps in the point-cloud are either caused by the transparency of windows or occlusions from protrusions.  If the artificial geometry to be inserted needs to mimic realistic architecture, then it is most probable that the missing mesh is composed of a vertical and horizontal plane.  An example result is shown in Figure~\ref{fig:face8-sharp}.  Note that the planes shown are recessed into the building.  Since the geometry is missed due to being in the shadow of another part of the building, the actual architecture must be indented with respect to the building fa\c{c}ade.  Otherwise, it would have been captured by the LiDAR and there would be no gap.
+
+%\begin{figure}[t]
+
+%\begin{minipage}[b]{.3\linewidth}
+%  \centering
+%  \centerline{\includegraphics[width=2.7cm]{figures/set1-face5-points00.png}}
+%  \centerline{(a)}\medskip
+%\end{minipage}
+%\hfill
+%\begin{minipage}[b]{.3\linewidth}
+%  \centering
+%  \centerline{\includegraphics[width=2.7cm]{figures/set1-face5-no-fill00.png}}
+%  \centerline{(b)}\medskip
+%\end{minipage}
+%\hfill
+%\begin{minipage}[b]{.3\linewidth}
+%  \centering
+%  \centerline{\includegraphics[width=2.7cm]{figures/set1-face5-sharp00.png}}
+%  \centerline{(c)}\medskip
+%\end{minipage}
+%
+%\caption{Demonstration of sharp hole-filling.  The awning on the left shows example of two-plane filling; (a) Point-cloud; (b) MLS sampling; (c) Sharp hole-filling.}
+%\label{fig:face5-sharp}
+%
+%\end{figure}
+
+Note that the planes fit are axis-aligned, rather than oriented based on local geometry.  This simplification is reasonable, since the fa\c{c}ade is assumed to be well-modeled by a flat surface.  Since the overall fa\c{c}ade is flat, then any missing components are either parallel or orthogonal to the full fa\c{c}ade for most modern architecture.
+
+The process to find and reshape these holes in the surface is shown in Figure~\ref{fig:sharp-plane-fitting}.  For each MLS interpolated sample, we check its distance to the closest point from input point-cloud.  If this distance is greater than a specified threshold, we mark the sample as ``hole'', as shown in Figure~\ref{fig:sharp-plane-fitting} (a).  Since MLS samples reside on grid, we use Union-Find to group connected hole positions, so that the entirety of each hole is considered at a time \cite{Doyle76}. For each connected ``hole'' region, we determine the sample points that compose the exterior border of the region. We then use K-Means clustering to fit horizontal and vertical plane to hole edges \cite{Lloyd57}.  These planes are shown as dotted lines in the side-view of Figure~\ref{fig:sharp-plane-fitting} (b).  Then we move the final plane locations by one standard deviation of edge sample heights into the building face, to simulate a recessed cavity in the building.  Vertical planes are moved back, while horizontal planes representing tops of ledges are moved down, and horizontal planes representing bottoms of ledges are moved up.  This movement is shown with solid lines in Figure~\ref{fig:sharp-plane-fitting} (b).  We then recalculate the height of each MLS sample inside the connected hole via bilinear interpolation of the original point-cloud.  The motivation for this step is to account for holes of large diameter.  Since MLS devolves into nearest-neighbor interpolation, skipping this step would result in dramatic discontinuities in the sample heights.  Finally, we snap these sample locations to closest fit plane of the hole, as shown in Figure~\ref{fig:sharp-plane-fitting} (c). This process finds and snaps each hole location to a sharp edge.  As shown in Figures~\ref{fig:face8-sharp},~\ref{fig:rush-sharp}, and~\ref{fig:rush-windows}, the process fits one or two planes as needed.
+
+%\begin{figure}[t]
+
+%\begin{minipage}[b]{.3\linewidth}
+%  \centering
+%  \centerline{\includegraphics[width=2.7cm]{figures/pearson00.png}}
+%  \centerline{(a)}\medskip
+%\end{minipage}
+%\hfill
+%\begin{minipage}[b]{.3\linewidth}
+%  \centering
+%  \centerline{\includegraphics[width=2.7cm]{figures/pearson01.png}}
+%  \centerline{(b)}\medskip
+%\end{minipage}
+%\hfill
+%\begin{minipage}[b]{0.3\linewidth}
+%  \centering
+%  \centerline{\includegraphics[width=2.7cm]{figures/pearson02.png}}
+%  \centerline{(c)}\medskip
+%\end{minipage}
+%
+%\caption{Demonstration of sharp hole-filling.  Windows are on 8th floor of building; (a) Point-cloud; (b) MLS sampling; (c) Sharp hole-filling.}
+%\label{fig:pearson-sharp}
+%
+%\end{figure}
+
+If a hole occurs on the edge of the building fa\c{c}ade, this technique results in sub-par performance.  The likely cause of a hole on the edge of the fa\c{c}ade is the sparsity of points at high elevation above street level.  In this situation, it is common for a point-cloud to be truncated after some height.  Since it is desirable to be able to obtain a triangulated geometry that encompasses full buildings, fa\c{c}ades must be extrapolated.  In this situation we set the missing sample values to the mean depth along $\hat{n}$ of the existing point-cloud located in the area below the desired sample point.  This method results in flat strips of extrapolated fa\c{c}ade.  If the building curves outward or has other non-planar characteristics, these strips conform to the shape of the building, as shown in Figure~\ref{fig:extrapolate}.
+
+\begin{figure}[t]
+
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=4.0cm]{figures/set2-curve-points00.png}}
+  \centerline{(a)}\medskip
+\end{minipage}
+\hfill
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=4.0cm]{figures/set2-curve-screenshot.png}}
+  \centerline{(b)}\medskip
+\end{minipage}
+%
+\caption{The curvature of the building is preserved when extrapolated; (a) building point-cloud; (b) MLS triangulation.}
+\label{fig:extrapolate}
+%
+\end{figure}
+
+%\section{RESULTS}
+%\label{sec:results}
+\section{CONCLUSION}
+\label{sec:conclusion}
+
+Once a geometry has been processed, a texture is applied using panoramic photographs collected from the same location as the LiDAR.  Since these images are projected onto the geometry, any irregularities in the geometry result in dramatic disturbances in texturing.  Examples of this texturing process are shown in Figure~\ref{fig:texture}.
+
+\begin{figure}[t]
+
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=4.0cm]{figures/set1-face4_mls.png}}
+  \centerline{(a)}\medskip
+\end{minipage}
+\hfill
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=4.0cm]{figures/set1-face4_texture.png}}
+  \centerline{(b)}\medskip
+\end{minipage}
+%
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=4.0cm]{figures/set1-face7_mls.png}}
+  \centerline{(c)}\medskip
+\end{minipage}
+\hfill
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=4.0cm]{figures/set1-face7_texture.png}}
+  \centerline{(d)}\medskip
+\end{minipage}
+%
+%\begin{minipage}[b]{1.0\linewidth}
+%  \centering
+%  \centerline{\includegraphics[width=6.0cm]{figures/set2-face4_texture.png}}
+%  \centerline{(e)}\medskip
+%\end{minipage}
+%
+\caption{Results of texturing geometry after sharp hole-filling; (a) sampling of flat fa\c{c}ade; (b) with texture; (c) sampling of uneven fa\c{c}ade; (d) with texture.}
+\label{fig:texture}
+%
+\end{figure}
+
+%\section{CONCLUSION AND FUTURE WORK}
+%\label{sec:conclusion}
+
+As shown, our method takes a scanned point-cloud that can contain gaps as well as high variance in point-cloud density, and generates a complete triangulated geometry whose vertices are uniformly spaced.  Existing gaps in the original point-cloud are represented with sharp features created using assumptions about typical patterns in modern architecture.
+
+\bibliographystyle{IEEEbib}
+\bibliography{litreview}
+
+\end{document}
