@@ -135,14 +135,72 @@ This is where the abstract will go.
 \chapter{Introduction}
 \label{ch:introduction}
 
-% TODO motivation text
-This is some motivation text.
+% motivation text
+Laser scanning technology is becoming a vital component of building construction and maintenance.  During building construction, laser scanning can be used to record the as-built locations of HVAC and plumbing systems before drywall is installed.  In existing buildings, blueprints are often outdated or missing, especially after several remodelings.  Such scans can be used to generate building models describing the current architecture.  Meshed triangulations allow for the efficient representation of the scanned geometry.  In addition to being useful in the fields of architecture, civil engineering, and construction, these models can be directly applied to virtual walk-throughs of environments, gaming entertainment, augmented reality, indoor navigation, and energy simulation analysis.  These applications rely on the accuracy of a model as well as its compact representation.
+
+% figure with pointcloud and models
+\begin{figure}
+
+	% top row
+	\begin{minipage}[t]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.4cm]{quals/joint/coryf2/coryf2_photo}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.4cm]{quals/joint/coryf2/coryf2_3d_triangles}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.4cm]{quals/joint/coryf2/coryf2_3d_texture_compressed}}
+		\centerline{(c)}\medskip
+	\end{minipage}
+	
+	% bottom row
+	\begin{minipage}[b]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.4cm]{quals/joint/coryf2/coryf2_pointcloud_compressed}}
+		\centerline{(d)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.4cm]{quals/joint/coryf2/coryf2_2d_triangles}}
+		\centerline{(e)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.4cm]{quals/joint/coryf2/coryf2_2d_texture_compressed}}
+		\centerline{(f)}\medskip
+	\end{minipage}
+	
+	\caption[Models generated with our techniques.]{Models generated with the techniques described in this dissertation:  (a) photograph of scanned area, academic building; (b) surface carving model of this area; (c) surface carving model with texturing; (d) point cloud of captured scans; (e) extruded floor plan model of area; (f) extruded floor plan with texturing.}
+	\label{fig:coryf2}
+
+\end{figure}
+
+% applications
+Generating an accurate model of indoor environments is an emerging challenge in the fields of architecture and construction for the purposes of verifying as-built compliance to engineering designs~\cite{Bosche10,Xiong13}.  This task is made more challenging by the GPS-deprived nature of these environments~\cite{Liang13}.  Another application that requires an exported mesh to retain as much detail as possible is historical preservation via a virtual reality model~\cite{VillageHeritage,Carving}.  Building energy efficiency simulations can use watertight meshes of the environment to estimate airflow and heat distribution~\cite{EnergyPlus}.  These simulations require simplified meshes as input, since finite element models are difficult to scale.  It is also important to be able to generate an immersive visualization and walk-through of the environment for these applications, so experts can remotely inspect the scanned environment via telepresence, a task that currently requires expensive travel and on-site visits.  Different applications require models of different complexities, both with and without furniture geometry.  The modeling approaches detailed in this report are useful for both types of applications, as shown in the examples in Figure~\ref{fig:coryf2}.  Figure~\ref{fig:coryf2}a is a photograph of the scanned area: the hallways of an academic building, encompassing about 1,000 square meters of scanned area.  Figure~\ref{fig:coryf2}d represents the captured 3D point-cloud of this area.  Figures~\ref{fig:coryf2}b and~\ref{fig:coryf2}c show a high-detail 3D mesh of 2.7 million triangles generated using the algorithm in Chapter~\ref{ch:carving}, with and without texturing, respectively.  Figures~\ref{fig:coryf2}e and~\ref{fig:coryf2}f show a low detail model of 2,644 triangles generated using the approach in Chapter~\ref{ch:floorplan}, with and without texturing.
+
+% brief overview of different modeling techniques presented
+One of the primary challenges of indoor modeling is the sheer size of the input point-clouds.  Scans of single floors of buildings result in point-clouds that contain hundreds of millions of points, often larger than the physical memory in a personal computer.  Man-made geometry is typically composed of planar regions and sharp corners, but many conventional surface reconstruction schemes assume a certain degree of smoothness and result in rounded or blobby output if applied to these models~\cite{Powercrust,OctreeSculpting,Carving,ProgressiveMesh,Poisson,Eigencrust}.  In addition to large flat regions, building interiors also contain many small details, such as furniture.  A surface reconstruction scheme must be able to represent the large surfaces in a building with an efficient number of elements and preserve their sharp features.  The fine details of furniture are useful for some applications whereas others require furniture to be removed.  In this report, we discuss existing modeling techniques that remove fine details and those that preserve these details.  The output of both of these modeling techniques can be texture-mapped with captured camera imagery~\cite{Cheng14}.  An example of texture-mapping these two modeling processes is shown in Figs.~\ref{fig:coryf2}c and~\ref{fig:coryf2}f.
 
 \section{Surface Reconstruction}
 \label{sec:surf_recon_background}
 
-% TODO background on surface reconstruction techniques
-This is some background on general surface reconstruction
+% background on surface reconstruction techniques
+This section describes common techniques for surface reconstruction from input point-cloud data.  These techniques are useful for generating meshes of objects scanned with table-top scanning systems.
+
+% powercrust and the need for noise-reduction
+Powercrust is a volumetric surface reconstruction approach that yields watertight models from point-cloud data~\cite{Powercrust}.  It computes the interior median axis of a shape using the voronoi diagram of the input scan points.  By taking the union of the inner polar balls, the elements of the Delaunay Triangulation that form the interior of the shape can be found, and are used to approximate the modeled volume.  While this approach is popular, one weakness is that it is sensitive to noise in the input scans.  Fortunately, other techniques have improved on this methodology to account for noisy input
+
+% Accounting for noise in volumetric scans
+An approach to account for the noise in the Powercrust algorithm is to remove sufficiently small polar balls from consideration, which are likely to be due to input noise~\cite{NoisyPowercrust}.  Another approach is to perform spectral clustering on the tetrahedralization of the points~\cite{EigencrustShewchuk}.  This approach, dubbed Eigencrust, allows for substantially improved robustness to noise.  An important consideration, though, is that the noise models tested are randomly positioned outlier points and randomly perturbed input points.  Both of these approaches assume that the randomness is independent and identically distributed from point-to-point.  Such characteristics are not the dominant case when dealing with noise from mis-registration of scans, which is the most common source of noise from mobile scanning systems.
+
+% Isosurface and the reign of SDFs
+Another technique used to produce watertight models is to define implicit functions on the scanned volume, and use an isosurface of this volume as the exported mesh.  Once an implicit function is defined, techniques such as Marching Cubes or Dual Contours can be used to mesh the surface~\cite{MarchingCubes,DualContouring}. A popular method for defining this implicit function is to use Signed-Distance Fields~\cite{SignedDistanceFields}.  Another popular approach is Poisson Surface Reconstruction~\cite{Poisson}.  Both of these methods are more robust at mis-registration errors than the previous algorithms.  One downside of their use in the area of modeling man-made objects is that they yield smooth, continuous surfaces.  Such results tend to look overly organic when modeling objects with flat regions or sharp corners.  This issue can be alleviated somewhat by using dual contour isosurface meshing rather than marching cubes, since it preserves sharp edges in the scalar field, but with these methods, the scalar field itself can be overly-smoothed.
+
+% typical hardware set-up for traditional surface reconstruction
+An important note is that traditional surface reconstruction techniques, as described above, are written for and tested with common point-cloud test-sets, such as the Stanford Bunny or Dragon.  These models are scanned with precision 3D scanners that yield relatively low noise and minimal mis-registration when compared to scans of larger areas such as buildings.  These approaches are also designed to model isolated objects.  The goal of my thesis is to model buildings, which are scanned at a much larger scale and produce much higher rates of noise and mis-registration.  While watertight volumetric processing is still useful for our applications, different techniques must be applied compared to isolated objects.
 
 \section{Outdoor Building Scanning}
 \label{sec:outdoor_scanning}
@@ -150,20 +208,58 @@ This is some background on general surface reconstruction
 % TODO discuss general outdoor technology for building scanning
 Discuss general outdoor technology for building scanning.
 
-% briefly mention highlights of navteq project
+% TODO briefly mention highlights of navteq project
 Briefly mention highlights of navteq project.
 
-% use this project as smooth introduction to dealing with large pointclouds
+% TODO use this project as smooth introduction to dealing with large pointclouds
 Smooth introduction to dealing with large pointclouds.
 
-\section{Indoor Building Scanning}
+\section{Indoor Building Scanning Systems}
 \label{sec:indoor_scanning}
 
-% TODO discuss hardware (briefly reference backpack, but don't go into details)
-% also mention quadrotors and carts (see quals)
-% also mention that most of my work is hardware agnostic
+% building information models
+In the architecture community, there is a continuing push for use of a consolidated Building Information Model file format~\cite{AutodeskBIM}.  Such models need to be semantically-rich for all phases of building development, including architectural, structural, mechanical, electrical, plumbing, etc.  Traditionally, each separate aspect needed to be remodeled from scratch, by hand, which introduced errors into the modeling process.
 
-% TODO explaing why volumetic approaches are important
+It is important to distinguish between models that are as-designed compared to as-built.  Each phase of building development will produce a design, but it is still important to compare this design to the as-is nature of the building.  3D scanning of building environments is an important technology to be able to compare the result of construction to what was desired.  With current technology, there is still a fair amount of manual intervention that is  required to convert a 3D scan of a building into a suitable BIM file that can be used for such a comparison.
+
+% competing systems
+Traditional industry-standard building scanning uses static scanners.  Such scanners are mounted on tripods, and moved from area to area in the building~\cite{RoomSegmentation,HistWallRecon,BasicPlaneFit}. This scanning process is labor intensive and slow, but results in highly accurate point clouds after stitching.  In order to automate indoor scanning, many mobile systems have been introduced.  Wheeled platforms that carry scanning equipment and are manually pushed through the environment are popular~\cite{Carving, ProbabilisticRobotics}.  Mobility of such systems is limited, since they are unable to traverse rough terrain or stairs easily.  Others have investigated mounting laser range finders on unmanned aerial vehicles~\cite{Quadrotor,QuadrotorMIT}.  Such platforms are agile in that they can scan difficult-to-reach areas.  Such unmanned platforms are limited by short battery life and cannot scan for long durations.
+
+% include system hardware description
+% our system and WHAT WE DO DIFFERENT AND WHY IT IS BETTER!!!!!!!!!
+In this dissertation, we focus on ambulatory scanning platforms, where the sensor suite is carried by a human operator as the operator moves through the building environment~\cite{Sweep,MITBackpack,VillageHeritage}.  These systems allow for rapid data acquisition and can be actively scanning for several hours at a time.  They use 2D LiDAR scanners due to the cost and weight of full 3D laser range finders.  The captured scans are used both to reconstruct the geometry of the environment and to localize the system in the environment over time.  The datasets shown in this paper were generated by a backpack-mounted system that uses 2D LiDAR scanners to estimate the 3D path of the system over time as well as multiple scanners to generate geometry for the environment~\cite{liu2010indoor,Backpack,Localization,NickJournal}.  This system also has multiple cameras collecting imagery during the data acquisition process, which allows for scanned points to be colored or for generated meshes to be textured with realistic imagery~\cite{Cheng14}. 
+
+% This section describes building meshing techniques
+\section{3D Modeling of Building Environments}
+\label{sec:building_meshing}
+
+% give a brief overview of the different types of meshing techniques
+% Discuss how the below techniques typically use noise-less input from
+% static scanners, and do not explicitly detail with misregistration or
+% noise.
+The primary thesis of this dissertation regards surface reconstruction of scan data of indoor building environments, regardless of what hardware systems are used to collect building scan data.  There exists an emerging field of techniques used to model different aspects of building geometry from captured scans.  These techniques can be classified into three main categories:  Floor-Plan Generation, Simplified 3D Modeling, and Detailed 3D Modeling.  Floor-plan generation focuses on estimating 2D positions of walls in the building.  Simplified 3D modeling similarly focuses on 3D modeling only the permanent features of a building: floors, walls, and ceilings.  Detailed 3D modeling focuses on modeling all aspects of the scanned geometry, including fine details such as furniture or objects observed in the building.  Note that most of the approaches discussed here were developed to be applied to static scans of buildings, which have very low noise and capture high detail. The focus of this dissertation is to develop modeling techniques for mobile scanning systems, which are much more likely to suffer from mis-registration noise or missing geometry.
+
+In this section, we discuss existing techniques to generate each of these types of building models.  This dissertation also describes novel work we contributed, in Chapters~\ref{ch:floorplan},~\ref{ch:carving},~\ref{ch:better_floorplan}, and~\ref{ch:better_carving}.
+
+% This subsubsection describes floor plan generation techniques
+\subsection{Floor-Plan Modeling}
+\label{ssec:background_floorplan}
+
+Floor-plan modeling techniques are based on the idea of sampling positional information of walls within the environment captured by the scans, then using these wall samples to generate a plan composed of line segments or polygons.  The work of Weiss et al use a cart-based system with a horizontal laser scanner~\cite{Weiss05}.  The output scan points are exactly the sample positions of the walls.  The find lines in this scan map with a Hough Transform, which represent walls.  Okorn et al employ a similar method, but their input scans represent a full 3D point-cloud~\cite{Okorn09}.  The wall sample positions are found by computing a top-down histogram of the input points, and areas of high density are classified as vertical surfaces.  The approaches we discuss in Chapter~\ref{ch:floorplan} employ a similar top-down histogram.  Lastly, Mura et al's paper takes a different approach to estimating wall positions~\cite{Mura13}.  They perform region growing in the 3D point-cloud to fine planar regions, which are projected into 2D and treated as potential wall candidates.  A cell complex is then built to volumetrically identify separate rooms in the model.  This approach is the second publication that performs automatic room partitioning, where the first is our approach as discussed in Chapter~\ref{sec:room_label}~\cite{Turner14}.  There are also methods that take a floor plan as input, and use this information to generate a 3D model of the environment by extruding the defined wall information~\cite{Or05,Lewis98}.  This type of modeling yields aesthetically pleasing results with well-defined floors, walls, and ceilings.
+
+% This subsubsection describes plane fitting for 3D modeling
+\subsection{Simplified 3D Modeling}
+\label{ssec:background_planefit}
+
+Since building features are almost entirely planar, a popular approach is to explicitly fit planar elements to the input point-clouds.  Sanchez and Zakhor use PCA plane-fitting to find floors, walls, and ceilings explicitly in the point-cloud~\cite{Victors}. Since this method was applied to ambulatory data, it resulted in missing components, holes, and double-surfacing due to mis-registration.  Xiong et al also perform plane-fitting in a similar fashion, but also analyze the computed planes for the locations of windows and doors, which are represented as holes in the surface~\cite{Xiong13}.  Adan et al find planes by first generating a floor-plan, then extrude the floor-plan into a 3D model~\cite{WallFinder}.  One limitation with these methods is that they are not necessarily watertight.  Other approaches have focused to perform volumetric processing to ensure watertightness when computing simplified 3D models.  Xiao et al find horizontal cross-sections of the building, forming a sequence of 2D CSG models that are then stacked together and simplified~\cite{Museums}.  While this approach does lead to aesthetically-pleasing models, it assumes manhattan-world models, which leads to topological errors if an insufficient number of cross-sections are recovered.  Oseau et al use a voxelization approach, with a follow-up graph-cut step to remove small details in the environment, leaving only floors, walls, and ceilings~\cite{Oesau13}.  This optimization step, however, can also cause significant deformations in the final geometry depending on the input parameters. 
+
+% TODO include furukawa image-based floorplans
+
+% This subsubsection describes dense 3D modeling
+\subsection{Detailed 3D Modeling}
+\label{ssec:background_3dmodeling}
+
+One of the methods used to preserve the detail of furniture in a building scan is to explicitly search and classify for furniture models in the scan.  These techniques attempt to find locations in the input scans that match best with a stored database of known furniture.  The pre-existing model of the recognized piece of furniture is then oriented in the output model.  Nan et al employ this technique, with explicit classification of chairs and tables~\cite{SearchClassifyPointcloud}.  Kim et al also use this method, using a larger library of objects and operating on noisier scans~\cite{Kim12}.  They also discuss how search-classification can allow for change detection across scans of the same area taken at different times.  A major downside of this method is that the classification is only as good as the database.  Objects that are in unexpected orientations or are not in the database are misclassified.  For instance, a sideways chair is misclassified as a table.  One major benefit of this approach is the ability to model the objects independently of the room itself, as discussed later in Chapter~\ref{ch:better_carving}.  There are also methods that capture fine detail of buildings by attempting to be as accurate to the input point-cloud as possible.  Holenstein et al generate a space-carving model that voxelizes the scanned environment, labeling any voxels intersected by a scan-line line to be interior~\cite{Carving}.  The boundary of the interior voxels is meshed with Marching Cubes.  The advantage of this approach is an increased robustness to mis-registration errors, but the downside is that over-carving can result in the loss of fine detail.  Lastly, a popular approach to detailed modeling of environments is Kinect Fusion~\cite{KinectFusion,Kintinuous}.  This method allows for both meshing and tracking, but is limited in that it cannot handle large areas, and the actual meshing approach is a minor extension of Signed-Distance Fields~\cite{SignedDistanceFields}. 
 
 \section{Thesis Organization}
 \label{sec:organization}
@@ -228,9 +324,14 @@ The second generation backpack, as shown in Figure~\ref{fig:all_backpacks}b, was
 % briefly describe the type of scans we use as input
 Our geometry reconstruction algorithms use the retrieved laser range data as input.  These scans are taken with time-of-flight laser scanners that capture 3D geometry of the environment.  We use multiple 2D laser scanners mounted at different orientations to capture all observed geometry in the environment.  Since our system is mobile and ambulatory, the resulting point clouds have higher noise than traditional static scanners due to natural variability in human gait.  As such, our approach needs to be robust to motion induced scan-level noise and its associated artifacts.  We use these scans to form watertight models of the indoor building environment and the contained objects.
 
+% sparse but fast
+The primary advantage of a backpack system is speed of acquisition.  We use 2D Time-Of-Flight (TOF) laser scanners, which means we have sparser scan information per frame and traverse each area of the environment much faster than when scanning the equivalent area with a Kinect or Google Tango.  Since our system produces much sparser point clouds than Kinect-based scanning, it is not feasible to employ the same averaging techniques that allow for high-quality Kinect scans.  The advantage of these 2D TOF sensors is that they are less noisy, have a longer range, and a wider field of view.  The result is that much larger environments can be covered in significantly less time when using these sensors in a sweeping motion~\cite{Sweep}.  For instance, a backpack-mounted system allows an unskilled operator to rapidly walk through an environment to acquire data.
+
+% the noise characteristics
+Our system uses Hokuyo UTM-30LX sensors, whose intrinsic noise characterization is given in~\cite{Pomerleau12}.  Typically this noise contributes on the order of 1 to 2 centimeters to the standard deviation of the positional estimate of scan points.  This uncertainty value increases as the range of the point increases, with accurate measurements stopping at a range of $30$~meters.
+
 % TODO LEFT OFF HERE
 
-% TODO mechanical specs (discuss sweeping geometry idea)
 % also discuss extrinsic calibration of sensors, and show diagram of system common coordinate frame
 
 % TODO (very) brief overview of data acquisition software

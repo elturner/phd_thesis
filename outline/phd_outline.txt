@@ -38,10 +38,11 @@ Thesis outline :
 		- background
 		- surface reconstruction in general		\label{sec:surf_recon_background}
 		- talk about ICIP 2012?				\label{sec:outdoor_scanning}
-		- indoor scanning				\label{sec:indoor_scanning}
+		- indoor scanning systems			\label{sec:indoor_scanning}
 			- backpack systems
 			- quadrotor systems
-			- the need for volumetric approaches
+		- indoor building modeling algorithms		\label{sec:building_meshing}
+
 		- organization of thesis			\label{sec:organization}
 
 	harware description (5-10 pages)			\label{ch:hardware}
@@ -69,10 +70,10 @@ x	Pointcloud generation (5-10 pages)			\label{ch:preprocessing}
 		- volumetric approaches with triangles
 		- Eigencrust
 		- visigrapp
-		- room detection
+		- room detection				\label{sec:room_label}
 		- simplification techniques
 		
-	Carving
+	Carving							\label{ch:carving}
 		- 3DV 2013 voxel carving
 		- everything in siggraph paper about 3D stuff 
 			- (save fp for later)
@@ -82,13 +83,13 @@ x	Pointcloud generation (5-10 pages)			\label{ch:preprocessing}
 			- everything regarding the wedge model
 			- chunking of scans
 
-	Improving floorplans with carving  (ch:better_floorplans)
+	Improving floorplans with carving  			\label{ch:better_floorplans}
 		- level-splitting with octree, improves on pointcloud level split
 		- wall sample generation via procarve
 		- include optimization of fp alignment
 		- include some hia stuff
 
-	Improving carving with floorplans
+	Improving carving with floorplans			\label{ch:better_carving}
 		- removing explosions
 		- merging fp and oct
 		- refining furniture

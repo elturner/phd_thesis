@@ -1,0 +1,868 @@
+\documentclass[journal]{IEEEtran}
+\usepackage{cite}
+
+% avideh formatting
+\usepackage{setspace}
+\doublespacing
+\onecolumn
+% end avideh formatting
+
+% *** GRAPHICS RELATED PACKAGES ***
+\usepackage[pdftex]{graphicx}
+% declare the path(s) where your graphic files are
+\graphicspath{{../figures/}}
+% and their extensions so you won't have to specify these with
+% every instance of \includegraphics
+\DeclareGraphicsExtensions{.pdf,.jpg,.jpeg,.png}
+
+% *** MATH PACKAGES ***
+\usepackage[cmex10]{amsmath}
+\usepackage{amssymb}
+\interdisplaylinepenalty=2500
+
+% *** PDF, URL AND HYPERLINK PACKAGES ***
+\usepackage{url}
+
+% correct bad hyphenation here
+\hyphenation{op-tical net-works semi-conduc-tor}
+
+
+\begin{document}
+
+\title{Qualification Exam and Thesis Proposal: \\
+3D Modeling of Interior Building Environments and Objects from Noisy Sensor Suites}
+
+\author{Eric~Turner\thanks{Advisor: Avideh Zakhor}\thanks{University of California Berkeley}\thanks{Department of Electrical Engineering and Computer Sciences}\thanks{Berkeley, CA 94720 USA (email: elturner@eecs.berkeley.edu)}}
+
+% make the title area
+\maketitle
+
+% As a general rule, do not put math, special symbols or citations
+% in the abstract or keywords.
+\begin{abstract}
+
+3D modeling of building architecture from mobile scanning is a rapidly advancing field.  These models are used in virtual reality, gaming, navigation, and simulation applications.  State-of-the-art scanning produces accurate point-clouds of building interiors containing hundreds of millions of points.  The goal of this report is to describe the current state of the field with regards to surface reconstruction of indoor environments, my contribution to this field so far, and to elaborate on my proposed direction of research.  I discuss how there are two philosophies when generating building models:  to generate a sparse model that only represents the floors, walls, and ceilings of a building, or to generate a dense model that contains all fine detail of the building, including models of all furnitures and objects within the building environment.  Both of these approaches have many applications, and I describe both types of methods in detail in my accomplished work.  For my proposed work, I wish to combine both of these methods in order to improve mesh generation of buildings.  I discuss how each model can be used to improve the other, and specifically how these models can be used to isolate volumetric representations of furniture and objects inside a building to be reconstructed separately.  These objects can benefit from different meshing techniques than the building itself and meshing them in isolation will result in improved visualization, as well as a richer representation for the model.  I also discuss what steps I plan to take to account for noise in the input sensors, which is more severe for building scanning than for other types of scanning, and how to incorporate many different types of sensors to improve modeling.
+
+\end{abstract}
+
+\section{Motivation}
+\label{sec:introduction}
+% Here we have the typical use of a "T" for an initial drop letter
+% and "HIS" in caps to complete the first word.
+
+% motivation
+\IEEEPARstart{L}{aser} scanning technology is becoming a vital component of building construction and maintenance.  During building construction, laser scanning can be used to record the as-built locations of HVAC and plumbing systems before drywall is installed.  In existing buildings, blueprints are often outdated or missing, especially after several remodelings.  Such scans can be used to generate building models describing the current architecture.  Meshed triangulations allow for the efficient representation of the scanned geometry.  In addition to being useful in the fields of architecture, civil engineering, and construction, these models can be directly applied to virtual walk-throughs of environments, gaming entertainment, augmented reality, indoor navigation, and energy simulation analysis.  These applications rely on the accuracy of a model as well as its compact representation.
+
+% figure with pointcloud and models
+\begin{figure*}[t]
+
+	% top row
+	\begin{minipage}[t]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.4cm]{joint/coryf2/coryf2_photo}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.4cm]{joint/coryf2/coryf2_3d_triangles}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.4cm]{joint/coryf2/coryf2_3d_texture_compressed}}
+		\centerline{(c)}\medskip
+	\end{minipage}
+	
+	% bottom row
+	\begin{minipage}[b]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.4cm]{joint/coryf2/coryf2_pointcloud_compressed}}
+		\centerline{(d)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.4cm]{joint/coryf2/coryf2_2d_triangles}}
+		\centerline{(e)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.4cm]{joint/coryf2/coryf2_2d_texture_compressed}}
+		\centerline{(f)}\medskip
+	\end{minipage}
+	
+	\caption{Models generated with the techniques described in this paper:  (a) photograph of scanned area, academic building; (b) surface carving model of this area; (c) surface carving model with texturing; (d) point cloud of captured scans; (e) extruded floor plan model of area; (f) extruded floor plan with texturing.}
+	\label{fig:coryf2}
+
+\end{figure*}
+
+% applications
+Generating an accurate model of indoor environments is an emerging challenge in the fields of architecture and construction for the purposes of verifying as-built compliance to engineering designs~\cite{Bosche10,Xiong13}.  This task is made more challenging by the GPS-deprived nature of these environments~\cite{Liang13}.  Another application that requires an exported mesh to retain as much detail as possible is historical preservation via a virtual reality model~\cite{VillageHeritage,Carving}.  Building energy efficiency simulations can use watertight meshes of the environment to estimate airflow and heat distribution~\cite{EnergyPlus}.  These simulations require simplified meshes as input, since finite element models are difficult to scale.  It is also important to be able to generate an immersive visualization and walk-through of the environment for these applications, so experts can remotely inspect the scanned environment via telepresence, a task that currently requires expensive travel and on-site visits.  Different applications require models of different complexities, both with and without furniture geometry.  The modeling approaches detailed in this report are useful for both types of applications, as shown in the examples in Fig.~\ref{fig:coryf2}.  Fig.~\ref{fig:coryf2}a is a photograph of the scanned area: the hallways of an academic building, encompassing about 1,000 square meters of scanned area.  Fig.~\ref{fig:coryf2}d represents the captured 3D point-cloud of this area.  Figs.~\ref{fig:coryf2}b and~\ref{fig:coryf2}c show a high-detail 3D mesh of 2.7 million triangles generated using the algorithm in Sect.~\ref{ssec:carving}, with and without texturing, respectively.  Figs.~\ref{fig:coryf2}e and~\ref{fig:coryf2}f show a low detail model of 2,644 triangles generated using the approach in Sect.~\ref{ssec:floorplan}, with and without texturing.
+
+% brief overview of different modeling techniques presented
+One of the primary challenges of indoor modeling is the sheer size of the input point-clouds.  Scans of single floors of buildings result in point-clouds that contain hundreds of millions of points, often larger than the physical memory in a personal computer.  Man-made geometry is typically composed of planar regions and sharp corners, but many conventional surface reconstruction schemes assume a certain degree of smoothness and result in rounded or blobby output if applied to these models~\cite{Powercrust,OctreeSculpting,Carving,ProgressiveMesh,Poisson,Eigencrust}.  In addition to large flat regions, building interiors also contain many small details, such as furniture.  A surface reconstruction scheme must be able to represent the large surfaces in a building with an efficient number of elements and preserve their sharp features.  The fine details of furniture are useful for some applications whereas others require furniture to be removed.  In this report, I discuss existing modeling techniques that remove fine details in Sect.~\ref{sssec:background_planefit} and those that preserve these details in Sect.~\ref{sssec:background_3dmodeling}.  I also discuss two surface reconstruction techniques I have developed for 3D point clouds generated by ambulatory systems.  Sect.~\ref{ssec:carving} describes a method that preserves these fine details while remaining robust to registration errors and noise from the input point-cloud, which generates models such as the one shown in Fig.~\ref{fig:coryf2}b.  Sect.~\ref{ssec:floorplan} describes a method that first generates a floor plan of the building environment, then creates a 2.5D model by extruding the floor plan vertically using captured height information.  Such a model represents the floors, walls, and ceilings of a model efficiently, while removing geometry associated with furniture and other objects within the building.  This type of model is shown in Fig.~\ref{fig:coryf2}e.  The output of both of these modeling techniques can be texture-mapped with captured camera imagery~\cite{Cheng14}.  An example of texture-mapping these two modeling processes is shown in Figs.~\ref{fig:coryf2}c and~\ref{fig:coryf2}f.  Lastly, we will show the results of all of these techniques on a variety of data sets in Sect.~\ref{ssec:comparison}.
+
+\section{State of the Field}
+\label{sec:background}
+
+% section that describes general surface reconstruction techniques
+\subsection{Surface Reconstruction}
+\label{ssec:background_surf_recon}
+
+This section describes common techniques for surface reconstruction from input point-cloud data.  These techniques are useful for generating meshes of objects scanned with table-top scanning systems.
+
+% powercrust and the need for noise-reduction
+Powercrust is a volumetric surface reconstruction approach that yields watertight models from point-cloud data~\cite{Powercrust}.  It computes the interior median axis of a shape using the voronoi diagram of the input scan points.  By taking the union of the inner polar balls, the elements of the Delaunay Triangulation that form the interior of the shape can be found, and are used to approximate the modeled volume.  While this approach is popular, one weakness is that it is sensitive to noise in the input scans.  Fortunately, other techniques have improved on this methodology to account for noisy input
+
+% Accounting for noise in volumetric scans
+An approach to account for the noise in the Powercrust algorithm is to remove sufficiently small polar balls from consideration, which are likely to be due to input noise~\cite{NoisyPowercrust}.  Another approach is to perform spectral clustering on the tetrahedralization of the points~\cite{EigencrustShewchuk}.  This approach, dubbed Eigencrust, allows for substantially improved robustness to noise.  An important consideration, though, is that the noise models tested are randomly positioned outlier points and randomly perturbed input points.  Both of these approaches assume that the randomness is independent and identically distributed from point-to-point.  Such characteristics are not the dominant case when dealing with noise from mis-registration of scans, which is the most common source of noise from mobile scanning systems.
+
+% Isosurface and the reign of SDFs
+Another technique used to produce watertight models is to define implicit functions on the scanned volume, and use an isosurface of this volume as the exported mesh.  Once an implicit function is defined, techniques such as Marching Cubes or Dual Contours can be used to mesh the surface~\cite{MarchingCubes,DualContouring}. A popular method for defining this implicit function is to use Signed-Distance Fields~\cite{SignedDistanceFields}.  Another popular approach is Poisson Surface Reconstruction~\cite{Poisson}.  Both of these methods are more robust at mis-registration errors than the previous algorithms.  One downside of their use in the area of modeling man-made objects is that they yield smooth, continuous surfaces.  Such results tend to look overly organic when modeling objects with flat regions or sharp corners.  This issue can be alleviated somewhat by using dual contour isosurface meshing rather than marching cubes, since it preserves sharp edges in the scalar field, but with these methods, the scalar field itself can be overly-smoothed.
+
+% typical hardware set-up for traditional surface reconstruction
+An important note is that traditional surface reconstruction techniques, as described above, are written for and tested with common point-cloud test-sets, such as the Stanford Bunny or Dragon.  These models are scanned with precision 3D scanners that yield relatively low noise and minimal mis-registration when compared to scans of larger areas such as buildings.  These approaches are also designed to model isolated objects.  The goal of my thesis is to model buildings, which are scanned at a much larger scale and produce much higher rates of noise and mis-registration.  While watertight volumetric processing is still useful for my application, different techniques must be applied compared to isolated objects, as discussed in Sect.~\ref{ssec:building_meshing}.
+
+% section on scanning hardware
+\subsection{Scanning Hardware}
+\label{ssec:hardware}
+
+% competing systems
+Traditional industry-standard building scanning uses static scanners.  Such scanners are mounted on tripods, and moved from area to area in the building~\cite{RoomSegmentation,HistWallRecon,BasicPlaneFit}. This scanning process is labor intensive and slow, but results in highly accurate point clouds after stitching.  In order to automate indoor scanning, many mobile systems have been introduced.  Wheeled platforms that carry scanning equipment and are manually pushed through the environment are popular~\cite{Carving, ProbabilisticRobotics}.  Mobility of such systems is limited, since they are unable to traverse rough terrain or stairs easily.  Others have investigated mounting laser range finders on unmanned aerial vehicles~\cite{Quadrotor,QuadrotorMIT}.  Such platforms are agile in that they can scan difficult-to-reach areas.  Such unmanned platforms are limited by short battery life and cannot scan for long durations.
+
+% include system hardware description
+% our system and WHAT WE DO DIFFERENT AND WHY IT IS BETTER!!!!!!!!!
+In this report, I focus on ambulatory scanning platforms, where the sensor suite is carried by a human operator as the operator moves through the building environment~\cite{Sweep,MITBackpack,VillageHeritage}.  These systems allow for rapid data acquisition and can be actively scanning for several hours at a time.  They use 2D LiDAR scanners due to the cost and weight of full 3D laser range finders.  The captured scans are used both to reconstruct the geometry of the environment and to localize the system in the environment over time.  The datasets shown in this paper were generated by a backpack-mounted system that uses 2D LiDAR scanners to estimate the 3D path of the system over time as well as multiple scanners to generate geometry for the environment~\cite{liu2010indoor,Backpack,Localization,NickJournal}.  This system also has multiple cameras collecting imagery during the data acquisition process, which allows for scanned points to be colored or for generated meshes to be textured with realistic imagery~\cite{Cheng14}. 
+
+% Brief bit on localization
+In order to reconstruct the observed geometry, the position and orientation of the scanning system must be estimated for each time-instant during the acquisition.  To localize the datasets presented in this paper, we matched successive 2D scans of a horizontally-oriented scanner in order to estimate the change in 2D position and orientation of the system between scans~\cite{NickJournal}.  These incremental changes in pose are refined by a global graph optimization step that constrains the system path whenever an area is revisited~\cite{toro07}.  These revisits are automatically detected and constrained in order to produce an accurate 2D trajectory of the system.  The elevation of the system is computed using a similar technique with a vertically mounted scanner~\cite{Backpack}.
+
+% generating a pointcloud
+Once the path of the system over time is recovered using the above localization schemes, the pose of each sensor is known at any given time, where pose refers to 3D position and orientation.  A point cloud of the scanned environment can be generated by performing a rigid translation and rotation of scanned points from the sensor's coordinate frame at each timestamp to the world coordinate frame.  These points can then be back-projected to the image plane of the temporally nearest camera image in order to assign color information~\cite{Backpack}.  Fig.~\ref{fig:coryf2}d shows an example of a captured point cloud that is colored with imagery in this manner.
+
+% This section describes the architectural side of BIM
+\subsection{Building Information Models}
+\label{ssec:BIM}
+
+In the architecture community, there is a continuing push for use of a consolidated Building Information Model file format~\cite{AutodeskBIM}.  Such models need to be semantically-rich for all phases of building development, including architectural, structural, mechanical, electrical, plumbing, etc.  Traditionally, each separate aspect needed to be remodeled from scratch, by hand, which introduced errors into the modeling process.
+
+It is important to distinguish between models that are as-designed compared to as-built.  Each phase of building development will produce a design, but it is still important to compare this design to the as-is nature of the building.  3D scanning of building environments is an important technology to be able to compare the result of construction to what was desired.  With current technology, there is still a fair amount of manual intervention that is  required to convert a 3D scan of a building into a suitable BIM file that can be used for such a comparison.
+
+% This section describes building meshing techniques
+\subsection{3D Modeling of Building Environments}
+\label{ssec:building_meshing}
+
+% give a brief overview of the different types of meshing techniques
+% Discuss how the below techniques typically use noise-less input from
+% static scanners, and do not explicitly detail with misregistration or
+% noise.
+There exists an emerging field of techniques used to model different aspects of building geometry from captured scans.  These techniques can be classified into three main categories:  Floor-Plan Generation, Simplified 3D Modeling, and Detailed 3D Modeling.  Floor-plan generation focuses on estimating 2D positions of walls in the building.  Simplified 3D modeling similarly focuses on 3D modeling only the permanent features of a building: floors, walls, and ceilings.  Detailed 3D modeling focuses on modeling all aspects of the scanned geometry, including fine details such as furniture or objects observed in the building.  Note that most of the approaches discussed here were developed to be applied to static scans of buildings, which have very low noise and capture high detail. The focus of my research is to develop modeling techniques for mobile scanning systems, which are much more likely to suffer from mis-registration noise or missing geometry.
+
+% This subsubsection describes floor plan generation techniques
+\subsubsection{Floor-Plan Modeling}
+\label{sssec:background_floorplan}
+
+Floor-plan modeling techniques are based on the idea of sampling positional information of walls within the environment captured by the scans, then using these wall samples to generate a plan composed of line segments or polygons.  The work of Weiss et al use a cart-based system with a horizontal laser scanner~\cite{Weiss05}.  The output scan points are exactly the sample positions of the walls.  The find lines in this scan map with a Hough Transform, which represent walls.  Okorn et al employ a similar method, but their input scans represent a full 3D point-cloud~\cite{Okorn09}.  The wall sample positions are found by computing a top-down histogram of the input points, and areas of high density are classified as vertical surfaces.  The approach I discuss in Sect.~\ref{ssec:floorplan} employs a similar top-down histogram.  Lastly, Mura et al's paper takes a different approach to estimating wall positions~\cite{Mura13}.  They perform region growing in the 3D point-cloud to fine planar regions, which are projected into 2D and treated as potential wall candidates.  A cell complex is then built to volumetrically identify separate rooms in the model.  This approach is the second paper that I know of that performs room partitioning, where the first is my approach as discussed in Sect.~\ref{ssec:floorplan}~\cite{Turner14}.  There are also methods that take a floor-plan as input, and use this information to generate a 3D model of the environment by extruding the defined wall information~\cite{Or05,Lewis98}.  This type of modeling yields aesthetically pleasing results with well-defined floors, walls, and ceilings.
+
+% This subsubsection describes plane fitting for 3D modeling
+\subsubsection{Simplified 3D Modeling}
+\label{sssec:background_planefit}
+
+Since building features are almost entirely planar, a popular approach is to explicitly fit planar elements to the input point-clouds.  Sanchez and Zakhor use PCA plane-fitting to find floors, walls, and ceilings explicitly in the point-cloud~\cite{Victors}. Since this method was applied to ambulatory data, it resulted in missing components, holes, and double-surfacing due to mis-registration.  Xiong et al also perform plane-fitting in a similar fashion, but also analyze the computed planes for the locations of windows and doors, which are represented as holes in the surface~\cite{Xiong13}.  Adan et al find planes by first generating a floor-plan, then extrude the floor-plan into a 3D model~\cite{WallFinder}.  One limitation with these methods is that they are not necessarily watertight.  Other approaches have focused to perform volumetric processing to ensure watertightness when computing simplified 3D models.  Xiao et al find horizontal cross-sections of the building, forming a sequence of 2D CSG models that are then stacked together and simplified~\cite{Museums}.  While this approach does lead to aesthetically-pleasing models, it assumes manhattan-world models, which leads to topological errors if an insufficient number of cross-sections are recovered.  Oseau et al use a voxelization approach, with a follow-up graph-cut step to remove small details in the environment, leaving only floors, walls, and ceilings~\cite{Oesau13}.  This optimization step, however, can also cause significant deformations in the final geometry depending on the input parameters. 
+
+% This subsubsection describes dense 3D modeling
+\subsubsection{Detailed 3D Modeling}
+\label{sssec:background_3dmodeling}
+
+One of the methods used to preserve the detail of furniture in a building scan is to explicitly search and classify for furniture models in the scan.  These techniques attempt to find locations in the input scans that match best with a stored database of known furniture.  The pre-existing model of the recognized piece of furniture is then oriented in the output model.  Nan et al employ this technique, with explicit classification of chairs and tables~\cite{SearchClassifyPointcloud}.  Kim et al also use this method, using a larger library of objects and operating on noisier scans~\cite{Kim12}.  They also discuss how search-classification can allow for change detection across scans of the same area taken at different times.  A major downside of this method is that the classification is only as good as the database.  Objects that are in unexpected orientations or are not in the database are misclassified.  For instance, a sideways chair is misclassified as a table.  One major benefit of this approach is the ability to model the objects independently of the room itself, which I will discuss further in my proposed research in Sect.~\ref{sec:proposed}.  There are also methods that capture fine detail of buildings by attempting to be as accurate to the input point-cloud as possible.  Holenstein et al generate a space-carving model that voxelizes the scanned environment, labeling any voxels intersected by a scan-line line to be interior~\cite{Carving}.  The boundary of the interior voxels is meshed with Marching Cubes.  The advantage of this approach is an increased robustness to mis-registration errors, but the downside is that over-carving can result in the loss of fine detail.  I have extended this approach, which I discuss in Sect.~\ref{ssec:carving}.  Lastly, a popular approach to detailed modeling of environments is Kinect Fusion~\cite{KinectFusion,Kintinuous}.  This method allows for both meshing and tracking, but is limited in that it cannot handle large areas, and the actual meshing approach is a minor extension of Signed-Distance Fields~\cite{SignedDistanceFields}. 
+
+\section{Accomplished Work}
+\label{sec:accomplished}
+
+% give overview of all work accomplished
+%
+%	- facade meshing
+%	- 3d carving
+%	- eigencrust floorplans
+%	- room labeling floorplans
+%
+
+\subsection{Outdoor Facade Meshing}
+\label{ssec:facade}
+
+% introduction to project
+While most of my accomplished work has focused on processing interior building scans, my first project dealt with meshing point-cloud representations of exterior fa\c{c}ades of buildings~\cite{TurnerICIP12}.  Even though this is a different area than what my proposed research will be, it is still important to discuss, since it shows some of the main differences between interior and exterior building modeling, and how approaches must be varied for each circumstance.
+
+In many applications, it is desirable to generate a triangulated geometry for a collected point-cloud.  This geometry needs to be accurate to the original architecture.  My approach for rectilinear surface reconstruction of building fa\c{c}ades with incomplete 3D point-clouds generates geometry for any holes in the point-cloud while preserving flat planes and sharp corners, which are common in modern architecture.  In both interior and exterior modeling, there may be clutter in the environment that prevents complete scanning of all geometry, and gaps in the point-cloud must be dealt with properly.  My approach for fa\c{c}ade reconstruction is not volumetric, so it explicitly identifies and fills any holes in the scans.
+
+For buildings of an appreciable height, the street-level LiDAR scans are taken at a very acute angle with respect to the surface of the building.  Any protrusions from the building cause shadows in the LiDAR and therefore the building is not collected in its entirety, as shown in Figure~\ref{fig:truck_lidar}.  For many applications, a typical solution would be to gather scans from multiple angles.  For the urban reconstruction problem, this tactic cannot be used since the scanner is restricted to street-level.
+
+\begin{figure}[t]
+
+\begin{minipage}[b]{1.0\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{facade/truck_lidar}}
+\end{minipage}
+
+\caption{Locations on the building A, B, C are occluded from the LiDAR collector on the vehicle.}
+\label{fig:truck_lidar}
+
+\end{figure}
+
+Previous attempts to model buildings have assumed that architecture takes a simple polyhedron geometry. This approach ignores minor details of a building fa\c{c}ade, such as windows and ledges when applied on a large scale \cite{Chen07}.  The goal of my method is to preserve as much detail as possible in the reconstructed model geometry.  Any interpolation must preserve the sharp edges of corners that occur within these holes.  This requirement diverges from the typical assumptions of most surface completion methods, which usually result in smoothed surfaces~\cite{Poisson}.
+
+\begin{figure}[t]
+
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=6.0cm]{facade/set1-face800}}
+  \centerline{(a)}\medskip
+\end{minipage}
+\hfill
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=6.0cm]{facade/set1-face801}}
+  \centerline{(b)}\medskip
+\end{minipage}
+%\hfill
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=6.0cm]{facade/set1-face802}}
+  \centerline{(c)}\medskip
+\end{minipage}
+\hfill
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=6.0cm]{facade/set1-face803}}
+  \centerline{(d)}\medskip
+\end{minipage}
+%
+\caption{Demonstration of two-plane sharp hole-filling; (a) point-cloud; (b) MLS sampling; (c) planes used to fit hole; (d) sharp hole-filling.}
+\label{fig:face8-sharp}
+%
+\end{figure}
+
+My approach considers only a single building fa\c{c}ade at a time.  This simplification allows us to assume a relatively flat point-cloud while creating a triangulated geometry.  First, the approach determines the dominant plane of this fa\c{c}ade, then by treating the original points as a depth map on this plane, we uniformly resample these depths over the entire surface using Moving Least-Squares (MLS) smoothing in order to mitigate noise in areas of high sampling, interpolate the areas corresponding to gaps in the point-cloud, and guarantee uniformity of resulting geometry~\cite{Nealen04}.
+
+Let matrix $P \in \mathbb{R} ^{3 \times M}$ be the point-set of a fa\c{c}ade, with $M$ samples, where each column is expressed in ENU coordinates centered at the origin.  Using Principle Components Analysis (PCA), let $ E \Lambda E^T = PP^T $ be the eigenvalue decomposition of this point-set, and $e_{min}$ be the column of $E$ that corresponds to the minimum eigenvalue entry of $\Lambda$.  Defining $\hat{z} = [0\,0\,1]^T$, the dominant normal of the fa\c{c}ade is given by:
+
+\begin{equation}
+\hat{n} = \dfrac{( I_3 - \hat{z} \hat{z}^T ) e_{min} } {|| (I_3 - \hat{z} \hat{z}^T) e_{min} ||}
+\end{equation}
+
+with identity matrix $I_3$.  For ease of computation, we perform a coordinate transform of the point-set to the orthonormal basis $\{ \hat{a}, \hat{z}, \hat{n} \}$, where $\hat{a} = \hat{z} \times \hat{n}$.  Under this coordinate system, the height of a MLS sampling of the point-cloud along $\hat{n}$ can be expressed as
+
+\begin{equation}
+\sum_{p \in P} (p^T \hat{n}) \; exp\Big( - \dfrac{\big( (p-s)^T \hat{a} \big)^2 + \big( (p-s)^T \hat{z} \big)^2 }{h^2} \Big)
+\end{equation}
+
+where $s$ is the sampling position and $h$ is the rate of decay for the MLS estimate.  We chose $h$ to be 20 to 40 cm.  We resample the heights of $P$ uniformly along the dominant plane, defined by the $\{\hat{a},\hat{z}\}$ subspace. The sampling distance chosen is of the order of 1 to 10 cm.
+
+For any MLS sample $s$, if the distance $|s-p|$ is large compared to $h$ for all original points $p \in P$, then the interpolation asymptotically approaches a nearest-neighbor interpolation.  This property yields undesirable discontinuities in the geometry and these holes require additional post-processing in order to accurately model original architecture.
+
+Figure~\ref{fig:extrapolate} shows an example of a full building fa\c{c}ade.  It also shows how the method can be extended to extrapolate missing sections of the building, especially at high elevation where the scans get very sparse.  To determine whether an interpolation sample occurs in a gap area of the point-cloud, we use its distance from the nearest LiDAR point.  This distance threshold is dependent on the sampling density of the LiDAR.  As discussed above, these gaps in the point-cloud are either caused by the transparency of windows or occlusions from protrusions.  If the artificial geometry to be inserted needs to mimic realistic architecture, then it is most probable that the missing mesh is composed of a vertical and horizontal plane.  An example result is shown in Figure~\ref{fig:face8-sharp}.  Note that the planes shown are recessed into the building.  Since the geometry is missed due to being in the shadow of another part of the building, the actual architecture must be indented with respect to the building fa\c{c}ade.  Otherwise, it would have been captured by the LiDAR and there would be no gap.
+
+\begin{figure}[t]
+
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=6.0cm]{facade/set2-curve-points00}}
+  \centerline{(a)}\medskip
+\end{minipage}
+\hfill
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=6.0cm]{facade/set2-curve-screenshot}}
+  \centerline{(b)}\medskip
+\end{minipage}
+%
+\caption{The curvature of the building is preserved when extrapolated; (a) building point-cloud; (b) MLS triangulation.}
+\label{fig:extrapolate}
+%
+\end{figure}
+
+The remaining discussion in this report considers modeling interior environments, which benefit greatly from taking a volumetric approach.  Similar to this section, however, they also need to consider occlusions from clutter during the scanning process and limitation of viewing angle due to access within the building.
+
+\subsection{Detailed Mesh Reconstruction}
+\label{ssec:carving}
+
+% general description of 3D modeling approach
+Many practical applications require the captured geometry of building interiors to preserve as much detail as possible. This detail includes all static objects in the scene, such as furniture or temporary items.  The surface reconstruction method we propose in this section generates a watertight mesh that preserves all details in the original scan points~\cite{Turner13}.
+
+% voxel-specific background
+Mobile mapping systems use range scanners to create a dense 3D point-cloud representation of the environment geometry~\cite{Sweep,Localization}, which can be used to develop full 3D models~\cite{Pons10,Carving}.  One approach to generating models of high detail is to use a classification scheme on the input point-cloud.  Such schemes are capable of preserving the fine detail in the model, such as staircases~\cite{Victors} or furniture~\cite{Kim12, SearchClassifyPointcloud, Shao12}.  Unfortunately, these techniques are heavily dependent on the variance of the database of shapes available and are prone to errors due to mislabeling.  Many surface reconstruction techniques applied to building architecture commonly assume that building geometry is piece-wise planar, with the orientation of planar elements as either perfectly horizontal or vertical.  This assumption allows for plane-fitting to be performed on the input point-cloud, either by a histogram approach or random consensus~\cite{HistWallRecon,Victors,BasicPlaneFit}.  Such approaches do not guarantee watertightness of the resulting mesh and can require substantial post-processing.  While similar techniques exist that ensure watertightness, they are unable to capture fine details~\cite{Museums}. Existing techniques that attempt to preserve fine detail for architecture models often require computationally expensive global optimizations~\cite{Pons10}.  Those approaches work well for a limited modeling environment, but do not scale well.  The largest tested model in~\cite{Pons10} consists of 3.3 million points, whereas the techniques described in this paper are easily applied to models with 115 million points~\cite{Turner13}.  Then, it is desirable to develop techniques that (a) use a volumetric approach to ensure watertightness, (b) preserve sharp, planar features as well as fine detail, and (c) are fast and memory efficient even with large models.
+
+There have been several algorithms that reconstruct surfaces from point-clouds using a volumetric approach via partitioning Delaunay Tetrahedralizations generated from input point clouds~\cite{Powercrust,EigencrustShewchuk}.  The downsides to such techniques are that (a) the complexity of the output surface scales with number of input points, (b) they break down under noise due to scan misregistration, (c) they are optimized for smooth and continuous surfaces, and (d) they require a global optimization step.  These factors limit the scalability of existing approaches to mobile scanning of indoor environments.  While advancements have been made to perform these computations in an efficient and out-of-core manner~\cite{RealTimeEigenCrust,StreamingDelaunay}, the resulting models are too large to be practical for graphical or simulation applications.
+
+Implicit surface reconstruction techniques generate watertight meshes and can be applied to large models using distributed computing techniques~\cite{Poisson,UnorganizedPoints,OutOfCorePoisson,ParallelPoisson}. These techniques are unsuitable for modeling man-made architecture, since output models lack sharp features due to implicit surfacing from Gaussian basis functions.  Additionally, many common triangulation schemes for implicit surfaces result in uniform elements~\cite{DualContouring,MarchingCubes}, which are undesirable for large, flat surfaces that can be modeled just as accurately with fewer elements.  Such techniques also often require mesh smoothing, further reducing accuracy~\cite{Carving}. Algorithms that adaptively mesh an isosurface or simplify an existing mesh rely on the local feature size of a model~\cite{QEM,ProgressiveMesh,Isostuffing,AdaptiveMeshing}.  Models with flat regions or sharp corners, where the curvature approaches zero or infinity, can become degenerate or have poor quality.  Models of building interiors are rich with flat surfaces and right angles.  This prior knowledge supports the use of primitives that have these same aspects.  Examples include voxel and octree structures, which are used in many carving techniques~\cite{OctreeSculpting,Carving,SpaceTime,VoxelSurfaceArea,Yang05,ParallelOctree}.  Such approaches are robust to noise and registration errors, but challenges with voxel representations are memory and computational intensity. The approach described below is a modification of voxel carving to address these issues.  We also introduce memory-efficient data structures that produce models that preserve fine details with an efficient number of elements.  In subsection~\ref{sssec:voxel_carving}, we detail the voxel carving step, which produces a volumetric representation of the scanned environment.  In subsection~\ref{sssec:planar_meshing}, we describe our approach to generate planar surfaces in order to form a watertight mesh of the captured volume.
+
+% voxel carving
+\subsubsection{Voxel Carving}
+\label{sssec:voxel_carving}
+We partition space volumetrically into interior and exterior sets to ensure the boundary between these areas is watertight.  This \textit{interior} and \textit{exterior} volume classification is performed on a voxel grid.  Initially, all voxels are assumed to be \textit{exterior}, referring to any space that never had a line-of-sight with the scanners.  This label applies to the interior volume of solid objects, as well as the area completely outside the building environment.  The process of \textit{carving} refers to relabeling a voxel from \textit{exterior} to \textit{interior}, which occurs when a voxel is found to intersect the line segment from a scanner to a corresponding scan point.  If a laser passes through a voxel, that voxel is considered \textit{interior}.
+
+Additionally, the sweeping nature of the laser scanning process is utilized by also carving voxels that reside between two adjacent scan-lines~\cite{Turner13,Carving}.  As the scanning system moves from pose $t_i$ to pose $t_{i+1}$, the scan-lines $p_{i,j}$, $p_{i,j+1}$, $p_{i+1,j}$, and $p_{i+1,j+1}$ are captured, as shown in Fig.~\ref{fig:carving}a.  These scan-lines are bilinearly interpolated, as shown in Fig.~\ref{fig:carving}b, so that all intersected voxels are carved, which is depicted in Fig.~\ref{fig:carving}c.
+
+% make figure of prism carving and interpolation
+\begin{figure*}[t]
+
+  \begin{minipage}[b]{0.3\linewidth}
+  \centerline{\includegraphics[height=2.7cm]{carving/diagrams/triangle_prism_carve_a}}
+  \centerline{(a)}\medskip
+  \end{minipage}
+  \begin{minipage}[b]{0.3\linewidth}
+  \centerline{\includegraphics[height=2.7cm]{carving/diagrams/triangle_prism_carve_b}}
+  \centerline{(b)}\medskip
+  \end{minipage}
+  \begin{minipage}[b]{0.3\linewidth}
+  \centerline{\includegraphics[height=2.7cm]{carving/diagrams/triangle_prism_carve_c}}
+  \centerline{(c)}\medskip
+  \end{minipage}
+
+\caption{(a) The input point-cloud is used in conjunction with the track of each scanner to define interior space to carve; (b) carving is performed using ray-tracing from scanner location to an interpolation of the input points; (c) the result is a set of voxels labeled as {\it interior}.}
+\label{fig:carving}
+\end{figure*}
+
+% voxel data structure
+In most common voxel representations, memory usage is proportional to the volume represented.  For sizeable models, this memory footprint rapidly becomes intractable, necessitating splitting models into smaller chunks and processing each separately~\cite{Carving,Kintinuous}.  This step adds redundant computation and storage overhead.
+
+Rather than storing all relevant voxels in memory, we propose a data structure that implicitly represents the interior and exterior voxels by only explicitly storing the boundary voxels.  A boundary voxel is defined to be one that is labeled as exterior, but has at least one face incident to a voxel labeled interior.  The number of boundary voxels is proportional to the surface area of a model, so storing the boundary only requires $O(n^2)$ memory, whereas the full volume would require $O(n^3)$ memory to store, where $n$ is the characteristic length of a model.
+
+Fig.~\ref{fig:boundary_carving} demonstrates in 2D how a voxel representation of the full model can be built from a starting configuration using ray-tracing as a primitive operation, while still respecting the above invariants.  The starting configuration for the 2D map is shown in Fig.~\ref{fig:boundary_carving}a, with a single interior voxel represented using four boundary voxels.  This interior voxel is initialized to be at the scanner's start position, which is known to be interior.  Dark green lines indicate faces bordering interior voxels.  Recall that interior voxels denoted in white are not explicitly stored in the map while the boundary voxels, denoted in light green, are stored explicitly.  If an external voxel $v$ is designated to be carved, then each of these neighboring exterior voxels, $v^{\prime}$, is added to the map as boundary voxels.  Lastly, $v$ is removed from the map, which now represents that $v$ is part of the interior volume, as seen in Fig.~\ref{fig:boundary_carving}c.  Any carving attempt on a voxel that is not in the map can be ignored, since all carving initiates from within the interior volume.  By using only this operation, the map invariants are preserved and consistently define an interior volume.
+
+% show boundary carving
+\begin{figure}[t]
+
+  \centerline{\includegraphics[width=0.85\linewidth]{carving/diagrams/boundary_voxel_carving}}
+  \centerline{(a)\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,(b)\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,(c)\,\,\,\,\,}
+\caption{A 2D example of carving a voxel.  Stored boundary voxels are shown in green.  White voxels are not explicitly stored. (a) The initial map configuration; (b) voxel $v$ is carved by removing $v$ from the map and adding additional boundary voxels $v^{\prime}$ to the map; (c) $v$ is represented as interior volume.}
+\label{fig:boundary_carving}
+\end{figure}
+
+% surface reconstruction and why planarity first is good for us
+\subsubsection{Planar Surface Meshing}
+\label{sssec:planar_meshing}
+
+Our procedure for surface reconstruction of voxels can be broken into two parts.  First, estimates of planar regions are found around the boundary faces of these voxels.  These regions are formed from connected sets of voxel faces, all of which are positioned on best-fit planes.  Second, each region is triangulated, forming a mesh.  This triangulation lies along the best-fit plane for each region, with elements whose sizes are proportional to the size of the region.
+
+We wish to encourage the output surface to contain large planar regions.  Such regions accurately model most man-made structures and the dominant surfaces in a building environment: the floors, walls, and ceiling.  Since the voxels are a discretized representation of the volume, any flat surface of the environment that is not axis-aligned is represented as a zig-zag pattern of voxels.  By fitting planes that only approximate the voxel faces, the output model can contain surfaces that are not axis-aligned.  The approximating planes are found by performing Principle Component Analysis (PCA) on connected subsets of voxel faces~\cite{PCA}.  Adjacent regions of voxel faces are progressively merged by attempting to model their union with a single best-fit plane.  In order to yield a more aesthetically pleasing output, we further relax these region definitions.  If two adjacent regions are fit by planes whose normal vectors are within $15^{\circ}$, then they are replaced by a single region defined by their union.  The result of this processing yields plane definitions that closely resemble an intuitive labeling of the floors, walls, and ceilings. 
+
+Once the set of voxel faces has been partitioned into planar regions, it is necessary to triangulate these regions.  Taking advantage of the existing voxel grid ensures that each region is represented with good quality triangles.  This grid allows for regions to be triangulated with a 2D variant of Isosurface Stuffing techniques, which provide strict bounds on resulting triangle angles~\cite{Isostuffing}.  An example region of voxel faces is shown in Fig.~\ref{fig:triangulation}a.  Since this region is best-fit by a plane that is not axis aligned, the region is composed of voxel faces in a zig-zag pattern.  The voxel faces that are most aligned with the normal vector of the region's plane, shown in red, are considered the dominant faces of the region.  These dominant faces are projected along their corresponding axis to generate an axis-aligned 2D projection of the region.  This projection is shown with black dashed lines in Fig.~\ref{fig:triangulation}a.  The triangulation is found by populating a quadtree that is aligned to the projected grid with the faces of this region.  An example of this quadtree is shown in Fig.~\ref{fig:triangulation}b.  The tree is triangulated by placing vertices at the center and corners of the leaf nodes, as shown in Fig.~\ref{fig:triangulation}c.  This step results in larger triangles for larger leaf nodes, while still controlling the quality of the output triangles.  This triangulation is projected back onto the plane defined by the region, to result in triangulated representation of this region in 3D space.
+
+% show cartoon of triangulation of region, including quadtree
+\begin{figure}[t]
+
+	\begin{minipage}[b]{0.48\linewidth}
+		\centerline{\includegraphics[height=5.0cm]{carving/project_plane/dominant_axis_project_a}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.48\linewidth}
+		\centerline{\includegraphics[height=5.0cm]{carving/project_plane/2dtri2}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	
+	\begin{minipage}[b]{0.48\linewidth}
+		\centerline{\includegraphics[height=5.0cm]{carving/project_plane/2dtri3}}
+		\centerline{(c)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.48\linewidth}
+		\centerline{\includegraphics[height=5.0cm]{carving/snapshot_triangles_corner00}}
+		\centerline{(d)}\medskip
+	\end{minipage}
+
+	\caption{(a) The dominant faces of a planar region (shown in red) are projected to the dominant axis-aligned plane; (b) projected faces represented in a quadtree structure to reduce number of elements; (c) this quadtree can be triangulated efficiently while ensuring high-quality triangles; (d) an example output of the triangulation of three regions in the corner of a room.}
+	\label{fig:triangulation}
+
+\end{figure}
+
+To ensure that the borders between planar regions are represented sharply, the vertices that are shared by multiple regions are snapped onto the intersection of those regions.  This step yields a watertight mesh across regions, as can be seen in the intersection of three regions at the corner of a room in Fig.~\ref{fig:triangulation}d.
+
+% describe final result
+This approach results in models that preserve geometric detail up to the voxel resolution.  Improving the input resolution allows for finer detail to be represented in the output model, at the cost of increased run-time.
+
+\subsection{Simplified Mesh Reconstruction and Floor Plan Generation}
+\label{ssec:floorplan}
+
+% motivation for simpler geometry
+While the technique described in Sect.~\ref{ssec:carving} has many applications, it is often necessary to generate models rapidly or with very few elements, that do not represent objects such as furniture in the environment.  Such models are especially useful for building simulation applications, which are restrictive in the number of elements used to represent building geometry~\cite{EnergyPlus}.  In this section, we describe a surface reconstruction technique that first constructs a 2D floor plan of the area for each level of the building, then extrudes these floor plans into 3D models using estimates of the floor and ceiling heights in each room scanned.  We refer to this process as 2.5D modeling~\cite{Turner14}.
+
+% floor plan specific background
+
+A number of simplified building modeling algorithms have been developed, most of which assume vertical walls, rectified rooms, and axis-alignment~\cite{Museums,WallFinder}.  One of the major limitations of these techniques is that they are developed only for axis-aligned models or fundamentally change the topology of minor areas, such as ignoring doorways, shapes of rooms, or small rooms entirely.  Our approach described below generates a 2D floor plan of the building, then uses wall height information to generate a 3D extrusion of this floor plan.  Such blueprint-to-model techniques have been well-studied~\cite{Or05,Lewis98}, but rely on the original building blueprints as input.  Prior work on automatic floor plan generation use dense 3D point-clouds as input, and take advantage of the verticality of walls to perform histogram analysis to sample wall position estimates~\cite{Okorn09,Eigencrust}, which are in the same format as a grid map for particle filtering~\cite{toro05}.  In situations where dense 3D point-clouds are available, we apply similar techniques to recover point estimates of wall positions.
+
+A novel contribution of our method is the use of room labeling to enhance building models.  One motivation for existing work has been to capture line-of-sight information for fast rendering of building environments~\cite{WalkthroughRendering}, whereas others have partitioned environments into segments for efficient localization and tracking~\cite{SpectralClustering}.  These approaches are meant to create easily recognizable subsections of the environment, whereas our proposed room labeling technique uses geometric features to capture semantic room definitions for both architectural and building energy simulation applications.
+
+% wall sampling
+\subsubsection{Wall Sampling}
+\label{sssec:wall_sampling}
+The input data used during floor plan generation consist of points in the ($x$,$y$) horizontal plane, which we call wall samples.  These points depict locations of walls or vertical objects in the environment.  We assume that interior environments satisfy ``2.5-Dimensional'' geometry:  all walls are vertically aligned, and floors and ceilings are perfectly horizontal.  Many mapping systems use a horizontal LiDAR scanner to estimate a map of the area as a set of wall sample positions in order to refine estimates for scanner poses~\cite{MITBackpack,NickJournal}.  Such 2D wall samples are often generated during the localization process and do not require separate processing to produce.  These mobile mapping systems often have additional sensors capable of estimating floor and ceiling heights at each pose~\cite{Backpack,Quadrotor}.  The input to our algorithm is a set of 2D wall samples, where each sample is associated with the scanner pose that observed it, as well as estimates of the floor and ceiling heights at the wall sample location.
+
+An alternate method of computing wall samples is to subsample a full 3D point-cloud to a set of representative 2D points~\cite{Turner14,Eigencrust,Okorn09}.  This process cannot be done in a streaming fashion, since it requires a complete point cloud as input, but it can provide more accurate estimates for wall positions than a real-time particle filter.  Such an approach is useful when representing dense, highly complex point clouds with simple geometry.  Under the 2.5D assumption of the environment, wall samples can be detected by projecting 3D points onto the horizontal plane.  Horizontal areas with a high density of projected points are likely to correspond to vertical surfaces.  This approach works well to capture permanent wall features and ignore furniture and other interior clutter.
+
+% cropping the pointclouds based on level, or separating gridmap by floors
+This approach creates models by generating a floor plan separately for each level in the building.  Some localization systems that rely on 2D grid maps of wall samples are capable of detecting when the operator moves from one level to another and automatically partition their output grid maps accordingly~\cite{MITBackpack}.  If the wall samples are generated from point-clouds, then a histogram approach can be used to separate the point-cloud by levels~\cite{Eigencrust}. Fig.~\ref{fig:heighthist}a shows an example point-cloud, colored by height, which contains multiple levels.  By computing a histogram along the vertical-axis of the point-cloud, it is possible to find heights with high point density, which indicates the presence of a large horizontal surface.  An example of this process is shown in Fig.~\ref{fig:heighthist}b, where peaks in the histogram correspond to the floors and ceilings of each scanned level in the building.  Points scanned from above, in a downward direction, are used to populate a histogram to estimate the position of each floor, and the histogram used to estimate the position of each ceiling is populated by points scanned from below.  The local maxima of these two histograms show locations of likely candidates for floor and ceiling positions, which are used to estimate the number of scanned levels and the vertical extent of each level.  Fig.~\ref{fig:heighthist}c shows the final extruded mesh with all three scanned levels.
+
+% show example histogram and partitioning
+\begin{figure}[t]
+
+	\centerline{\begin{minipage}[c]{0.45\linewidth}
+		\centerline{\includegraphics[height=5.5cm]{floorplan/cory3story/points_LEFT}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[c]{0.45\linewidth}
+		\centerline{\includegraphics[height=6.5cm]{floorplan/cory3story/hist}}
+		\centerline{(b)}\medskip
+	\end{minipage}}
+	\begin{minipage}[c]{0.9\linewidth}
+		\centerline{\includegraphics[height=3.5cm]{floorplan/cory3story/mesh}}
+		\centerline{(c)}
+	\end{minipage}
+	
+	\caption{An example point-cloud partitioning by height: (a) the input point-cloud, showing geometry for three levels; (b) the vertical histogram showing estimates of each building level height; (c) the produced mesh of this building scan.}
+	\label{fig:heighthist}
+
+\end{figure}
+
+% border generation
+\subsubsection{Floor Plan Generation}
+\label{sssec:floorplan}
+For each scanned level of the building, we generate a 2D floor plan by partitioning space into \textit{interior} and \textit{exterior} domains, in the same manner as in Sect.~\ref{ssec:carving}.  The boundary between these two domains are exported as the building walls in the floor plan.  I have published two different techniques that perform this labeling for floor-plan generation.  The first technique adapts the Eigencrust algorithm to a 2D triangulation in order to use spectral clustering on a Delaunay Triangulation of the wall samples to define interior and exterior volumes~\cite{Eigencrust,EigencrustShewchuk}.
+
+% METHOD FROM 3DimPVT 2012 PAPER
+
+\begin{figure}[t]
+
+\begin{minipage}[b]{1.0\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.8cm]{crust/intersect_angles}}
+\end{minipage}
+
+\caption{The angles of intersection between two triangles $u$ and $v$, which share the edge $\overline{s_1 s_2}$. These values are used in computing weights between triangle pairs.}
+\label{fig:intersect_angles}
+
+\end{figure}
+
+The Eigencrust algorithm first computes the 2D Delaunay Triangulation, $T$, for the set of wall samples plus four bounding box corners.  Eigencrust constructs a sparse graph where the nodes represent triangles and edges are placed between the nodes with weights corresponding to the relative geometry of the triangles.  Edges with positive weights indicate that triangles should have the same labeling, while negative weights indicate that the triangles connected should be labeled oppositely.  Generalized eigensystems are solved in order to determine the best triangle labelings to fit these connections.  For our 2D varient of Eigencrust, we keep the same criteria for placing edge weights as in \cite{EigencrustShewchuk}, but modify the negative edge weight values.  We have additional information of normal vectors for each sample location. If a negative edge is placed between two triangles $u$ and $v$, we use the weighting:
+
+\begin{equation}
+w_{u,v} = - e ^ {4 + 4 cos \phi + 2 sin \theta_1 + 2 sin \theta_2}
+\label{neg_edge_weight}
+\end{equation}
+
+where these parameters are shown in Figure~\ref{fig:intersect_angles}.  This weighting is very close to the one used in \cite{EigencrustShewchuk}.  The value $\phi$ is defined as the angle at which the circumcircles of $u$ and $v$ intersect.  The intersection of the triangles $u$ and $v$ is a line segment whose endpoints are samples $s_1$ and $s_2$, which have normal vectors $\vec{n}_1$ and $\vec{n}_2$ respectively.  The values of $\theta_1$, $\theta_2$ are defined to be the angles between $\overline{s_1 s_2}$ and $\vec{n}_1$, $\vec{n}_2$, respectively.  This weight is defined to have a large magnitude when both the normal vectors are perpendicular to the line $\overline{s_1 s_2}$, which is a strong indication of a wall in the original point cloud.
+
+We can constrain some triangles to be interior or exterior based on a priori information.  The label ``inside'' refers to locations of open area within a building where a person can exist.  The term ``outside'' refers to all other areas, which include both the exterior of the building as well as the areas inside walls or other solid spaces.  We can immediately force the label of ``outside'' to any triangles connected to the bounding box corner vertices.  If the pose information for the scanner is available, we can force the label of ``inside'' to a subset of triangles.  First, we investigate whether the 2D line-of-sight from a scanner pose to a scan sample crosses triangles.  If the center 50\% of this laser travel distance crosses a triangle, that triangle is intersected by that scan line.  If a triangle is intersected by 10 or more scan lines, it is assumed to be ``inside''.  Second, all triangles that contain a pose position of a scanner are marked as interior.  If a mobile scanning system is used, then the path traversed by that system can also be used to mark interior triangles.  Each pair of adjacent pose positions represents a line segment in 2D space.  If both of these poses contributed scans to the wall sample set, then any triangles that are intersected by this line segment are also constrained to be interior.  The remaining triangles are labeled inside or outside by solving generalized eigenvalue systems that minimizes the total positive edge weights that connect oppositely labeled triangles and negative edge weights that connect triangles with the same labeling \cite{EigencrustShewchuk}.
+
+Once all triangles have been labeled as either ``inside'' or ``outside'', the boundary edges between the two groups are taken as the floor-plan boundary representation of walls.  Since there may exist areas in the building geometry that are insufficiently scanned or errors incurred during processing, it is important to utilize common architectural patterns to reduce errors in these computed walls.  Additionally, applications may require a floor plan to be composed of parametric lines and curves.  Local model-fitting approaches such as region growing are sub-optimal because unconnected architectural features may use the same geometric model.  For example, the back walls in a row of offices may lie on the same plane, even though they are in different rooms. Since we need to fit both curves and straight lines simultaneously, a reasonable technique for this situation is one that is non-local and flexible, such as Random Sample Consensus (RANSAC).
+
+We apply RANSAC to the subset of samples used as vertices in the boundary edges $B$.  Each iteration randomly picks three samples from this set that have not yet been associated with a model.  These three points uniquely define a circle.  A line of best fit can also be obtained for these points.  Both the circle and the line models are compared to the subset of samples still unassigned.  Inlier sets for both of these models are computed.  An inlier is an unassigned sample that is both within a threshold distance of a model and whose normal vector is within a threshold angle to the model's normal vector at that location.  Only models that exceed a specified minimum number of inliers are considered.  The line or circle model found with the smallest average error is returned as a valid model and its inlier vertices are no longer considered for subsequent models.
+
+The result of this processing is a simplified, watertight 2D boundary that represents the walls in the floor-plan.  Figure~\ref{fig:cory_three_results} shows this approach as applied to multiple levels of a building, and compares these results to the ground-truth floor plans for that building.
+
+\begin{figure*}[t]
+
+\begin{minipage}[b]{1.0\linewidth}
+  \centering
+  \centerline{\includegraphics[height=5.1cm]{crust/cory_three_results/cory_three_points}}
+\end{minipage}
+\centerline{(a)}
+\linebreak
+
+% Floor #2
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{crust/cory_three_results/cory_three_2_wall_samples}}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{crust/cory_three_results/backpack_cory_three_2_final_triangles}}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{crust/cory_three_results/cory_three_2_boundary_snapped}}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{crust/cory_ground_truth/03_4_overlay}}
+\end{minipage}
+\centerline{(b)}
+\linebreak
+
+% Floor #1
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.2cm]{crust/cory_three_results/cory_three_1_wall_samples}}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{crust/cory_three_results/backpack_cory_three_1_final_triangles}}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.2cm]{crust/cory_three_results/cory_three_1_boundary_snapped_labeled}}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{crust/cory_ground_truth/03_3_overlay}}
+\end{minipage}
+\centerline{(c)}
+\linebreak
+
+% Floor #0
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{crust/cory_three_results/cory_three_0_wall_samples}}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{crust/cory_three_results/cory_three_0_triangles}}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{crust/cory_three_results/cory_three_0_boundary_snapped_labeled}}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{crust/cory_ground_truth/03_2_overlay}}
+\end{minipage}
+\centerline{(d)}
+\linebreak
+
+\caption{(a) Full point cloud for three-story model, taken with mobile scanning system; (b-d) Processing of each story, with (left to right) wall sample locations, triangulation labeling, watertight curve-fit model, and comparison against ground-truth blueprints.}
+\label{fig:cory_three_results}
+
+\end{figure*}
+
+% METHOD FROM VISIGRAPP PAPER
+
+While the above method for floor-plan generation produces well-simplified and watertight models, the global optimization step is often sensitive to mis-registration in the input point-cloud or large gaps in the scans.  These sorts of errors can cause mislabeling for large areas in the final floor-plan, even if the error in the point-cloud is localized to a small region.  For this reason, I published another approach to floor-plan generation that does not use a global optimization step, but rather uses much the same approach as the carving method described in Sect.~\ref{ssec:carving}.  This method again again computes a Delaunay Triangulation of the input wall samples in order to define a volumentric representation, but this time each triangle is labeled as interior or exterior based on line-of-sight information from the input scanner positions~\cite{Turner14}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.9\linewidth]{floorplan/algorithm/carving/carving_full_figure}
+  \caption{Example of carving process to find interior triangles:  (a) wall samples (in blue) with path of scanner (in green); (b) Delaunay Triangulation of wall samples; (c) laser scans from each pose (in red); (d) triangles that intersect with laser scans (in pink), used as interior triangles, with building model border (in blue).}
+  \label{fig:floorplan_creation}
+\end{figure}
+
+Initially, all triangles are considered exterior.  For every scanner position over time, the line segments from the scanner's position to each associated wall sample are considered.  If a triangle is intersected by one of these line segments, then it must be interior, since the scan was not occluded by any solid objects.  Each such intersected triangle is relabeled to be interior.  This process is similar to the carving process described in Sect.~\ref{ssec:carving}, but traces 2D lines across triangles, rather than 3D lines across voxels.
+
+Fig.~\ref{fig:floorplan_creation} demonstrates an example of this process.  Fig.~\ref{fig:floorplan_creation}a shows the input wall samples, in blue, as well as the path of the mobile mapping system, in green.  These points are triangulated, as shown in Fig.~\ref{fig:floorplan_creation}b.  The line-of-sight information is analyzed from each pose of the system, demonstrated by the laser scans from each pose to its observed wall samples in Fig.~\ref{fig:floorplan_creation}c.  The subset of triangles that are intersected by these laser scans are considered interior.  The interior triangles are shown in pink in Fig.~\ref{fig:floorplan_creation}d, denoting the interior volume of the reconstructed building model.  The border of this building model is shown in blue, denoting the estimated walls of the floor plan.
+
+% room labeling
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\linewidth]{floorplan/algorithm/room_seeds/room_seeds_full_figure}
+  \caption{Example room seed partitioning on an interior triangulation: (a) the room seed triangles, and their corresponding circumcircles; (b) room labels propagated to all other triangles.}
+  \label{fig:roomlabeling}
+\end{figure}
+
+\subsubsection{Room Labeling}
+\label{sssec:rooms}
+
+Once we have a volumetric partitioning that defines the interior space of a building, we can use this information to model individual rooms inside the building.  We define a \textit{room} to be a connected subset of the interior triangles in the building model.  Detected rooms should match with real-world architecture, where separations between labeled rooms are located at doorways in the building.  We model room labeling as a graph-cut problem.  First, a rough estimate for the number of rooms and a seed triangle for each room is computed.  A seed triangle is representative of a room, where every room to be modeled has one seed triangle.  These seeds are used to partition the remainder of interior triangles into rooms.  This process typically over-estimates the number of rooms, so prior knowledge of architectural compliance standards is used to evaluate each estimated room geometry.  Using this analysis, the number of ill-formed rooms is reduced, providing an update on the original seed points.  This process is repeated until the set of room seeds converges.
+
+We use the Delaunay property of the triangulation to identify likely seed triangle locations for room labels.  It is unlikely that the circumcircles of the interior triangles intersect the boundary walls of the carved floor plan, which causes these circles to overlap only interior area.  Each triangle's circumradius provides an estimate of the local feature size at its location on the floor plan boundary polygon.  An example of this process is shown in Fig.~\ref{fig:roomlabeling}, with the highlighted triangles in Fig.~\ref{fig:roomlabeling}a showing the chosen seed locations. Triangles with larger circumradii are likely to be more representative of their rooms than those with smaller circumradii.  We form the initial set of room seeds by finding all triangles whose circumcircles are local maxima.  That is, a seed triangle will have a circumcircle with a larger radius than any other circumcircle that intersects it. This process selects the largest triangles that encompass the space of rooms as the seeds for room labeling.  Fig.~\ref{fig:roomlabeling}b shows example seed triangles and their corresponding circumcircles.  The result is an estimate of the number of rooms and a rough location for each room.
+
+All interior triangles in the floor plan are then associated with one of these seeds, to form the total area of each room.  This step can be performed as a graph-cut on the dual of the triangulation.  Specifically, each triangle is a node in the graph, with the edge weight between two abutting triangles as the length of their shared side.  Performing a min-cut on this graph partitions rooms to minimize inter-room boundary length.  In other words, rooms are defined to minimize the size of doors.  This process propagates the room labels to every triangle, and the boundaries between rooms are composed of only the smallest edges in the triangulation.  The result of this process is shown in Fig.~\ref{fig:roomlabeling}c.
+
+The initial room seeds typically over-estimate the number of rooms, since a room may have multiple local maxima.  This case is especially true for long hallways, where the assumption that one triangle dominates the area of the room is invalid.  The solution is to selectively remove room seeds and redefine the partition. A room is considered a candidate for merging if it shares a large perimeter with another room.  Ideally, two rooms sharing a border too large to be a door should be considered the same room.  By Americans with Disabilities Act Compliance Standards, a swinging door cannot exceed 48 inches in width~\cite{ADACompliance}.  Accounting for the possibility of double-doors, we use a threshold of 2.44 meters, or 96 inches, when considering boundaries between rooms.  If two rooms share a border greater than this threshold, then the seed triangle with the smaller circumradius is discarded.  With a reduced set of room seeds, existing room labels are discarded and the process of room partitioning is repeated.  This iteration repeats until the room labeling converges.
+
+% Height estimation by room
+\subsection{2.5D Model Extrusion and Simplification}
+\label{ssec:extrusion}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\linewidth]{floorplan/algorithm/height_extrusion/height_extrusion_full}
+  \caption{Example of creating a 3D extruded mesh from 2D wall samples:  (a) walls of generated floor plan with estimated height ranges; (b) floor and ceiling heights are grouped by room; (c) simplification performed on walls; (d) floor and ceiling triangles added to create a watertight mesh. }
+  \label{fig:heightextrusion}
+\end{figure}
+
+Partitioning the floor plan model into separate rooms is useful for both model refinement and 3D mesh extrusion.  In order to generate a 3D mesh, we extrude the floor plan vertically using estimates of the floor and ceiling height at each wall sample location.  These heights estimates are often very noisy, due to clutter in the room, or the sparsity of samples. Fig.~\ref{fig:heightextrusion}a shows an example room with these initial height estimates.  The height estimates of samples within each room are combined to form a single floor height and a single ceiling height.  By taking the median floor and ceiling heights in each room, the resulting model still captures accurate geometry and variations in ceiling heights across the building, but ensures that each room is modeled simply and sharply.  The result of this median filtering is shown in Fig.~\ref{fig:heightextrusion}b.
+
+In many applications, it is useful to reduce the complexity of the floor plan representation, so that each wall is represented by a single line segment.  This step is often desirable in order to attenuate noise in the input wall samples or to classify the walls of a room for application-specific purposes.  We simplify wall segments using a variant of QEM~\cite{QEM,Turner14}. Performing this step after room partitioning allows for the fine details in the doorways between rooms to be preserved, but the large surfaces within a room to be simplified more aggressively.  Fig.~\ref{fig:heightextrusion}c shows the results of this simplification process.  The floor and ceiling mesh is is taken from the simplified 2D triangulation of the floor plan, as shown in Fig.~\ref{fig:heightextrusion}d.
+
+% model improvement through the magic of room labels
+\subsubsection{Model Refinement using Room Labels}
+\label{sssec:trimming}
+
+% figure showing trimming for floorplans, pointclouds, carvings
+\begin{figure}[h!]
+
+	% top row: floorplan
+	\centerline{\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[height=6.0cm]{joint/office/floorplan_notrim}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[height=5.55cm]{joint/office/floorplan_withtrim}}
+		\centerline{(b)}\medskip
+	\end{minipage}}
+	
+	% middle row: pointcloud
+	\centerline{\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[height=7.0cm]{joint/office/pointcloud_notrim}}
+		\centerline{(c)}\medskip
+	\end{minipage}
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[height=7.0cm]{joint/office/pointcloud_withtrim}}
+		\centerline{(d)}\medskip
+	\end{minipage}}
+	
+	% bottom row: carving
+	\centerline{\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[height=7.0cm]{joint/office/carving_notrim}}
+		\centerline{(e)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[height=7.0cm]{joint/office/carving_withtrim}}
+		\centerline{(f)}\medskip
+	\end{minipage}}
+	
+	\caption{Using room labels to trim and improve models.  Top-down view of: (a) Floor plan before room trimming; (b) floor plan after trimming; (c) point cloud before trimming; (d) point cloud after trimming; (e) surface carving before trimming; (f) surface carving after trimming.}
+	\label{fig:trimming}
+
+\end{figure}
+
+% trimming and improving floorplan by rooms
+Room labeling within a model provides an effective mechanism to prevent misrepresentation of poorly scanned areas.  The mobile scanning system does not necessarily traverse every room and may only take superficial scans of room geometry while passing by a room's open doorway.  When a room is not entered, the model is unlikely to capture sufficient geometry and therefore it is necessary to remove this poorly scanned area from the model.  If none of the triangles for a room within the floor plan are intersected by the scanner's path, we can infer the room is never entered.  The room's triangles are then relabeled from interior to exterior, removing it from the floor plan.  Figs.~\ref{fig:trimming}a and~\ref{fig:trimming}b show an example floor plan before and after such trimming occurs, respectively.  Note the removal of a sharp extrusion in the bottom-right corner, which was a partial scan through a window.
+
+% removing explosions in 3d carving using floorplans
+Similar refinement can be used to improve the 3D carving method described in Sect.~\ref{ssec:carving}.  Due to the nature of voxel carving, laser scans that pass through a building window or open doorway can capture geometry outside of the desired scanned area.  Since the outside volume is only observed from a few angles, the resulting carving produces undesirable artifacts.  Using the 2.5D extruded floor plan, we can automatically remove scans from the input point cloud that fall outside our desired area.  Figs.~\ref{fig:trimming}c and~\ref{fig:trimming}d show the corresponding point clouds before and after the result of this trimming, colored by height with the ceiling points removed.  Any scans that pass through windows or doorways are removed.  As a result, the surface carving of these point clouds, as shown in Figs.~\ref{fig:trimming}e and~\ref{fig:trimming}f respectively, can be improved by reducing these undesirable artifacts.
+
+\subsection{Comparison of Meshing Techniques}
+\label{ssec:comparison}
+
+% show pictures of results of each section: pointclouds, 3D, 2D, textured
+
+% houston figure
+\begin{figure*}[t]
+
+	% top row
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[height=2.7cm]{joint/houston/houston_3D_interior_2}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[height=2.7cm]{joint/houston/results_houston_2_3d_compressed}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[height=2.7cm]{joint/houston/houston_2D_interior_2}}
+		\centerline{(c)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[height=2.7cm]{joint/houston/results_houston_2_2d_compressed}}
+		\centerline{(d)}\medskip
+	\end{minipage}
+	
+	% bottom row
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[height=2.7cm]{joint/houston/houston_3D_interior_3}}
+		\centerline{(e)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[height=2.7cm]{joint/houston/results_houston_3_3d_compressed}}
+		\centerline{(f)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[height=2.7cm]{joint/houston/houston_2D_interior_3}}
+		\centerline{(g)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[height=2.7cm]{joint/houston/houston3_2_compressed}}
+		\centerline{(h)}\medskip
+	\end{minipage}
+
+	\caption{Modeling results of hotel lobby: (a) Desk area modeled with surface carving; (b) texture-mapping applied; (c) area modeled with floor plan extrusion; (d) texture-mapping applied; (e) main lobby area modeled with surface carving; (f) texture-mapping applied; (g) area modeled with floor plan extrusion; (h) texture-mapping applied.}
+	\label{fig:houston}
+
+\end{figure*}
+
+% discuss data product size (compare output of 2D vs 3D meshing)
+The resulting meshes of the methods described in Sect.~\ref{ssec:carving} and~\ref{ssec:floorplan} are each useful for different applications.  Fig.~\ref{fig:houston} shows the results of modeling the scans collected in a hotel lobby in Houston, TX.  The input point clouds for this model consisted of 70.4 million points, which comprised 5.16 GB on disk.  The generated models cover 2317 square meters, or about 25,000 square feet.  The surface carving model, as shown in Figs.~\ref{fig:houston}a and~\ref{fig:houston}e, is represented by 2.65 million triangles.  The extruded floor plan, as shown in Figs.~\ref{fig:houston}c and~\ref{fig:houston}g, is modeled with 2,944 triangles.  This reduction by a factor of a thousand means that finer details in the model such as furniture or drop ceilings are not present, but can aid in many applications, including texture-mapping~\cite{Cheng14}.
+
+% discuss runtime and memory usage of each process
+Run-time analysis was performed on the dataset shown in Fig.~\ref{fig:pier15}.  The input to this dataset contains 25 million points.  The code was run on a laptop with an Intel i7-2620M processor with 8 GB of RAM.  All approaches presented in this paper were implemented in C++ as single-threaded programs.  The voxel carving method described in Sect.~\ref{ssec:carving}, at 5 centimeter resolution, took 55 minutes of processing time.  The surface reconstruction of these voxels took 1 minute and 2 seconds.  Previous voxel carving schemes processed similar models of 15 million points in 16 hours at the same resolution~\cite{Carving}.  Computation time was recorded for this same dataset with a resolution of 2~cm.  Voxel carving took 12 hours and 10 minutes for this resolution, whereas surface reconstruction took 9.5 minutes.
+
+The same input point-cloud was processed using the 2.5D modeling approach described in Sect.~\ref{ssec:floorplan} on the same hardware.  The processing step of extracting wall samples from the input point-cloud took 84.3 seconds.  Once these wall samples were generated, the process of generating the mesh took a total of 3.5 seconds.  This step includes data i/o, the floor plan generation, and the 3D extrusion of the floor plan.  This result shows one of the main distinctions between the two methods.  While our surface carving routine is efficient when compared to other similar techniques, generating a model using 2D information is orders of magnitude quicker.  Since the floor plan generation technique can be applied in a streaming fashion to input grid-map data, it could be able to run in real-time for compatible SLAM systems.
+
+\begin{figure*}[t]
+
+	% top row
+	\begin{minipage}[t]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.6cm]{joint/pier15/pier15_camera}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.6cm]{joint/pier15/pier15_carving01}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.6cm]{joint/pier15/pier15_carving00_compressed}}
+		\centerline{(c)}\medskip
+	\end{minipage}
+	
+	% bottom row
+	\begin{minipage}[b]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.6cm]{joint/pier15/pier15_pointcloud00_compressed}}
+		\centerline{(d)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.6cm]{joint/pier15/pier15_floorplan01}}
+		\centerline{(e)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.6cm]{joint/pier15/pier15_floorplan00_compressed}}
+		\centerline{(f)}\medskip
+	\end{minipage}
+	
+	\caption{Close-up of models generated with the techniques described in this paper:  (a) photograph of scanned area; (b) surface carving model from Sect.~\ref{ssec:carving}; (c) surface carving with textures; (d) point-cloud of scanned area; (e) extruded floor plan model from Sect.~\ref{ssec:floorplan}; (f) extruded floor plan with texturing.}
+	\label{fig:pier15}
+
+\end{figure*}
+
+% Now the Proposed thesis!
+\section{Proposed Research}
+\label{sec:proposed}
+
+% write stuff on proposed work
+In the above sections, I have described how indoor modeling can be performed either by preserving every detail in the scanned environment, including all furniture and objects, or by attempting to model only the permanent features of the building, namely floors, walls, and ceilings.  I have also discussed how each of these approaches have their own separate applications.  In my proposed research, I want to combine these two methods in order to develop richer modeling techniques.  An initial example of how one model can be used to improve the other is shown in Sect.~\ref{sssec:trimming} above.
+
+In Sect.~\ref{ssec:combined}, I discuss how I want to use both model types to perform automatic object segmentation and modeling within the environment.  Since the full 3D carving contains volumetric representations of objects and furniture in the environment, while the extruded floor-plan does not, a model of each object can be separately extracted by taking the set difference of these volumes and extracting connected components of the result.  This segmentation can be used both to improve the meshing techniques as well as provide richer data for the output building models.
+
+In Sect.~\ref{ssec:probabilistic}, I discuss how I will improve my existing meshing techniques to account for noise in the existing system, as well as the ability to model with sensor modalities that will increase noise further still.  This consideration is especially important due to our usage of a mobile scanning system, which results in much higher levels of mis-registration error than other scanning techniques.  As is discussed above, very few building modeling techniques take sensor noise into consideration, since most assume static scanners as input.  By developing meshing techniques that are robust to high levels of input noise, these techniques can be used with any type of scanning equipment, allowing for more rapid and cheaper building modeling.
+
+% combing modeling techniques
+\subsection{Combined Model Processing}
+\label{ssec:combined}
+
+The goal of this proposed research is to be able to model the objects and furniture within a building separately and independently from the building mesh itself.  This task requires representing both types of features, being able to separate the building from the contained objects, then being able to appropriately mesh both types of features.  The motivation for this processing is two-fold: improved meshing and richer output.  The improvement in meshing comes from being able to apply different meshing techniques to the different components of the model.  As shown in the simplified construction of building meshes in Sect.~\ref{ssec:floorplan}, if we can assume a building model is only composed of large, planar surfaces, then the number of elements required to mesh this model can be dramatically reduced.  Similarly, attempting to mesh all fine details and small objects within a building with planar regions often results in poor detail on many of those objects.  Fig.~\ref{fig:eric_and_nick} shows an example case where planar region meshing results in poor results.  In Fig.~\ref{fig:eric_and_nick}b, the mesh is generated using the planar surface reconstruction approach described in Sect.~\ref{ssec:carving}.  While the building environment represented by a floor, wall, and doorway are well-modeled by this technique, the people shown in the scan are poorly represented as only a handful of planes.  Fig.~\ref{fig:eric_and_nick}c shows the same volume, voxelized at a finer resolution and meshed via marching cubes without plane-fitting.  Now the people are well-represented in the scan, but the general environment of the floor and wall are riddled with noise, as well as over represented with way more elements than necessary.
+
+% eric and nick figure, which shows people in a mesh
+\begin{figure}[t]
+
+	\centerline{
+	\begin{minipage}[t]{0.3\linewidth}
+		\centerline{\includegraphics[height=4.0cm]{proposed/eric_and_nick_photo}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.3\linewidth}
+		\centerline{\includegraphics[height=4.0cm]{proposed/eric_and_nick_planes}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.3\linewidth}
+		\centerline{\includegraphics[height=4.0cm]{proposed/eric_and_nick_fine}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	}
+	
+	\caption{3D Carving model showing meshing results in the presence of planar surface and non-planar features in the environment: (a) photograph of scanned area; (b) planar-fit surface reconstruction of scan at resolution of 5 cm; (c) marching cubes reconstruction of scan at resolution of 0.5 cm}
+	\label{fig:eric_and_nick}
+
+\end{figure}
+
+By being able to perform planar-fit meshing on large building elements and finer resolution meshing on objects within the building, we can achieve the best of both worlds.  This approach will also allow us to regenerate the volume for objects at a finer resolution, while still processing the rest of the building at a more scalable resolution.
+
+% show object segmentation
+\begin{figure}[t]
+	\centerline{\includegraphics[height=5.0cm]{proposed/object_segmentation}}
+	\caption{An example of object segmentation in an office environment.  The extruded floor-plan model (left) does not contain any furniture representation, while the detailed 3D carved model (right) models the objects the objects in the room.  By performing a set difference of these two models, we can subpartition the volume of each object for improved modeling}
+	\label{fig:objectseg}
+\end{figure}
+
+The other advantage to object segmentation in building models would be for richer data analysis in the output.  Since these objects are modeled volumetrically, we can model each object in a watertight fashion, even though many of the surfaces are occluded from view.  This method provides a way of modeling the regions on floors and walls that are occluded by such objects.  In many applications, it would be useful to have separate representations for these objects.  A room could be modeled with furniture, and that furniture could be easily rearranged for the purposes of real-estate, construction/renovation, or building simulation.  For energy simulation purposes, the furniture can be characterized with different material properties than the rest of the environment.
+
+% show houston room labels with different axis alignments
+\begin{figure}[t]
+	\centerline{\includegraphics[height=8.0cm]{proposed/room_specific_axes}}
+	\caption{With room-label information, rooms can be modeled in their own coordinate frame, which can improve the final resolution of a voxelized model.}
+	\label{fig:room_axes}
+\end{figure}
+
+Another important method for how to improve 3D modeling with the presence of a generated floor-plan would be to import room-label information, which would allow the model to be generated room-by-room.  As discussed in Sect.~\ref{ssec:carving}, a voxelized approach does not assume a Manhattan-world model, but is improved by such a constraint.  If planar regions are not axis-aligned, then fitting planes results in less detail preserved.  While it is too strict to assume that a whole building is axis-aligned, it is often the case that a single room has a dominant coordinate system.  By modeling room-by-room, each area can be processed within its own coordinates, which may improve detail in the final model.  An example of such a case is shown in Fig.~\ref{fig:room_axes}, where each room is shown in a different color.  While the model as a whole is not axis-aligned, each individual room can often be well approximated with dominant axes.  Three such coordinate frames are shown, matching the color of the corresponding room.  Another advantage of this approach would be to visualize a final model in a scalable fashion.  Even if a model can be carved with very fine detail, rendering this model is often taxing to a desktop computer.  By being able to render one room at a time, each area can be generated in finer detail while still preserving interactivity of the final mesh.
+
+% probabilistic modeling
+\subsection{Probabilistic Modeling}
+\label{ssec:probabilistic}
+
+A unique aspect of mobile scanning is the level of mis-registration and other system noise that is present in the final scan frames.  This noise requires special consideration during any surface reconstruction approach on such data.
+
+My group is in a rare position in which we are developing these meshing techniques alongside the hardware construction and localization approaches.  This set-up allows us to understand and accurately model the sources of error in the scans without having to resort to simplified assumptions.  Most probabilistic techniques assume that each scan-point is distributed in an {\it i.i.d.} fashion, which leads to general smoothing of the output model.  As I've already discussed, the largest source of error is often mis-registration of scans caused by errors in the localization process.  Our system is localized using a modified particle filter framework~\cite{NickJournal}, which allows us to generate a frame-specific distribution for the uncertainty in the pose of the system.  Another source of error occurs due to the clock synchronization between different sensors in our system.  This synchronization process is performed in software, and can export a best-fit certainty for the clock of each sensor.  If the clock of a specific sensor is particularly noisy, then its measurements should be trusted less than those of other sensors.  Lastly, noise due to the intrinsic measurement from a sensor can also be computed.  All of our sensing equipment is off-the-shelf, and many of these scanners have been analyzed and modeled for noise~\cite{HokuyoNoise}.  An accurate probability distribution for each point can be computed by convolving all of these sources of error together, resulting in an accurate mapping of scan uncertainty.
+
+% show houston room labels with different axis alignments
+\begin{figure}[t]
+	\centerline{\includegraphics[height=9.0cm]{proposed/p_interior_onescan}}
+	\caption{A probabilistic modeling example using a single laser scan.  The observed slice of volume is modeled with the likelihood of each point being interior to the building model.  Locations that are likely to be interior are colored in red, while locations that are likely to be exterior are colored in blue.}
+	\label{fig:prob_onescan}
+\end{figure}
+
+The point distributions can then be used to model uncertainty in volumetric labeling.  As discussed in Sect.~\ref{ssec:carving}, 3D modeling is performed by labeling each voxel as interior or exterior.  With a probabilistic approach, we can label each voxel with an estimated probability value, which represents the likelihood that point in space is within the interior.  An example of such processing is shown in Fig.~\ref{fig:prob_onescan}.  Each point in the represented scan frame has its own probability distribution, which is used to compute the likelihood that all points in the intersected volume are interior.  By performing voxel carving with this level of information rather than simply labeling voxels as interior or exterior will allow for increased fidelity in the output models, as well as improved robustness to input noise.
+
+% laser points vs camera points
+\begin{figure}[t]
+
+	\centerline{
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[height=4.0cm]{proposed/dense_pointcloud_close}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[height=4.0cm]{proposed/sparse_pointcloud_close}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	}
+	
+	\caption{Comparison of the difference in fidelity of a point-cloud generated (a) using laser scanners, or (b) using camera image triangulation.  The camera points compose a sparser point-cloud that has much higher positional error.}
+	\label{fig:sparse_points}
+
+\end{figure}
+
+A strong motivation for moving towards a probabilistic framework for scan modeling is to allow for the inclusion of other sensor modalities.  Laser scanning systems can be quite expensive, while camera-based modeling techniques can be peformed cheaply.  The downside is that geometry modeling with cameras, either through pixel triangulation, structure from motion, or optical flow are highly noisy, error-prone, and sensitive to environmental factors.  Fig.~\ref{fig:sparse_points} shows a comparison of a point-cloud generated from laser scanners as compared to a point-cloud of the same area generated by triangulating matched pixels between camera images.  The latter is a much sparser point-cloud, with positional noise that is orders of magnitude higher than from laser range finders.  By representing each sensor with an appropriate probabilistic model, both types of sensors can be included in building modeling, which will allow for modeling of more diverse environments.  The locations where a laser sensor often fails to model, such as glass, reflective surfaces, or highly non-planar geometry, are regions where camera-based modeling can be used.  Similarly, the locations where camera-modeling often fails, such as featureless surfaces, poorly-lit areas, or tight spaces that induce motion blur, are locations where laser range finders can excel in modeling the environment.
+
+% conclusion
+\section{Conclusion}
+\label{sec:conclusion}
+
+% wrap up
+This report discussed the state of the field of indoor building modeling, the work I've contributed to the field so far, and my proposed research direction for my thesis.  The ability to detect and model both buildings and the objects inside of them will provide a leap-forward in many applications that rely on building modeling.  The flexibility to use many different types of sensing modalities will allow building modeling to be performed cheaper and faster.
+
+% references section
+
+% can use a bibliography generated by BibTeX as a .bbl file
+% BibTeX documentation can be easily obtained at:
+% http://www.ctan.org/tex-archive/biblio/bibtex/contrib/doc/
+% The IEEEtran BibTeX style support page is at:
+% http://www.michaelshell.org/tex/ieeetran/bibtex/
+\bibliographystyle{IEEEtran}
+% argument is your BibTeX string definitions and bibliography database(s)
+%\bibliography{IEEEabrv,../bib/paper}
+\bibliography{elturner}
+\vfill
+
+% that's all folks
+\end{document}
