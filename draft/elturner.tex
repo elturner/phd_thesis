@@ -54,24 +54,84 @@
 \pagenumbering{roman}
 \begin{document}
 
-% TODO deal with title and author pages, which have special requirements
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+% TITLE
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
 
-\title{Eric's Ph.D. Thesis}
 
-% author names and IEEE memberships
-% note positions of commas and nonbreaking spaces ( ~ ) LaTeX will not break
-% a structure at a ~ so this keeps an author's name from being broken across
-% two lines.
-% use \thanks{} to gain access to the first footnote area
-% a separate \thanks must be used for each paragraph as LaTeX2e's \thanks
-% was not built to handle multiple paragraphs
+% the title and author page has very special requirements
 %
+% see:  http://grad.berkeley.edu/wp-content/uploads/title-page.pdf
+%
+% For all formatting requirements, see:
+%
+% http://grad.berkeley.edu/academic-progress/dissertation/#formatting-your-manuscript
 
-\author{Eric~Turner}
-%\thanks{This research was conducted with Government support under and awarded by DoD, Air Force Office of Scientific Research, National Defense Science and Engineering Graduate (NDSEG) Fellowship, 32 CFR 168a.
+\newcommand{\mytitle}{Eric's Ph.D. Thesis}
+\title{\mytitle}
 
-% make the title area
-\maketitle
+\newcommand{\myauthor}{Eric~Lee~Turner}
+\author{\myauthor}
+
+{\centering
+	{\textbf{\mytitle}}\\
+	\hfill \break
+	\hfill \break
+	By\\
+	\hfill \break
+	\myauthor\\
+	\hfill \break
+	\hfill \break
+	\hfill \break
+	A dissertation submitted in partial satisfaction of the\\	
+	\hfill \break
+	requirements for the degree of\\
+	\hfill \break
+	Doctor of Philosophy\\
+	\hfill \break
+	in\\
+	Engineering -- Electrical Engineering and Computer Sciences\\	
+	\hfill \break 
+	in the\\
+	\hfill \break
+	Graduate Division\\
+	\hfill \break
+	of the\\
+	\hfill \break
+	University of California, Berkeley\\
+	\hfill \break
+	\hfill \break
+	\hfill \break
+	Committee in charge:\\
+	\hfill \break
+	Professor Avideh Zakhor, Chair\\
+	Professor Jonathan Shewchuk\\
+	Professor Kyle Steinfeld\\
+	\hfill \break	
+	\hfill \break
+	Spring 2015\\
+}
+
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+% COPYRIGHT
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+
+\newpage
+{\centering
+	{\textbf{\mytitle}}\\
+	\hfill \break
+	\hfill \break
+	\hfill \break
+	\hfill \break
+	\hfill \break
+	Copyright \copyright \, 2015\\
+	by\\
+	\myauthor\\
+}
 
 %---------------------------------------------------------------------------
 %---------------------------------------------------------------------------
@@ -84,10 +144,28 @@
 \pagenumbering{arabic}
 \setcounter{page}{1}
 
-% TODO do abstract, which also has special formatting requirements
+% header for abstract
+{\centering
+	{\textbf{Abstract}}\\
+	\hfill \break
+	\mytitle\\
+	\hfill \break
+	by\\
+	\hfill \break
+	\myauthor\\
+	\hfill \break
+	Doctor of Philosophy in Electrical Engineering and Computer Sciences\\
+	\hfill \break
+	University of California, Berkeley\\
+	\hfill \break
+	Professor Avideh Zakhor, Chair\\
+	\hfill \break
+}
 
 %\begin{abstract}
-This is where the abstract will go.
+In this dissertation, we present several techniques used to automatically generate virtual models of indoor building environments.  The interior environment of a building is scanned using our custom hardware system, which provides a set of data products used to develop these models.  Our modeling technqiues can be separated into two categories:  2D floor plan models and dense 3D models.  All approaches are produced automatically from the output data of our backpack-mounted ambulatory scanning system, which can scan multiple floors of a building efficiently.  We are capable of capturing the entirety of large buildings in only a few hours.  This system is capable of producing many kinds of 3D virtual building models while traversing through a GPS-denied environment, including point clouds, 2D floor plans, and 3D building models.
+
+The novel contributions of this dissertation can be sorted into three groups.  First, we present multiple methods for producing 2D floor plans across all of the building environment.  We automatically partition these floor plans into separate building levels and separate rooms within each level.  These floor plans can also be extruded into simplified 3D models of the building environment.  Second, we present multiple technqiues to produce complex 3D models of the scanned environment, capturing all observed detail.  Third, we present several techniques that combine these two types of building models -- simple and complex -- in order to perform additional analysis of the building environment.  Such analysis includes segmenting objects and furniture of the environment as separate models, reducing noise and artifacts within the models, and demonstrating novel visualization techniques.  Additionally, we show several results of the system in real-world environments, including buildings of over 40,000 square feet.  We demonstrate how such building models are applicable to many fields of study, including architecture, building energy efficiency, virtual walk-throughs of buildings, indoor navigation, augmented and virtual reality.
 %\end{abstract}
 
 %---------------------------------------------------------------------------
@@ -476,6 +554,9 @@ Our system uses Hokuyo UTM-30LX sensors, whose intrinsic noise characterization 
 % data rate from cameras, scalability of systems.
 Since we collect 12~MP imagery from three cameras at 2 Hz each, the camera images represent the major of data flow during the data acquisition process, at 72~megabytes per second.  To ensure no data loss, we necessitate a fast internal drive on the backpack system.  We have also configured the system with a USB-3 external drive, with twin SSD drives in a RAID-0 configuration.  This set-up allows us to write data directly to the external drive, which can be hot-swapped for fast processing.  On the second generation system, this storage drive is 500~GB, which allows for just under two hours of consecutive scanning.  The third generation system contains a 1~TB drive, which allows for up to four hours of scanning.  At that rate, we can perform data acquisition of over 100,000 square feet of building space on a single drive.
 
+\section{Sensor Calibration}
+\label{sec:calibration}
+
 % also discuss extrinsic calibration of sensors
 Since our hardware system contains may separate sensors, it is necessary to create a common system coordinate frame, as shown in Figure~\ref{fig:backpack}b.  Each sensor has an independent coordinate frame, but they are extrinsically calibrated against one another, in order to establish the rotation and translation between any given sensor and the common coordinate frame.  Once this extrinsic calibration process is performed, we can determine the orientation of any given sensor with respect to the common system.  As discussed in Chapter~\ref{sec:localization}, after a data collection we can determine the orientation of the system within a model coordinate frame.  The combintation of the transform generated by extrinsic sensor calibration and the localization process allows for sensor readings to be placed in model coordinates.
 
@@ -635,6 +716,74 @@ A histogram approach can be used to separate the point cloud by levels~\cite{Tur
 	\label{fig:heighthist}
 
 \end{figure}
+
+
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+% CHAPTER:  Floorplan Generation
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+
+\chapter{Floor Plan Generation}
+\label{ch:floorplan}
+
+% TODO LEFT OFF HERE
+
+
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+% CHAPTER:  Complex 3D Model Generation
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+
+\chapter{Complex 3D Model Generation}
+\label{ch:carving}
+
+% TODO chapter on carving
+
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+% CHAPTER:  Improving floorplans with carving
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+
+\chapter{Improvements of 2D Floor Plan Models using Complex 3D Models}
+\label{ch:better_floorplans}
+
+% TODO chapter on better floorplans
+
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+% CHAPTER:  Improving carving with floorplans
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+
+\chapter{Improvements of 3D Complex Models using 2D Floor Plan Models}
+\label{ch:better_floorplans}
+
+% TODO chapter on better carving
+
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+% CHAPTER:  Applications
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+
+\chapter{Applications of Building Models}
+\label{ch:applications}
+
+% TODO chapter on applications
+
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+% CHAPTER:  Conclusion
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+
+\chapter{Conclusions}
+\label{ch:conclusion}
+
+% TODO chapter on conclusion
 
 
 
