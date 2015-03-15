@@ -182,7 +182,7 @@ Laser scanning technology is becoming a vital component of building construction
 Generating an accurate model of indoor environments is an emerging challenge in the fields of architecture and construction for the purposes of verifying as-built compliance to engineering designs~\cite{Bosche10,Xiong13}.  This task is made more challenging by the GPS-deprived nature of these environments~\cite{Liang13}.  Another application that requires an exported mesh to retain as much detail as possible is historical preservation via a virtual reality model~\cite{VillageHeritage,Carving}.  Building energy efficiency simulations can use watertight meshes of the environment to estimate airflow and heat distribution~\cite{EnergyPlus}.  These simulations require simplified meshes as input, since finite element models are difficult to scale.  It is also important to be able to generate an immersive visualization and walk-through of the environment for these applications, so experts can remotely inspect the scanned environment via telepresence, a task that currently requires expensive travel and on-site visits.  Different applications require models of different complexities, both with and without furniture geometry.  The modeling approaches detailed in this report are useful for both types of applications, as shown in the examples in Figure~\ref{fig:coryf2}.  Figure~\ref{fig:coryf2}a is a photograph of the scanned area: the hallways of an academic building, encompassing about 1,000 square meters of scanned area.  Figure~\ref{fig:coryf2}d represents the captured 3D point-cloud of this area.  Figures~\ref{fig:coryf2}b and~\ref{fig:coryf2}c show a high-detail 3D mesh of 2.7 million triangles generated using the algorithm in Chapter~\ref{ch:carving}, with and without texturing, respectively.  Figures~\ref{fig:coryf2}e and~\ref{fig:coryf2}f show a low detail model of 2,644 triangles generated using the approach in Chapter~\ref{ch:floorplan}, with and without texturing.
 
 % brief overview of different modeling techniques presented
-One of the primary challenges of indoor modeling is the sheer size of the input point-clouds.  Scans of single floors of buildings result in point-clouds that contain hundreds of millions of points, often larger than the physical memory in a personal computer.  Man-made geometry is typically composed of planar regions and sharp corners, but many conventional surface reconstruction schemes assume a certain degree of smoothness and result in rounded or blobby output if applied to these models~\cite{Powercrust,OctreeSculpting,Carving,ProgressiveMesh,Poisson,Eigencrust}.  In addition to large flat regions, building interiors also contain many small details, such as furniture.  A surface reconstruction scheme must be able to represent the large surfaces in a building with an efficient number of elements and preserve their sharp features.  The fine details of furniture are useful for some applications whereas others require furniture to be removed.  In this report, we discuss existing modeling techniques that remove fine details and those that preserve these details.  The output of both of these modeling techniques can be texture-mapped with captured camera imagery~\cite{Cheng14}.  An example of texture-mapping these two modeling processes is shown in Figs.~\ref{fig:coryf2}c and~\ref{fig:coryf2}f.
+One of the primary challenges of indoor modeling is the sheer size of the input point-clouds.  Scans of single floors of buildings result in point-clouds that contain hundreds of millions of points, often larger than the physical memory in a personal computer.  Man-made geometry is typically composed of planar regions and sharp corners, but many conventional surface reconstruction schemes assume a certain degree of smoothness and result in rounded or blobby output if applied to these models~\cite{Powercrust,OctreeSculpting,Carving,ProgressiveMesh,Poisson,EigencrustShewchuk}.  In addition to large flat regions, building interiors also contain many small details, such as furniture.  A surface reconstruction scheme must be able to represent the large surfaces in a building with an efficient number of elements and preserve their sharp features.  The fine details of furniture are useful for some applications whereas others require furniture to be removed.  In this report, we discuss existing modeling techniques that remove fine details and those that preserve these details.  The output of both of these modeling techniques can be texture-mapped with captured camera imagery~\cite{Cheng14}.  An example of texture-mapping these two modeling processes is shown in Figs.~\ref{fig:coryf2}c and~\ref{fig:coryf2}f.
 
 \section{Surface Reconstruction}
 \label{sec:surf_recon_background}
@@ -205,14 +205,96 @@ An important note is that traditional surface reconstruction techniques, as desc
 \section{Outdoor Building Scanning}
 \label{sec:outdoor_scanning}
 
-% TODO discuss general outdoor technology for building scanning
-Discuss general outdoor technology for building scanning.
+% motivation for discussing outdoor stuff
+When discussing 3D reconstruction of building environments, it is important to note the subfields of both indoor and outdoor building modeling.  Most of this dissertation is specific to indoor building modeling, however many related techniques are used for outdoor modeling as well.
 
-% TODO briefly mention highlights of navteq project
-Briefly mention highlights of navteq project.
+% how to scan outdoors
+The current method of outdoor building scanning requires an acquisition vehicle to drive down a street while taking Light Detection And Ranging (LiDAR) scans and panoramic photographs of the surround area~\cite{Zakhor07,Chen07}.  In many applications, it is desirable to generate a triangulated geometry for a collected point-cloud.  This geometry needs to be accurate to the original architecture.  
 
-% TODO use this project as smooth introduction to dealing with large pointclouds
-Smooth introduction to dealing with large pointclouds.
+% pointcloud of building facade
+\begin{figure}
+	\begin{minipage}[b]{1.0\linewidth}
+	  \centering
+	  \centerline{\includegraphics[width=0.7\linewidth]{icip2012/rush_pointcloud00}}
+	\end{minipage}
+
+	\caption[An example point-cloud of a fa\c{c}ade.]{An example point-cloud of a fa\c{c}ade. Note gaps near windows, ledges, and columns.}
+	\label{fig:rush_points}
+\end{figure}
+
+For buildings of an appreciable height, the street-level LiDAR scans are taken at a very acute angle with respect to the surface of the building.  Any protrusions from the building cause shadows in the LiDAR and therefore the building is not collected in its entirety, as shown in Figure~\ref{fig:truck_lidar}.  For many applications, a typical solution would be to gather scans from multiple angles \cite{Tang10, Curless96}.  For the urban reconstruction problem, this tactic cannot be used since the scanner is restricted to street-level.
+
+\begin{figure}[t]
+
+% figure:  how to scan outdoors
+\begin{minipage}[b]{1.0\linewidth}
+  \centering
+  \centerline{\includegraphics[height=4.5cm]{icip2012/truck_lidar}}
+\end{minipage}
+
+\caption[Scanning building fa\c{c}ades from a vehicle.]{Locations on the building A, B, C are occluded from the LiDAR collector on the vehicle.}
+\label{fig:truck_lidar}
+
+\end{figure}
+
+% background on outdoor modeling
+Previous attempts to model buildings have assumed that architecture takes a simple polyhedron geometry. This approach ignores minor details of a building fa\c{c}ade, such as windows and ledges when applied on a large scale \cite{Chauve10, Chen07}.  The goal of this paper is to preserve as much detail as possible in the reconstructed model geometry.  Any interpolation must preserve the sharp edges of corners that occur within these holes.  This requirement diverges from the typical assumptions of most surface completion methods, which usually result in smoothed surfaces \cite{Kazhdan06, Kawai11}.  While developing 3D models with sharp features is a well-explored topic, most current approaches require a sufficient density of points near regions of high curvature, which would not be applicable here \cite{Bernardini04, Mhatre06}.  
+
+% our method
+Our goal is to generate sharp, axis-aligned, planar features in locations where the point-cloud is sparse or not sampled at all.  We propose an approach for rectilinear surface reconstruction of building fa\c{c}ades with incomplete 3D point-clouds~\cite{Turner12outdoor}.  Specifically, our proposed algorithm generates geometry for any holes in the point-cloud while preserving flat planes and sharp corners, which are common in modern architecture.  In order to reconstruct a mesh of a building face, first we determine the dominant plane of this fa\c{c}ade, then by treating the original points as a height map on this plane, we uniformly resample these heights over the entire surface using Moving Least-Squares (MLS) smoothing in order to mitigate noise in areas of high sampling, interpolate the areas corresponding to gaps in the point-cloud, and guarantee uniformity of resulting geometry~\cite{Nealen04}.
+
+% Some results
+\begin{figure}
+
+\begin{minipage}[b]{0.5\linewidth}
+  \centering
+  \centerline{\includegraphics[width=0.8\linewidth]{icip2012/set2-curve-points00}}
+  \centerline{(a)}\medskip
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.5\linewidth}
+  \centering
+  \centerline{\includegraphics[width=0.8\linewidth]{icip2012/set2-curve-screenshot}}
+  \centerline{(b)}\medskip
+\end{minipage}
+%
+\caption[Surface reconstruction of building fa\c{c}ade.]{The curvature of the building is preserved when extrapolated; (a) building point-cloud; (b) MLS triangulation.}
+\label{fig:extrapolate}
+%
+\end{figure}
+
+This method results in flat strips of extrapolated fa\c{c}ade.  If the building curves outward or has other non-planar characteristics, these strips conform to the shape of the building, as shown in Figure~\ref{fig:extrapolate}.  Once a geometry has been processed, a texture is applied using panoramic photographs collected from the same location as the LiDAR.  Since these images are projected onto the geometry, any irregularities in the geometry result in dramatic disturbances in texturing.  Examples of this texturing process are shown in Figure~\ref{fig:icip2012_texture}.
+
+\begin{figure}[t]
+
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=6.0cm]{icip2012/set1-face4_mls}}
+  \centerline{(a)}\medskip
+\end{minipage}
+\hfill
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=6.0cm]{icip2012/set1-face4_texture}}
+  \centerline{(b)}\medskip
+\end{minipage}
+%
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=6.0cm]{icip2012/set1-face7_mls}}
+  \centerline{(c)}\medskip
+\end{minipage}
+\hfill
+\begin{minipage}[b]{.48\linewidth}
+  \centering
+  \centerline{\includegraphics[width=6.0cm]{icip2012/set1-face7_texture}}
+  \centerline{(d)}\medskip
+\end{minipage}
+\caption[Meshes of building fa\c{c}ades with texture.]{Results of texturing geometry after sharp hole-filling; (a) sampling of flat fa\c{c}ade; (b) with texture; (c) sampling of uneven fa\c{c}ade; (d) with texture.}
+\label{fig:icip2012_texture}
+\end{figure}
+
+While the techniques used for surface reconstruction of exterior building models are different than those used for interior models, both methods require the efficient processing of large amounts of scan data in the form of point clouds.  Such point clouds may represent noisy or inconsistent geometry, due to being acquired via a mobile scanning system.
 
 \section{Indoor Building Scanning Systems}
 \label{sec:indoor_scanning}
