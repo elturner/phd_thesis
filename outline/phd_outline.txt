@@ -72,6 +72,7 @@ x	Pointcloud generation (5-10 pages)			\label{ch:preprocessing}
 		- visigrapp
 		- room detection				\label{sec:room_label}
 		- simplification techniques
+		- extruding to 2.5D model
 		
 	Carving							\label{ch:carving}
 		- 3DV 2013 voxel carving
@@ -104,6 +105,6 @@ x	Pointcloud generation (5-10 pages)			\label{ch:preprocessing}
 		- wifi maps
 		- pressure maps? temperature maps?
 
-	Conclusion (1-2 pages)
+	Conclusion (1-2 pages)					\label{ch:conclusion}
 
 	Bibliography (~100 sources)
