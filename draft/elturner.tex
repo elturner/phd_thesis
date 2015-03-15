@@ -101,7 +101,14 @@ This is where the abstract will go.
 \pagenumbering{roman}
 \setcounter{page}{1}
 
-% TODO dedication page
+% dedication page
+\clearpage
+\vspace*{\fill}
+\begin{center}
+To Mom.
+\end{center}
+\vfill % equivalent to \vspace{\fill}
+\clearpage
 
 % table of contents
 \addcontentsline{toc}{chapter}{Table of Contents}
@@ -119,7 +126,29 @@ This is where the abstract will go.
 \addcontentsline{toc}{chapter}{\listtablename}
 \listoftables{}
 
-% TODO acknowledgements
+% acknowledgement section
+\newpage
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{Acknowledgements}
+\chapter*{Acknowledgements}
+
+% berkeley is an awesome place
+As soon as I saw University of California, Berkeley, I knew I would love it here.  A campus cut with forrested paths and narrow streams seemed straight out of a Calvin \& Hobbes strip.  As soon as I met the people here, I immediately found that the intellectual adventure matched the aesthetics.
+
+% Avideh and thesis committee
+I first want to thank my advisor, Professor Avideh Zakhor.  The potential she sees in her students becomes manifest with each challenge she places before them.  My understanding of the field and of academics in general has become so much richer thanks to her guidance.  I also would like to thank Jonathan Shewchuk, Kyle Steinfeld, and Carlo Sequin, who served on my qualifying exam and dissertation committees.  These are some of the best professors I've ever met, and have provided me with excellent guidance both in the classroom and in my committee.
+
+% funding
+This research was conducted with Government support under and awarded by DoD, Air Force Office of Scientific Research, National Defense Science and Engineering Graduate (NDSEG) Fellowship, 32 CFR 168a.
+
+% lab folks
+I also want to extend my deep gratitude to all my colleagues in the Video and Image Processing Lab.  John Kua, Michael Krishnan, Rick Garcia, Shangliang Jiang, Nicholas Corso, Shicong Yang, Richard Zhang, and Joe Menke have all lent me guidance and helped me through.  I especially want to mention Nicholas, who ensured that I took a daily constitutional around campus rather than hiding away in our lab.
+
+% TODO rest of acknowledgements
+5) Bay-area friends
+7) Dad and family
+8) Sam
 
 %---------------------------------------------------------------------------
 %---------------------------------------------------------------------------
@@ -179,7 +208,7 @@ Laser scanning technology is becoming a vital component of building construction
 \end{figure}
 
 % applications
-Generating an accurate model of indoor environments is an emerging challenge in the fields of architecture and construction for the purposes of verifying as-built compliance to engineering designs~\cite{Bosche10,Xiong13}.  This task is made more challenging by the GPS-deprived nature of these environments~\cite{Liang13}.  Another application that requires an exported mesh to retain as much detail as possible is historical preservation via a virtual reality model~\cite{VillageHeritage,Carving}.  Building energy efficiency simulations can use watertight meshes of the environment to estimate airflow and heat distribution~\cite{EnergyPlus}.  These simulations require simplified meshes as input, since finite element models are difficult to scale.  It is also important to be able to generate an immersive visualization and walk-through of the environment for these applications, so experts can remotely inspect the scanned environment via telepresence, a task that currently requires expensive travel and on-site visits.  Different applications require models of different complexities, both with and without furniture geometry.  The modeling approaches detailed in this report are useful for both types of applications, as shown in the examples in Figure~\ref{fig:coryf2}.  Figure~\ref{fig:coryf2}a is a photograph of the scanned area: the hallways of an academic building, encompassing about 1,000 square meters of scanned area.  Figure~\ref{fig:coryf2}d represents the captured 3D point-cloud of this area.  Figures~\ref{fig:coryf2}b and~\ref{fig:coryf2}c show a high-detail 3D mesh of 2.7 million triangles generated using the algorithm in Chapter~\ref{ch:carving}, with and without texturing, respectively.  Figures~\ref{fig:coryf2}e and~\ref{fig:coryf2}f show a low detail model of 2,644 triangles generated using the approach in Chapter~\ref{ch:floorplan}, with and without texturing.
+Generating an accurate model of indoor environments is an emerging challenge in the fields of architecture and construction for the purposes of verifying as-built compliance to engineering designs~\cite{Bosche10,Xiong13}.  This task is made more challenging by the GPS-deprived nature of these environments~\cite{Liang13}.  Another application that requires an exported mesh to retain as much detail as possible is historical preservation via a virtual reality model~\cite{VillageHeritage,Carving}.  Building energy efficiency simulations can use watertight meshes of the environment to estimate airflow and heat distribution~\cite{EnergyPlus}.  These simulations require simplified meshes as input, since finite element models are difficult to scale.  It is also important to be able to generate an immersive visualization and walk-through of the environment for these applications, so experts can remotely inspect the scanned environment via telepresence, a task that currently requires expensive travel and on-site visits.  Different applications require models of different complexities, both with and without furniture geometry.  The modeling approaches detailed in this report are useful for both types of applications, as shown in the examples in Figure~\ref{fig:coryf2}.  Figure~\ref{fig:coryf2}a is a photograph of the scanned area: the hallways of an academic building, encompassing about 1,000 square meters of scanned area.  Figure~\ref{fig:coryf2}d represents the captured 3D point-cloud of this area.  Figures~\ref{fig:coryf2}b and~\ref{fig:coryf2}c show a high-detail 3D mesh of 2.7 million triangles generated using the algorithm in Chapter~\ref{ch:carving}, with and without texturing, respectively.  Figures~\ref{fig:coryf2}e and~\ref{fig:coryf2}f show a low detail model of 2,644 triangles generated using the approach in Chapter~\ref{ch:floorplan}, with and without texturing~\cite{Turner14Journal}.
 
 % brief overview of different modeling techniques presented
 One of the primary challenges of indoor modeling is the sheer size of the input point-clouds.  Scans of single floors of buildings result in point-clouds that contain hundreds of millions of points, often larger than the physical memory in a personal computer.  Man-made geometry is typically composed of planar regions and sharp corners, but many conventional surface reconstruction schemes assume a certain degree of smoothness and result in rounded or blobby output if applied to these models~\cite{Powercrust,OctreeSculpting,Carving,ProgressiveMesh,Poisson,EigencrustShewchuk}.  In addition to large flat regions, building interiors also contain many small details, such as furniture.  A surface reconstruction scheme must be able to represent the large surfaces in a building with an efficient number of elements and preserve their sharp features.  The fine details of furniture are useful for some applications whereas others require furniture to be removed.  In this report, we discuss existing modeling techniques that remove fine details and those that preserve these details.  The output of both of these modeling techniques can be texture-mapped with captured camera imagery~\cite{Cheng14}.  An example of texture-mapping these two modeling processes is shown in Figs.~\ref{fig:coryf2}c and~\ref{fig:coryf2}f.
@@ -333,15 +362,21 @@ Floor-plan modeling techniques are based on the idea of sampling positional info
 \subsection{Simplified 3D Modeling}
 \label{ssec:background_planefit}
 
-Since building features are almost entirely planar, a popular approach is to explicitly fit planar elements to the input point-clouds.  Sanchez and Zakhor use PCA plane-fitting to find floors, walls, and ceilings explicitly in the point-cloud~\cite{Victors}. Since this method was applied to ambulatory data, it resulted in missing components, holes, and double-surfacing due to mis-registration.  Xiong et al also perform plane-fitting in a similar fashion, but also analyze the computed planes for the locations of windows and doors, which are represented as holes in the surface~\cite{Xiong13}.  Adan et al find planes by first generating a floor-plan, then extrude the floor-plan into a 3D model~\cite{WallFinder}.  One limitation with these methods is that they are not necessarily watertight.  Other approaches have focused to perform volumetric processing to ensure watertightness when computing simplified 3D models.  Xiao et al find horizontal cross-sections of the building, forming a sequence of 2D CSG models that are then stacked together and simplified~\cite{Museums}.  While this approach does lead to aesthetically-pleasing models, it assumes manhattan-world models, which leads to topological errors if an insufficient number of cross-sections are recovered.  Oseau et al use a voxelization approach, with a follow-up graph-cut step to remove small details in the environment, leaving only floors, walls, and ceilings~\cite{Oesau13}.  This optimization step, however, can also cause significant deformations in the final geometry depending on the input parameters. 
+Since building features are almost entirely planar, a popular approach is to explicitly fit planar elements to the input point-clouds.  Sanchez and Zakhor use PCA plane-fitting to find floors, walls, and ceilings explicitly in the point-cloud~\cite{Victors}. Since this method was applied to ambulatory data, it resulted in missing components, holes, and double-surfacing due to mis-registration.  Xiong et al also perform plane-fitting in a similar fashion, but also analyze the computed planes for the locations of windows and doors, which are represented as holes in the surface~\cite{Xiong13}.  Adan et al find planes by first generating a floor-plan, then extrude the floor-plan into a 3D model~\cite{WallFinder}.  One limitation with these methods is that they are not necessarily watertight, though floor plan extrusion can also be done in a watertight fashion~\cite{Mura14,Turner14,Cabral14}.  These approaches allow for accurate wall geometry and reduce the complexity of the output model. Extruded floor plans also allow for models to explicitly define floors, walls, and ceiling surfaces.  
 
-% TODO include furukawa image-based floorplans
+Other approaches have focused to perform volumetric processing to ensure watertightness when computing simplified 3D models.  Xiao et al find horizontal cross-sections of the building, forming a sequence of 2D CSG models that are then stacked together and simplified~\cite{Museums}.  While this approach does lead to aesthetically-pleasing models, it assumes manhattan-world models, which leads to topological errors if an insufficient number of cross-sections are recovered.  Oseau et al use a voxelization approach, with a follow-up graph-cut step to remove small details in the environment, leaving only floors, walls, and ceilings~\cite{Oesau13}.  This optimization step, however, can also cause significant deformations in the final geometry depending on the input parameters. 
 
 % This subsubsection describes dense 3D modeling
 \subsection{Detailed 3D Modeling}
 \label{ssec:background_3dmodeling}
 
-One of the methods used to preserve the detail of furniture in a building scan is to explicitly search and classify for furniture models in the scan.  These techniques attempt to find locations in the input scans that match best with a stored database of known furniture.  The pre-existing model of the recognized piece of furniture is then oriented in the output model.  Nan et al employ this technique, with explicit classification of chairs and tables~\cite{SearchClassifyPointcloud}.  Kim et al also use this method, using a larger library of objects and operating on noisier scans~\cite{Kim12}.  They also discuss how search-classification can allow for change detection across scans of the same area taken at different times.  A major downside of this method is that the classification is only as good as the database.  Objects that are in unexpected orientations or are not in the database are misclassified.  For instance, a sideways chair is misclassified as a table.  One major benefit of this approach is the ability to model the objects independently of the room itself, as discussed later in Chapter~\ref{ch:better_carving}.  There are also methods that capture fine detail of buildings by attempting to be as accurate to the input point-cloud as possible.  Holenstein et al generate a space-carving model that voxelizes the scanned environment, labeling any voxels intersected by a scan-line line to be interior~\cite{Carving}.  The boundary of the interior voxels is meshed with Marching Cubes.  The advantage of this approach is an increased robustness to mis-registration errors, but the downside is that over-carving can result in the loss of fine detail.  Lastly, a popular approach to detailed modeling of environments is Kinect Fusion~\cite{KinectFusion,Kintinuous}.  This method allows for both meshing and tracking, but is limited in that it cannot handle large areas, and the actual meshing approach is a minor extension of Signed-Distance Fields~\cite{SignedDistanceFields}. 
+One of the methods used to preserve the detail of furniture in a building scan is to explicitly search and classify for furniture models in the scan.  These techniques attempt to find locations in the input scans that match best with a stored database of known furniture.  The pre-existing model of the recognized piece of furniture is then oriented in the output model.  Nan et al employ this technique, with explicit classification of chairs and tables~\cite{SearchClassifyPointcloud}.  Kim et al also use this method, using a larger library of objects and operating on noisier scans~\cite{Kim12}.  They also discuss how search-classification can allow for change detection across scans of the same area taken at different times.  A major downside of this method is that the classification is only as good as the database.  Objects that are in unexpected orientations or are not in the database are misclassified.  For instance, a sideways chair is misclassified as a table.  One major benefit of this approach is the ability to model the objects independently of the room itself, as discussed later in Chapter~\ref{ch:better_carving}.  
+
+% object/room detection in buildings
+Recently, object detection methods from indoor scans have been proposed without the use of a training dataset~\cite{Mattausch14}.  They segment point clouds using a bottom-up approach to fit rectangular patches on to the scans, then find clusters of patches that are repeated often.  Even though this approach can be applied to large datasets, it assumes very basic building geometry in order to segment objects.  Additionally, it only detects objects of certain complexity, is unable to detect very small objects, and requires objects to be repeated often in the environment.  We expand on this work by segmenting objects volumetrically, rather than in the point cloud domain.
+
+% general carving
+There are also methods that capture fine detail of buildings by attempting to be as accurate to the input point-cloud as possible.  Holenstein et al generate a space-carving model that voxelizes the scanned environment, labeling any voxels intersected by a scan-line line to be interior~\cite{Carving}.  The boundary of the interior voxels is meshed with Marching Cubes.  The advantage of this approach is an increased robustness to mis-registration errors, but the downside is that over-carving can result in the loss of fine detail.  Lastly, a popular approach to detailed modeling of environments is Kinect Fusion~\cite{KinectFusion,Kintinuous}.  This method allows for both meshing and tracking, but is limited in that it cannot handle large areas, and the actual meshing approach is a minor extension of Signed-Distance Fields~\cite{SignedDistanceFields}. 
 
 % this section outlines the remainder of the paper
 \section{Contributions and Organization of Dissertation}
@@ -414,29 +449,38 @@ The second generation backpack, as shown in Figure~\ref{fig:all_backpacks}b, was
 
 % figure of backpack hardware
 \begin{figure}[t]
-	\centerline{\includegraphics[width=0.5\linewidth]{procarve/hardware/backpack_annotated}}
-	\caption[Annotated scanning hardware system.]{Annotated scanning hardware system, worn as a backpack.  The operator walks through the indoor building area as the system scans the surroundings.  Our method combines the LiDAR and inertial measurements in order to form a virtual 3D model for the observed space.}
+
+	\begin{minipage}[c]{0.54\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/hardware/backpack_annotated}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[c]{0.46\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{hardware/backpack_coord_system}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+
+	\caption[Annotated scanning hardware system.]{Annotated scanning hardware system, worn as a backpack.  The operator walks through the indoor building area as the system scans the surroundings.  Our method combines the LiDAR and inertial measurements in order to form a virtual 3D model for the observed space:  (a) the system worn by operator; (b) the common coordinate frame of backpack system.}
 	\label{fig:backpack}
 \end{figure}
 
 % briefly describe the type of scans we use as input
-Our geometry reconstruction algorithms use the retrieved laser range data as input.  These scans are taken with time-of-flight laser scanners that capture 3D geometry of the environment.  We use multiple 2D laser scanners mounted at different orientations to capture all observed geometry in the environment.  Since our system is mobile and ambulatory, the resulting point clouds have higher noise than traditional static scanners due to natural variability in human gait.  As such, our approach needs to be robust to motion induced scan-level noise and its associated artifacts.  We use these scans to form watertight models of the indoor building environment and the contained objects.
+Our geometry reconstruction algorithms use the retrieved laser range data as input.  These scans are taken with time-of-flight laser scanners that capture 3D geometry of the environment.  We use multiple 2D laser scanners mounted at different orientations to capture all observed geometry in the environment, as indicated in Figure~\ref{fig:backpack}a.  Since our system is mobile and ambulatory, the resulting point clouds have higher noise than traditional static scanners due to natural variability in human gait.  As such, our approach needs to be robust to motion induced scan-level noise and its associated artifacts.  We use these scans to form watertight models of the indoor building environment and the contained objects.
 
 % sparse but fast
 The primary advantage of a backpack system is speed of acquisition.  We use 2D Time-Of-Flight (TOF) laser scanners, which means we have sparser scan information per frame and traverse each area of the environment much faster than when scanning the equivalent area with a Kinect or Google Tango.  Since our system produces much sparser point clouds than Kinect-based scanning, it is not feasible to employ the same averaging techniques that allow for high-quality Kinect scans.  The advantage of these 2D TOF sensors is that they are less noisy, have a longer range, and a wider field of view.  The result is that much larger environments can be covered in significantly less time when using these sensors in a sweeping motion~\cite{Sweep}.  For instance, a backpack-mounted system allows an unskilled operator to rapidly walk through an environment to acquire data.
 
 % the noise characteristics
-Our system uses Hokuyo UTM-30LX sensors, whose intrinsic noise characterization is given in~\cite{Pomerleau12}.  Typically this noise contributes on the order of 1 to 2 centimeters to the standard deviation of the positional estimate of scan points.  This uncertainty value increases as the range of the point increases, with accurate measurements stopping at a range of $30$~meters.
+Our system uses Hokuyo UTM-30LX sensors, whose intrinsic noise characterization is given in~\cite{Pomerleau12}.  Typically this noise contributes on the order of 1 to 2 centimeters to the standard deviation of the positional estimate of scan points.  This uncertainty value increases as the range of the point increases, with accurate measurements stopping at a range of $30$~meters.  We also must consider input noise from our cameras.  We use three 12-megapixel cameras with fisheye lenses, in order to collect as much of the surrounding scenery as possible.  Due to this set-up, a major factor in sensor calibration is how long of an exposure to use for each image.  Since we may be scanning in dark or narrow areas of building environments, ensuring that enough light hits the sensor is challenging, especially with fisheye lenses.  However, if we set the exposure too long, then the imagery is susceptible to motion blur, since the operator often walks or turns quickly.
 
-% TODO LEFT OFF HERE
+% data rate from cameras, scalability of systems.
+Since we collect 12~MP imagery from three cameras at 2 Hz each, the camera images represent the major of data flow during the data acquisition process, at 72~megabytes per second.  To ensure no data loss, we necessitate a fast internal drive on the backpack system.  We have also configured the system with a USB-3 external drive, with twin SSD drives in a RAID-0 configuration.  This set-up allows us to write data directly to the external drive, which can be hot-swapped for fast processing.  On the second generation system, this storage drive is 500~GB, which allows for just under two hours of consecutive scanning.  The third generation system contains a 1~TB drive, which allows for up to four hours of scanning.  At that rate, we can perform data acquisition of over 100,000 square feet of building space on a single drive.
 
-% also discuss extrinsic calibration of sensors, and show diagram of system common coordinate frame
+% also discuss extrinsic calibration of sensors
+Since our hardware system contains may separate sensors, it is necessary to create a common system coordinate frame, as shown in Figure~\ref{fig:backpack}b.  Each sensor has an independent coordinate frame, but they are extrinsically calibrated against one another, in order to establish the rotation and translation between any given sensor and the common coordinate frame.  Once this extrinsic calibration process is performed, we can determine the orientation of any given sensor with respect to the common system.  As discussed in Chapter~\ref{sec:localization}, after a data collection we can determine the orientation of the system within a model coordinate frame.  The combintation of the transform generated by extrinsic sensor calibration and the localization process allows for sensor readings to be placed in model coordinates.
 
-% TODO (very) brief overview of data acquisition software
-
-% TODO discuss time synchronization, both during collection and processing
-
-% TODO scalability of system (size on disk, possible sizes for buildings
+% discuss time synchronization, both during collection and processing
+In addition to geometric calibration of the individual sensors, we must also consider temporal calibration of the sensor readings to a common clock.  Since each sensor operates independely on a separate clock, it is important to compute the transformation from a given sensor's time frame to that of the common system.  For this computation, we make the assumption that there is an affine transform between any two clocks.  Such an assumption is reasonable, since two clocks can naturally have a phase offset based on when they were initialized, as well as a scalar offset due to factors such as running temperature and age.  Timestamp synchronization is acheived by recording two timestamps for every scan frame of each sensor, one from the sensor clock and one from the system computer.  This process must be done in software since not all sensors have the capacity for hardware triggering.  The linear fit between clocks is computed and typically represents a fitting error of around $2$ to $7$~milliseconds standard deviations.
 
 %---------------------------------------------------------------------------
 %---------------------------------------------------------------------------
@@ -458,28 +502,47 @@ Some methods discussed in this dissertation also require a consolidated 3D point
 Before models of the building geometry can be generated, we must first determine how the operator traversed the environment.  Indoor building environments are typically GPS-denied areas, so local observations are required in order to track the path walked~\cite{Backpack,Localization,NickJournal}.  The process of recovering the 3D trajectory of the system is especially difficult for our backpack hardware, since a human operator can experience six degrees of freedom in movement ($x$, $y$, $z$, $\theta$, $\phi$, $\psi$), whereas the sensors used in the system can only observe a 2D slice of the environment.  As such, multiple laser scanners are mounted at different orientations on the backpack hardware to ensure that full 3D movement can be observed~\cite{NickJournal}.  These incremental changes in pose are refined by a global graph optimization step that constrains the system path whenever an area is revisited~\cite{toro07}.  These revisits are automatically detected and constrained in order to produce an accurate 2D trajectory of the system.  The elevation of the system is computed using a similar technique with a vertically mounted scanner~\cite{Backpack}.
 
 % coordinate systems used:  sensor, backpack, model
-The localization procedure is complete, we have full mapping between three coordinate systems for each recorded frame for each hardware sensor.  The internal coordinate frame of the sensor, which is specific to the make and model of the sensor hardware, can be converted to the system common coordinate frame based on the extrinsic calibration of each sensor's rigid position and orientation on the backpack system.  This rigid affine transformation for a given sensor $s$ is represented by the $3 \times 3$ rotation matrix $R_{s\rightarrow c}$ and the $3 \times 1$ translation vector $T_{s\rightarrow c}$.  The localization procedure provides an output path of the system, so that each pose of the system can be transformed from the system common coordinate frame to the world coordinate frame.  At a given time $t$, the affine transformation from the system common coordinates to the model coordinates is given by $3 \times 3$ rotation matrix $R_{c\rightarrow m}(t)$ and $3 \times 1$ translation vector $T_{c\rightarrow m}(t)$.  With these transformations, any sensor reading can be placed in global coordinates.
+The localization procedure is complete, we have full mapping between three coordinate systems for each recorded frame for each hardware sensor.  The internal coordinate frame of the sensor, which is specific to the make and model of the sensor hardware, can be converted to the system common coordinate frame based on the extrinsic calibration of each sensor's rigid position and orientation on the backpack system, which is given by the coordinate frame shown in Figure~\ref{fig:backpack}b.  This rigid affine transformation for a given sensor $s$ is represented by the $3 \times 3$ rotation matrix $R_{s\rightarrow c}$ and the $3 \times 1$ translation vector $T_{s\rightarrow c}$.  The localization procedure provides an output path of the system, so that each pose of the system can be transformed from the system common coordinate frame to the world coordinate frame.  At a given time $t$, the affine transformation from the system common coordinates to the model coordinates is given by $3 \times 3$ rotation matrix $R_{c\rightarrow m}(t)$ and $3 \times 1$ translation vector $T_{c\rightarrow m}(t)$.  With these transformations, any sensor reading can be placed in global coordinates.
 
 % discuss output model frame of localization, and units
 The localization output path provides the output model coordinate frame in a locally consistent coordinate frame based on the starting position of the operator during a scan.  This starting position is used as the origin point of the model.  By convention, the heading vector of the first pose is used as the $+X$-direction of the model coordinate frame.  The direction of gravity is used as the $-Z$-direction of the model coordinate frame.  The $Y$-direction of the model coordinate frame is chosen such that the coordinate system is right-handed.  Although this procedure produces a common set of coordinates for the model, we apply an additional step in order to align the model with the global coordinate frame, as discussed in Section~\ref{sec:align_path}.  Once this step is complete, the model uses East-North-Up (ENU) coordinates.  For the rest of this dissertation, all output models are expressed in units of meters.
 
-% TODO show figure of backpack coordinate frame and model coordinate frame
+% show figure of double surfacing.
+\begin{figure}
+	\centerline{\includegraphics[width=0.7\linewidth]{quals/misregistration_example}}
+	\caption{An example of misregistration or ``double surfacing'' in a point cloud.}
+	\label{fig:double_surface}
+\end{figure}
 
 % noise models of localization output (e.g. double-surfacing)
-Since the localization procedure used is performed in an integrative fashion, the expected error in the reported position and orientation of the system at any pose is higher than in competing technologies, such as static scan systems~\cite{NickJournal}.  Static systems often utilize markers or control points within the environment to ensure manual alignment of scans, allowing for positional accuracy of within $1~mm$~\cite{Li97,Karimi00}.  By contrast, the mean positional accuracy of the output poses in the backpack localization procedure is typically $10~cm$.  Additionally, the errors in successive poses are highly correlated.  Typically a local set of scan points captured within a few seconds of one another are highly accurate, yet if the same features in the environment are scanned twice with a long interval between scans, then the scans are likely to be mis-matched.  This behavior leads to the presence of ``double-surfacing'' in the output scans, which can be observed in the generated point cloud of the environment.
-
-% TODO show figure of double surfacing.
+Since the localization procedure used is performed in an integrative fashion, the expected error in the reported position and orientation of the system at any pose is higher than in competing technologies, such as static scan systems~\cite{NickJournal}.  Static systems often utilize markers or control points within the environment to ensure manual alignment of scans, allowing for positional accuracy of within $1~mm$~\cite{Li97,Karimi00}.  By contrast, the mean positional accuracy of the output poses in the backpack localization procedure is typically $10~cm$.  Additionally, the errors in successive poses are highly correlated.  Typically a local set of scan points captured within a few seconds of one another are highly accurate, yet if the same features in the environment are scanned twice with a long interval between scans, then the scans are likely to be mis-matched.  This behavior leads to the presence of ``double-surfacing'' in the output scans, which can be observed in the generated point cloud of the environment.  Figure~\ref{fig:double_surface} shows an example of such misregistration.  The chair in the depicted point cloud is represented by two copies, slightly offset from one another.  Note that the point cloud shown is generated using a static scanning system, which can also suffer from misregistration issues.
 
 In order to provide consistent output geometry, the modeling techniques described in this dissertation are designed to prevent such ``double-surfacing'' from occurring in the output meshes.  This trait is accomplished by performing volumetric analysis of the input scans, as discussed later in this document. 
 
 \section{Aligning Model Coordinates}
 \label{sec:align_path}
 
+% show color pointcloud compared to camera image
+\begin{figure}
+	\begin{minipage}[t]{0.5\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{align_path/compass_readings}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.5\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{align_path/aligned_path}}
+		\centerline{(b)}
+	\end{minipage}
+
+	\caption[Aligning model coordinate system with North.]{An example of aligning model coordinates to magnetic north:  (a) individual compass estimates of North (red) are compiled from each pose of the path (blue) and represented in world coordinates; (b) the model coordinates are transformed so that the mean estimate of magnetic North across all readings is oriented in the $+Y$-direction.}
+	\label{fig:align_path}
+\end{figure}
+
 As discussed in Section~\ref{sec:localization}, the system path generated by the localization procedure is initially oriented using the heading vector of the first pose.  In order to keep the orientation of model coordinate frames consistent between separate scans of the same environment, and to ensure that output geometry is easily recognizable, we perform an additional orientation step that aligns the path to the East-North-Up (ENU) coordinate frame.
 
 One of the on-board sensors of the backpack hardware system is a 3D magnetometer, which is built into the Inertial Measurement Unit (IMU).  Individual readings from a 3D compass are typically noisy when indoors, due to nearby ferrous building elements that interfere with hard and soft iron calibration~\cite{Caruso00,Guo08}.  As such, these readings are not reliable during the localization process.  Once the final, consistent path is generated we are able to generate a least-squares estimate of compass north and reorient the path so that North is aligned with the $+Y$-direction.
 
-First, the 3D magnetometer reading is recorded at each pose during the data acquisition.  These vector readings represent the magnetic field at that location.  The direction of each reading is used as a noisy estimate of the direction of magnetic South.  Let $\vec{m}_i \in \mathbb{R}^3$ be the magnetometer reading at pose $i$, in the coordinate frame of the magnetometer sensor $\texttt{mag}$.  The rotation required to orient the model coordinate frame to ENU coordinates is given by:
+First, the 3D magnetometer reading is recorded at each pose during the data acquisition.  As shown in the example in Figure~\ref{fig:align_path}a, these vector readings represent the magnetic field at that location.  The direction of each reading is used as a noisy estimate of the direction of magnetic South.  The magnetic field flows South, so the reverse direction, as shown in Figure~\ref{fig:align_path}a, is an estimate of North.  Let $\vec{m}_i \in \mathbb{R}^3$ be the magnetometer reading at pose $i$, in the coordinate frame of the magnetometer sensor $\texttt{mag}$.  The rotation required to orient the model coordinate frame to ENU coordinates is given by:
 
 \begin{equation}
 	\label{eq:align_path}
@@ -500,9 +563,7 @@ where $t_i$ is the timestamp of pose $i$, and $R_{z}(\theta)$ is the rotation ma
 				0 & 0 & 1 \end{array} \right]
 \end{equation}
 
-This optimization rigidly rotates the model coordinate frame about the $z$-axis in order to best align all magnetometer readings with the direction we wish to denote south:  the $-Y$-direction.  This procedure ensures that all output models are aligned with magnetic North, in ENU coordinates.  While not applied in the current configuration, it is possible to also align the model to true North if given the latitude and longitude coordinates of the scanning location, by performing a look-up of magnetic declination~\cite{MagDec}.
-
-% TODO show figure of align_path rotation
+This optimization rigidly rotates the model coordinate frame about the $z$-axis in order to best align all magnetometer readings with the direction we wish to denote south:  the $-Y$-direction.  An example result of this procedure is shown in Figure~\ref{fig:align_path}b.  This procedure ensures that all output models are aligned with magnetic North, in ENU coordinates.  While not applied in the current configuration, it is possible to also align the model to true North if given the latitude and longitude coordinates of the scanning location, by performing a look-up of magnetic declination~\cite{MagDec}.
 
 \section{Point Cloud Generation}
 \label{sec:pointcloud}
@@ -580,6 +641,7 @@ A histogram approach can be used to separate the point cloud by levels~\cite{Tur
 % http://www.ctan.org/tex-archive/biblio/bibtex/contrib/doc/
 % The IEEEtran BibTeX style support page is at:
 % http://www.michaelshell.org/tex/ieeetran/bibtex/
+\addcontentsline{toc}{chapter}{Bibliography}
 \bibliographystyle{IEEEtran}
 % argument is your BibTeX string definitions and bibliography database(s)
 %\bibliography{IEEEabrv,../bib/paper}

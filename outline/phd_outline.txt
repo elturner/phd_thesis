@@ -28,11 +28,11 @@ Thesis outline :
 	dedication
 
 	Table of contents
-		- list of figures
+		- list of figures (~60 figures)
 	
 	Acknowledgements (1 page)
 
-	Introduction (10-15 pages)
+x	Introduction (10-15 pages)
 		- motivation					\label{ch:introduction}
 		- overview
 		- background
@@ -45,7 +45,7 @@ Thesis outline :
 
 		- organization of thesis			\label{sec:organization}
 
-	harware description (5-10 pages)			\label{ch:hardware}
+x	harware description (5-10 pages)			\label{ch:hardware}
 		- mechanical specs				\label{sec:mechanical}
 		- sweeping orientation of scanners		\label{sec:sensor_specs}
 		- error characteristics of sensors

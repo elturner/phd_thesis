@@ -4,6 +4,10 @@ STY = *.cls
 # rule to make everything
 pdf: $(R).pdf
 
+# just make pdf fast, may not have all references correct
+fast:
+	pdflatex $(R)
+
 # rule to make bibliography file
 $(R).bbl: $(R).bib
 	pdflatex $(R)
