@@ -976,30 +976,129 @@ This section details a technique to generate 2D architectural floor plans.  By p
 \section{Floor Plan Generation with Room Partitioning}
 \label{sec:visigrapp}
 
-% TODO visigrapp floorplan generation
+In this section, we present a technique to automatically generate accurate floor plan models at real-time speeds for indoor building environments~\cite{Turner14}.  In Section~\ref{ssec:visigrapp_carving}, we discuss how we compute the interior space of the 2D floor-plan, which defines the resultant building geometry.  The partitioning of this interior space into separate rooms is then considered in Section~\ref{ssec:room_label}.  Using these room labels, the geometry can be simplified, as described in Section~\ref{ssec:fp_simplify}.  In Section~\ref{ssec:fp_extrusion}, the final 2D geometry is extruded into an exported 3D model.
 
 \subsection{Defining Interior Area}
 \label{ssec:visigrapp_carving}
 
-% TODO visigrapp floorplan carving
+% carving a floor plan
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\linewidth]{visigrapp/algorithm/carving/carving_full_figure}
+  \caption[Carving process to find interior triangles.]{Example of carving process to find interior triangles:  (a) wall samples (in blue) with path of scanner (in green); (b) Delaunay Triangulation of wall samples; (c) laser scans from each pose (in red); (d) triangles that intersect with laser scans (in pink), used as interior triangles, with building model border (in blue).}
+  \label{fig:visigrapp_floorplan_creation}
+\end{figure}
 
+% introduction
+We generate a floor plan by partitioning space into {\it interior} and {\it exterior} domains.  The interior space of the floor plan is computed using the input wall samples.  The desired output consists of not only the architectural features such as walls, but also a volumetric representation of the environment such as rooms and hallways.  The exterior represents all space outside of the building, space occupied by solid objects, or space that is unobservable.  Once this partitioning is completed, as described below, the boundary lines between the interior and exterior are used to represent the exported walls of the floor plan.
+
+% carving process using pose positions  
+The input samples are used to define a volumetric representation by generating a Delaunay Triangulation in the plane.  Each triangle is labeled either interior or exterior by analyzing the line-of-sight information of each wall sample.  Initially, all triangles are considered exterior.  Each input wall sample, $p \in P$, is viewed by a set of scanner positions, $S_p \subseteq \mathbb{R}^2$.  For every scanner position $s \in S_p$, the line segment $(s,p)$ denotes the line-of-sight occurring from the scanner to the scanned point during data collection.  No solid object can possibly intersect this line, since otherwise the scan would have been occluded.  Thus, all triangles intersected by the line segment $(s,p)$ are relabeled to be interior.
+
+In order to prevent fine details from being removed, we check for occlusions when carving each line segment $(s,p)$.  If another wall sample $p'$ is located in between the positions of $s$ and $p$, then the line segment is truncated to $(s,p')$.  Thus, no features captured by wall samples are ever fully carved away, preserving environment details.  This process carves away the interior triangles with each captured scan.  Since these scans are captured on a mobile scanner, the scanner poses are ordered in time.  In order for the system to traverse the environment, the line segment between adjacent scanner poses must also intersect only interior space.  In addition to carving via scanner-to-scan lines, the same carving process is performed with scanner-to-scanner line segments.
+
+Figure~\ref{fig:visigrapp_floorplan_creation} demonstrates an example of this process.  Figure~\ref{fig:visigrapp_floorplan_creation}a shows the input wall samples, in blue, as well as the path of the mobile mapping system, in green.  These points are triangulated, as shown in Figure~\ref{fig:visigrapp_floorplan_creation}b.  The line-of-sight information is analyzed from each pose of the system, demonstrated by the laser scans from each pose to its observed wall samples in Figure~\ref{fig:visigrapp_floorplan_creation}c.  The subset of triangles that are intersected by these laser scans are considered interior.  The interior triangles are shown in pink in Figure~\ref{fig:visigrapp_floorplan_creation}d, denoting the interior volume of the reconstructed building model.  The border of this building model is shown in blue, denoting the estimated walls of the floor plan.
+
+% checking for occludiing wall samples
+The above method may result in errors if there is misregistration in the localization of the poses of the scanners during the data collection.  For instance, if opposite sides of the same wall are scanned, this wall appears in the output with some thickness, $t$.  If the estimated positions of the scanners on either side of the wall are inaccurate, the observed wall thickness varies by the component of this localization error orthogonal to the wall plane.  If this error is greater than $t$, then every triangle associated with the wall may be labeled interior, and the wall is carved away entirely from the output.  In order to prevent these topological errors, we check for occlusions when carving each line segment $(s,p)$.  If another wall sample $p'$ is located in between the positions of $s$ and $p$, then the line segment is truncated to $(s,p')$.  Thus, no features captured by wall samples are ever fully carved away, which preserves the details of the environment.
+
+% room labeling section
 \subsection{Labeling Rooms Within the Floor Plan}
 \label{ssec:room_label}
 
 A novel contribution of this technique is the use of room labeling to enhance building models, e.g.\ for thermal simulations of interior environments~\cite{Turner14,EnergyPlus}.  One motivation for existing work has been to capture line-of-sight information for fast rendering of building environments~\cite{WalkthroughRendering}.  This technique requires axis-aligned rectilinear building geometry, which often is not a valid assumption.  Others have partitioned building environments into submap segments with the goal of efficient localization and tracking~\cite{SpectralClustering}.  This approach is meant to create easily recognizable subsections of the environment, whereas our proposed room labeling technique uses geometric features to capture semantic room definitions for both architectural and building energy simulation applications.
 
-% TODO room labeling
+% figure showing room seed identification
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\linewidth]{visigrapp/algorithm/room_seeds/room_seeds_full_figure}
+  \caption[Example room seed partitioning.]{Example room seed partitioning: (a) interior triangulation; (b) the room seed triangles, and their corresponding circumcircles; (c) room labels propagated to all other triangles.}
+  \label{fig:roomlabeling}
+\end{figure}
 
+Once the volume has been partitioned into interior and exterior domains, the boundary between these domains can be exported as a valid floor plan of the environment.  Keeping volumetric information can also yield useful information, such as a partitioning of the interior into separate rooms.
+
+% definition of a room
+We define a {\it room} to be a connected subset of the interior triangles in the building model.  Ideally, a room is a large open space with small shared boundaries to the rest of the model.  Detected rooms should match with real-world architecture, where separations between labeled rooms are located at doorways in the building.  Since doors are often difficult to detect, or not even present, there is no strict mathematical definition for a room, so this labeling is heuristic in nature.
+
+We model room labeling as a graph-cut problem.  First, a rough estimate for the number of rooms and a seed triangle for each room is computed.  A seed triangle is representative of a room, where every room to be modeled has one seed triangle.  These seeds are used to partition the remainder of interior triangles into rooms.  This process typically over-estimates the number of rooms, so prior knowledge of architectural compliance standards is used to evaluate each estimated room geometry.  Using this analysis, the number of ill-formed rooms is reduced, providing an update on the original seed points.  This process is repeated until the set of room seeds converges.
+
+%\subsubsection{Forming Room Seeds}
+%\label{sssec:room_seeds}
+
+We use the Delaunay property of the triangulation to identify likely seed triangle locations for room labels, which states that no vertex is strictly inside the circumcircle of any triangle in this triangulation.  If we assume that the input wall samples represent a dense sampling of the building geometry, this property implies that the circumcircles of none of the interior triangles intersect the boundary walls of the carved floor plan, forcing these circles to represent only interior area.  This make-up allows each triangle's circumradius to provide an estimate of the local feature size at its location on the floor plan boundary polygon.  Given the example interior triangulation shown in Figure~\ref{fig:roomlabeling}a, the highlighted triangles in Figure~\ref{fig:roomlabeling}b show the chosen seed locations.
+
+Triangles with larger circumradii are likely to be more representative of their rooms than those with smaller circumradii.  We form the initial set of room seeds by finding all triangles whose circumcircles are local maxima.  Specifically, given the set of interior triangles $T$, each triangle $t \in T$ has circumcircle $c_t$, which is tested against every other circumcircle in $T$ that is intersected by $c_t$.  If $c_t$ has the largest radius of any intersecting circumcircle, then $t$ is considered a seed for the room labeling.  This process selects the largest triangles that encompass the space of rooms as the seeds for room labeling.  Figure~\ref{fig:roomlabeling}b shows example seed triangles and their corresponding circumcircles.  The result is an estimate of the number of rooms and a rough location for each room.
+
+%\subsubsection{Partitioning Room Labels}
+
+% refining and combining rooms
+\begin{figure}
+  \centering
+  \includegraphics[width=0.75\linewidth]{visigrapp/algorithm/room_merging/room_merging_full_figure}
+  \caption[Room labeling refinement example.]{Room labeling refinement example: (a) initial room labels; (b) converged room labels}
+  \label{fig:roommerging}
+\end{figure}
+
+Let $K$ be the number of room seeds found, with the seed triangles denoted as $t_1,\,t_2,\,...,\,t_K$.  We wish to partition all triangles in $T$ into $K$ rooms.  This step can be performed as a graph-cut on the dual of the triangulation.  Specifically, each triangle $t \in T$ is a node in the graph, and the edge weight between two abutting triangles is the length of their shared side.  Performing a min-cut on this graph partitions rooms to minimize inter-room boundary length.  In other words, rooms are defined to minimize the size of doors.  This process propagates the room labels to every triangle, and the boundaries between rooms are composed of only the smallest edges in the triangulation $T$.  The result of this process is shown in Figure~\ref{fig:roomlabeling}c.
+
+A greedy algorithm can alternatively be employed to flood-fill rooms.  To do so, we initialize the labeling so that each seed triangle $t_i$ has a unique label, while all non-seed triangles are unlabeled.  We then construct a priority queue of all edges in $T$ that separate a labeled triangle from an unlabeled triangle, sorted by decreasing edge length.  Iterating through this queue, the top value represents the longest edge in the queue, adjoining a labeled triangle $u \in T$ and unlabeled triangle $v \in T$.  We then pop this edge, propagate the label from $u$ to $v$, then push all edges of $v$ adjoining unlabeled triangles onto the queue.  
+
+%\subsection{Refining Rooms}
+%\label{sec:refiningrooms}
+
+Room labels partition $T$ into a set of rooms $R = \{R_1,\,R_2,\,...,\,R_K\}$, where each room $R_i$ contains a disjoint subset of $T$ and has seed triangle $t_i$.  The initial room seeds over-estimate the number of rooms, since a room may have multiple local maxima.  This case is especially true for long hallways, where the assumption that one triangle dominates the area of the room is invalid.  An example is shown in Figure~\ref{fig:roomlabeling}c, where two lower rooms, shown in green and purple, are properly labeled, but their adjoining hallway is broken into three subsections.  The solution is to selectively remove room seeds and redefine the partition.
+
+A room is considered a candidate for merging if it shares a large perimeter with another room.  Ideally, two rooms sharing a border too large to be a door should be considered the same room.  By Americans with Disabilities Act Compliance Standards, a swinging door cannot exceed 48 inches in width~\cite{ADACompliance}.  Accounting for the possibility of double-doors, we use a threshold of 2.44 meters, or 96 inches, when considering boundaries between rooms.  If two rooms share a border greater than this threshold, then the seed triangle with the smaller circumradius is discarded.  This process reduces the value of $K$, the number of rooms, while keeping the interior triangulation $T$ unchanged.  With a reduced set of room seeds, existing room labels are discarded and the process of room partitioning is repeated.  This iteration repeats until the room labeling converges.
+
+Another way room labels are refined is by comparing the path of the mobile mapping system to the current room labeling for each iteration.  The mobile scanning system does not necessarily traverse every room, and may only take superficial scans of room geometry passing by a room's open doorway.  Since the room is not actually entered, the model is unlikely to capture sufficient geometry, and so only a small handful of wall samples are acquired for such a room.  It is desirable to remove this poorly scanned area from the model rather than keeping it as part of the output.  After each round of room partitioning, if none of the triangles in a room $R_i$ are intersected by the scanner's path, then we infer that room has not been entered.  The elements of $R_i$ are removed from the interior triangulation $T$.  Since the topology of the building model is changed, the set of room seeds is recomputed in this event and room labeling is restarted.  This process will also remove areas that are falsely identified as rooms, such as ghost geometry generated by windows and reflective surfaces, which cause rooms to be replicated outside the actual model.
+
+Figure~\ref{fig:roommerging} shows an example of the room refinement process for the hallways and classrooms in an academic building. Figure~\ref{fig:roommerging}a shows the initial room seeds that were found based on circumcircle analysis.  The hallways of this building are represented by several room labels, but after room label refinement as shown in Figure~\ref{fig:roommerging}b, the hallways are appropriately classified.  Additionally, rooms that are insufficiently scanned and represented with triangulation artifacts are removed from the model in the manner described above.
+
+% simplification of floor plan geometry
 \subsection{Simplification of Floor Plan Geometry}
 \label{ssec:fp_simplify}
 
-% TODO floor plan simplification.  compare with ransac method in eigencrust
+The interior building model is represented as a triangulation of wall samples, which densely represent the building geometry.  In many applications, it is useful to reduce the complexity of this representation, so that each wall is represented by a single line segment.  This step is often desirable in order to attenuate noise in the input wall samples or to classify the walls of a room for application-specific purposes.  The goal is to simplify the wall geometry while preserving the general shape and features of the building model.
 
+We opt to simplify walls using a variant of QEM~\cite{QEM,Turner14}.  Since this mesh is in the plane, only vertices incident to the model boundary are considered for simplification.  The error matrix $Q_v$ of each boundary vertex $v$ is used to compute the sum of squared displacement error from each adjoining line along the boundary polygon.  Since error is measured via distance away from a line in 2D, each $Q_v$ has size $3 \times 3$, and is defined as:
+
+\begin{equation}
+Q_v = \sum_{l \in lines(v)} E_l
+\end{equation}
+
+where $E_l$ is defined from the line equation $ax + by + c = 0$, with $a^2 + b^2 = 1$:
+
+\begin{equation}
+E_l = \left[ \begin{array}{c c c}
+a^2 & ab & ac \\
+ab & b^2 & bc \\
+ac & bc & c^2 \end{array} \right]
+\end{equation}
+
+The simplification of the boundary proceeds in a similar manner to QEM, but if a wall vertex $v$ is contained in multiple rooms or if it is connected by an edge to a vertex that is contained in multiple rooms, then it is not simplified.  This constraint is used to preserve the fine details of doorways between rooms, while freely simplifying walls that are fully contained within one room.  Wall edges are iteratively simplified until no simplification produces error of less than the original wall sampling resolution, $r$.  Thus, walls are simplified while preserving any geometry features of the building interior.
+
+Since we are interested in preserving the 2D triangulation $T$ of the building model, in addition to the boundary polygon, every edge simplification is performed by collapsing an interior triangle.  This computation simplifies the boundary polygon of the model while still preserving the room labeling of the model's volume.  These triangle collapses do not preserve the Delaunay property of the triangulation, but do preserve the boundaries between room volumes, which is more desirable in the output.
+
+We can compare this method of simplification to the RANSAC fitting described in the previous method, in Section~\ref{sec:eigencrust}.  By using local simplification, each modification to the floor plan geometry only requires access to a small number of elements, allowing for rapid simplification.  With the RANSAC method, each adjustment is very expensive, since it must iterate several times over the entire set of input wall samples.  The one limitation to the QEM simplification method is that it does not support circular or curved surfaces.  This limitation, however, is reasonable, since curved features can be approximated with a set of piecewise-planar walls.
+
+% floor plan height extrusion
 \subsection{Extruding Floor Plan Geometry to 2.5D Models}
 \label{ssec:fp_extrusion}
 
-% TODO floor plan extrusion
+% example simplification and height extrusion
+\begin{figure}
+  \centering
+  \includegraphics[width=0.8\linewidth]{visigrapp/algorithm/height_extrusion/height_extrusion_full}
+  \caption[Example of creating a 3D extruded mesh from 2D wall samples.]{Example of creating a 3D extruded mesh from 2D wall samples:  (a) walls of generated floor plan with estimated height ranges; (b) floor and ceiling heights are grouped by room; (c) simplification performed on walls; (d) floor and ceiling triangles added to create a watertight mesh.}
+  \label{fig:heightextrusion}
+\end{figure}
 
+As mentioned in Section~\ref{sec:wall_sampling}, each input wall sample also references the vertical extent for the observed scans at that location.  This information can be used to convert the labeled 2D interior building model to a 2.5D extruded model, by using the minimum and maximum height values for each scan as an estimate of the floor and ceiling heights, respectively~\cite{Turner14}.
+
+Since these wall samples are collected using 2D planar scanners in an environment containing clutter, the minimum and maximum heights associated with each point are noisy.  Figure~\ref{fig:heightextrusion}a shows an example room with these initial heights.  To produce aesthetically-pleasing models, each room uses a single floor height and a single ceiling height.  This assumption is reasonable since the goal of this processing is to produce a simplified building mesh.  This step demonstrates the utility of room labeling to modeling.  The height range for each room is computed from the median floor and ceiling height values of that room's vertices.  An example is shown in Figure~\ref{fig:heightextrusion}b and the corresponding result from the simplification process from Section~\ref{ssec:fp_simplify} is demonstrated in Figure~\ref{fig:heightextrusion}c.
+
+The 2D triangulation of a room is then used to create the floor and ceiling mesh for that room, with the boundary edges of the triangulation extruded to create rectangular vertical wall segments.  The result is a watertight 3D mesh of the building, capturing the permanent geometry in an efficient number of triangles.  Figure~\ref{fig:heightextrusion}d shows an example of this watertight extruded geometry, including the effects of wall boundary simplification on the resulting extruded mesh.
 
 \section{Results}
 \label{sec:fp_results}
