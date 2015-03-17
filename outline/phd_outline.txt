@@ -61,18 +61,19 @@ x	Pointcloud generation (5-10 pages)			\label{ch:preprocessing}
 		- partition pointcloud by levels		\label{sec:pointcloud_level_split}
 	
 	Floorplan generation					\label{ch:floorplan}
-		- wall sampling techniques
+		- wall sampling techniques			\label{sec:wall_sampling}
 			- histogram binning of pointclouds
 				(with and without normal analysis)
 			- unsuccessfuly attempts:
 				- extrema wall samples
 	
 		- volumetric approaches with triangles
-		- Eigencrust
-		- visigrapp
-		- room detection				\label{sec:room_label}
-		- simplification techniques
-		- extruding to 2.5D model
+		- Eigencrust					\label{sec:eigencrust}
+		- visigrapp					\label{sec:visigrapp}
+			- room detection				\label{ssec:room_label}
+			- simplification techniques			\label{ssec:fp_simplify}
+			- extruding to 2.5D model			\label{ssec:fp_extrusion}
+		- results					\label{sec:fp_results}
 		
 	Carving							\label{ch:carving}
 		- 3DV 2013 voxel carving

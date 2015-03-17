@@ -221,14 +221,8 @@ This research was conducted with Government support under and awarded by DoD, Ai
 % lab folks
 I also want to extend my deep gratitude to all my colleagues in the Video and Image Processing Lab.  John Kua, Michael Krishnan, Rick Garcia, Shangliang Jiang, Nicholas Corso, Shicong Yang, Richard Zhang, and Joe Menke have all lent me guidance and helped me through.  I especially want to mention Nicholas, who ensured that I took a daily constitutional around campus rather than hiding away in our lab.
 
-
-
-% TODO rest of acknowledgements
-5) Bay-area friends
-7) Dad and family
-
-% Sam
-Lastly, I want to thank Samantha Shropshire, my girlfriend.  For putting up with my working at odd hours, for supporting me, and for bouncing ideas off of, her patience knows no bounds.  Sam, without you, I would never have survived graduate school.
+% family and sam
+Additionally, I want to thank my family.  Even though I moved to the other side of the country, they have always been supportive.  My Dad, David Turner, has not only been my role model of an engineer, but truly comforting at every step of my way through school.  Lastly, I want to thank Samantha Shropshire, my girlfriend.  For putting up with my working at odd hours, for supporting me, and for bouncing ideas off of, her patience knows no bounds.  Sam, without you, I would never have survived graduate school.
 
 %---------------------------------------------------------------------------
 %---------------------------------------------------------------------------
@@ -435,6 +429,10 @@ In this section, we discuss existing techniques to generate each of these types 
 % This subsubsection describes floor plan generation techniques
 \subsection{Floor-Plan Modeling}
 \label{ssec:background_floorplan}
+
+Interior scanning has traditionally been used for robotic navigation in indoor environments.  The rough locations of walls are necessary to avoid collisions.  Generating floor plans for modeling, however, requires a much higher degree of precision \cite{Okorn09}.  Given these antecedent studies, techniques have been developed using a single horizontal scanner collecting about the yaw direction \cite{Weiss05}.  Constructing full 3D scans allows for more sophisticated means of identifying walls from other obstacles in a building.  In this scenario, one can compute a top-down 2D histogram of point densities across the x-y plane \cite{Okorn09}.  Areas with high density are considered likely to be wall locations.  While clutter is mitigated by being less represented in the histogram than walls, no direct measures are taken to remove outlier samples before line-fitting.  Further, each story of a building must be processed separately.
+
+Previous approaches to floor plan modeling typically assume walls are well-fitted by straight line segments and whether these fitted models are watertight is not guaranteed \cite{Nuchter03, Okorn09, Weiss05}.  Many architectural designs incorporate curved features, which would not be modeled accurately by these approaches. The absence of any water-tightness guarantee requires extensive post-processing to be devoted to removing disconnected and outlier segments that are interpreted as noise.
 
 Floor-plan modeling techniques are based on the idea of sampling positional information of walls within the environment captured by the scans, then using these wall samples to generate a plan composed of line segments or polygons.  The work of Weiss et al use a cart-based system with a horizontal laser scanner~\cite{Weiss05}.  The output scan points are exactly the sample positions of the walls.  The find lines in this scan map with a Hough Transform, which represent walls.  Okorn et al employ a similar method, but their input scans represent a full 3D point-cloud~\cite{Okorn09}.  The wall sample positions are found by computing a top-down histogram of the input points, and areas of high density are classified as vertical surfaces.  The approaches we discuss in Chapter~\ref{ch:floorplan} employ a similar top-down histogram.  Lastly, Mura et al's paper takes a different approach to estimating wall positions~\cite{Mura13}.  They perform region growing in the 3D point-cloud to fine planar regions, which are projected into 2D and treated as potential wall candidates.  A cell complex is then built to volumetrically identify separate rooms in the model.  This approach is the second publication that performs automatic room partitioning, where the first is our approach as discussed in Chapter~\ref{sec:room_label}~\cite{Turner14}.  There are also methods that take a floor plan as input, and use this information to generate a 3D model of the environment by extruding the defined wall information~\cite{Or05,Lewis98}.  This type of modeling yields aesthetically pleasing results with well-defined floors, walls, and ceilings.
 
@@ -729,8 +727,190 @@ A histogram approach can be used to separate the point cloud by levels~\cite{Tur
 \chapter{Floor Plan Generation}
 \label{ch:floorplan}
 
-% TODO LEFT OFF HERE
+In this chapter, we discuss multiple methods to produce 2D floor plans of indoor building scans.  Both methods generate floor plan geometry by first generating a set of 2D wall samples.  Wall samples are represented by a set of points that locate areas of high likelihood of being large vertical surfaces.  We list the evolving techniques we use to generate wall samples in Section~\ref{sec:wall_sampling}.
 
+Once wall sampling is performed, we have developed two different floor plan generation techniques.  In Section~\ref{sec:eigencrust}, we discuss a global optimization approach to generate watertight floor plan geometry based off of the Eigencrust algorithm~\cite{EigencrustShewchuk,Turner12}.  This method explicitly fits both straight and curved features into the floor plan geometry, in order to preserve curved building features.  In Section~\ref{sec:visigrapp}, we discuss our second floor plan generation approach.  This approach is adapted from our original algorithm, but no longer requires a global optimization step, allowing for faster processing~\cite{Turner14}.  Additionally, it explicitly partitions the floor plan geometry into individual rooms.  This method also introduces simplfication mechanisms that allow for minimal elements to represent the geometry while still preserving the watertight, volumetric topology.
+
+Lastly, in Section~\ref{fp_results}, we show several results comparing each of these methods, including multi-story models showing how these methods can operate on datasets taken over several levels of a building environment.  We also show comparisons of our automatically generated results to the ground-truth blueprints of the scanned environments.
+
+% wall sampling technqiues
+\section{2D Wall Sampling}
+\label{sec:wall_sampling}
+
+% TODO section on wall sampling
+
+% eigencrust floor plan reconstruction
+\section{Eigencrust Floor Plan Reconstruction}
+\label{sec:eigencrust}
+
+Given a point cloud representing a subset of the interior of a building that can cover multiple stories, we propose a three-step process to generate a watertight floor plan for each story in the point cloud by fitting line segments and curves to model features~\cite{Turner12}.  First, The output wall samples generated using the method described in Section~\ref{sec:wall_sampling} are smoothed to prevent double-surfacing effects, as discussed in Section~\ref{ssec:eigencrust_smoothing}.  Second, the Delaunay Triangulation of the generated wall samples is computed and each triangle is labeled as ``inside'' or ``outside'' using a 2D version of the Eigencrust algorithm~\cite{EigencrustShewchuk}.  This process is discussed in Section~\ref{ssec:eigencrust_triangulation}.  The edges that border these two labels are output as wall locations, as detailed in Section~\ref{ssec:eigencrust_boundary}.  Third, noise reduction is achieved by fitting these facets to line segments and curved components using Random Sample Consensus (RANSAC)~\cite{Ransac}, discussed in Section~\ref{ssec:eigencrust_fitting}.
+
+\subsection{Smoothing Wall Samples}
+\label{ssec:eigencrust_smoothing}
+
+\begin{figure}[t]
+
+\begin{minipage}[b]{1.0\linewidth}
+  \centering
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/sample_smoothing_results}}
+\end{minipage}
+
+\caption[Smoothing wall samplings.]{Average filtering reduces occurrence of registration errors exposed in wall sampling.}
+\label{fig:sample_smoothing_results}
+
+\end{figure}
+
+A crucial step in generating a point cloud is to register the poses of separate scan positions to a common coordinate system.  Any error in this process may result in duplicate instances of a scanned wall with slight misalignments.  Each instance of a wall may appear in $S_k$ and if the registration error is significant smoothing may be required to force these wall instances to become aligned.
+
+For a given sample $s \in S_k$ with normal vector $\vec{n}$, its smoothing set is a subset of $S_k$.  The position of $s$ is translated to be the mean position of this smoothing set. The smoothing set contains all samples that are (a) within some smoothing distance of $s$ along the $\pm \vec{n}$ direction, (b) no more than $3 d_s$ away from $s$ in the direction orthogonal to $\vec{n}$, and (c) whose normals are aligned to within $\frac{\pi}{8}$ radians of $\vec{n}$.  The smoothing distance must be less than the minimum allowable spacing between parallel walls, but at least as large as the expected registration error.  This step is not necessary if registration error is smaller than $d_s$.  An example of this smoothing process is shown in Figure~\ref{fig:sample_smoothing_results}.
+
+\subsection{Labeling Triangulation of Wall Samples}
+\label{ssec:eigencrust_triangulation}
+
+We wish to determine the topology of the 2D sample set $S_k$ for each story $k \in \{ 0, 1, ..., f-1 \}$.  This task is accomplished using a 2D variant of the Eigencrust algorithm \cite{EigencrustShewchuk}.  This will partition 2D space into regions labeled ``inside'' and ``outside'' and export the borders between these regions.  These borders form the faces of a 2D simplicial complex, which are guaranteed to be watertight and not self-intersecting.  Eigencrust has been shown to be more robust to outlier samples than similar algorithms, such as Powercrust \cite{EigencrustShewchuk, Powercrust}.
+
+\begin{figure}[t]
+
+\begin{minipage}[b]{1.0\linewidth}
+  \centering
+  \centerline{\includegraphics[height=4.2cm]{3dimpvt2012/eigencrust/intersect_angles}}
+\end{minipage}
+
+\caption[Computing weighting between triangle pairs.]{The angles of intersection between two triangles $u$ and $v$, which share the edge $\overline{s_1 s_2}$. These values are used in computing weights between triangle pairs.}
+\label{fig:intersect_angles}
+
+\end{figure}
+
+The Eigencrust algorithm first computes the 2D Delaunay Triangulation, $T$, for the sample set $S_k$ plus four bounding box corners.  Eigencrust constructs a sparse graph where the nodes represent triangles and edges are placed between the nodes with weights corresponding to the relative geometry of the triangles.  Edges with positive weights indicate that triangles should have the same labeling, while negative weights indicate that the triangles connected should be labeled oppositely.  Generalized eigensystems are solved in order to determine the best triangle labelings to fit these connections.  For our 2D varient of Eigencrust, we keep the same criteria for placing edge weights as in \cite{EigencrustShewchuk}, but modify the negative edge weight values.  We have additional information of normal vectors for each sample location. If a negative edge is placed between two triangles $u$ and $v$, we use the weighting:
+
+\begin{equation}
+w_{u,v} = - e ^ {4 + 4 cos \phi + 2 sin \theta_1 + 2 sin \theta_2}
+\label{neg_edge_weight}
+\end{equation}
+
+where these parameters are shown in Figure~\ref{fig:intersect_angles}.  This weighting is very close to the one used in \cite{EigencrustShewchuk}.  The value $\phi$ is defined as the angle at which the circumcircles of $u$ and $v$ intersect.  The intersection of the triangles $u$ and $v$ is a line segment whose endpoints are samples $s_1$ and $s_2$, which have normal vectors $\vec{n}_1$ and $\vec{n}_2$ respectively.  The values of $\theta_1$, $\theta_2$ are defined to be the angles between $\overline{s_1 s_2}$ and $\vec{n}_1$, $\vec{n}_2$, respectively.  This weight is defined to have a large magnitude when both the normal vectors are perpendicular to the line $\overline{s_1 s_2}$, which is a strong indication of a wall in the original point cloud $P_k$.
+
+\begin{figure}[t]
+
+\begin{minipage}[b]{0.5\linewidth}
+  \centering
+  \centerline{\includegraphics[height=4.2cm]{3dimpvt2012/eigencrust/BHH-Lobby_wall_sampling_zoom}}
+  \centerline{(a)}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.5\linewidth}
+  \centering
+  \centerline{\includegraphics[height=4.2cm]{3dimpvt2012/eigencrust/BHH-Lobby_triangulation_zoom}}
+  \centerline{(b)}
+\end{minipage}
+
+\caption[Example triangulation of wall samples.]{An example triangulation of wall samples: (a) a set of wall samples for a column; (b) each triangle is denoted as ``inside'' (yellow) or ``outside'' (green).}
+\label{fig:eigencrust_triangulation}
+
+\end{figure}
+
+For each pair of samples $s$,$s' \in S_k$ such that ($s$,$s'$) is an edge of the Delaunay Triangulation $T$, let $u$ and $v$ be the poles of $s$, and $u'$ and $v'$ be the poles of $s'$.  Each of the pairs ($u$, $u'$), ($u$, $v'$), ($v$, $u'$), and ($v$, $v'$) are edges in $E$.  If a negative edge is not already defined, each of these pairs has positive edge weight:
+
+\begin{equation}
+w_{u,u'} = e ^ {4 - 4 cos \phi}
+\label{pos_edge_weight}
+\end{equation}
+
+where $\phi$ is again defined as the angle at which the circumcircles of $u$ and $u'$ intersect~\cite{EigencrustShewchuk}.  Next, we can constrain some triangles to be interior or exterior based on a priori information.  The label ``inside'' refers to locations of open area within a building where a person can exist.  The term ``outside'' refers to all other areas, which include both the exterior of the building as well as the areas inside walls or other solid spaces.  We can immediately force the label of ``outside'' to any triangles connected to the bounding box corner vertices.  If the pose information for the scanner is available, we can force the label of ``inside'' to a subset of triangles.  First, we investigate whether the 2D line-of-sight from a scanner pose to a scan sample crosses triangles.  If the center 50\% of this laser travel distance crosses a triangle, that triangle is intersected by that scan line.  If a triangle is intersected by 10 or more scan lines, it is assumed to be ``inside''.  Second, all triangles that contain a pose position of a scanner are marked as interior.  If a mobile scanning system is used, then the path traversed by that system can also be used to mark interior triangles.  Each pair of adjacent pose positions represents a line segment in 2D space.  If both of these poses contributed scans to the wall sample set $S_k$, then any triangles that are intersected by this line segment are also constrained to be interior.
+
+The remaining triangles are labeled inside or outside by solving generalized eigenvalue systems that minimizes the total positive edge weights that connect oppositely labeled triangles and negative edge weights that connect triangles with the same labeling~\cite{EigencrustShewchuk}.
+
+The non-pole triangles are then put into a corresponding graph.  Since the edge-weights of this non-pole graph in the 3D Eigencrust algorithm use the aspect ratio of bounding triangular faces, there is not a direct translation of these weight calculations to 2D.  Thus the same weights are used as for the pole graph $G$, defined in Equations~\ref{neg_edge_weight} and~\ref{pos_edge_weight}.  A corresponding generalized eigenvalue system is solved for this non-pole graph, which provides a labeling for all triangles in $T$.  An example output of this triangulation labeling process is shown in Figure~\ref{fig:eigencrust_triangulation}.
+
+All the ``outside'' nodes are collapsed into one outside super-node and all ``inside'' nodes are collapsed into one inside super-node, creating graph $G'$.  The nodes and edges of $G'$ are then converted into a matrix $L \in \mathbb{R}^{|G'| \times |G'|}$.  Each element is defined as $L_{ij} = L_{ji} = -w_{i,j}$ with the diagonal $L_{ii} = \sum_{j \neq i} |L_{ij}|$.  The diagonal matrix $D$ is the same size as $L$ and has the same diagonal elements as $L$.  These values are used to find the solution to the generalized eigensystem $L x = \lambda D x$.  The eigenvector $x$ associated with the smallest non-zero eigenvalue $\lambda$ is taken as the result~\cite{EigencrustShewchuk}.
+
+Each element of $x$ corresponds to a pole triangle in $T$.  The $i$'th triangle is labeled as ``inside'' or ``outside'' based on the sign of $x_i$.  This step partitions the poles into the inside/outside categories.  To label all the non-poles, we construct another graph.  All the ``outside'' poles in $G'$ are collapsed into one outside super-node and all the ``inside'' poles of $G'$ are collapsed into one inside super-node.  All the non-pole triangles are also nodes of this non-pole graph, and edges are defined between every pair of touching triangles, assuming both triangles are not part of the same super-node. Any edge between the two super-nodes are negatively weighted according to Equation~\ref{neg_edge_weight}.  Any edge involving at least one non-pole is positively weighted according to Equation~\ref{pos_edge_weight}.  The non-pole graph is then converted to the matrix $H$ in the same manner as described above for $G'$.  Let $D_H$ be the diagonal component of the matrix $H$.  Solving the concordant generalized eigensystem $H y = \mu D_H y$ will yield the eigenvector $y$, which gives us the inside/outside labelings for each of the non-pole triangles as well~\cite{EigencrustShewchuk}. An example output of this triangulation process is shown in Figure~\ref{fig:eigencrust_triangulation}.
+
+\subsection{Forming Floor Plan Boundary Edges}
+\label{ssec:eigencrust_boundary}
+
+\begin{figure}[t]
+
+\begin{minipage}[b]{0.49\linewidth}
+  \centering
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/eigencrust/eigencrust_cleaning_1}}
+  \centerline{(a)}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.49\linewidth}
+  \centering
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/eigencrust/eigencrust_cleaning_3}}
+  \centerline{(b)}
+\end{minipage}
+
+\caption[Post-processing floor plan triangulation.]{Original triangulation labeling (a) is cleaned by removing small unions and sharp protrusions (b).}
+\label{fig:eigencrust_postprocessing}
+
+\end{figure}
+
+We have found the following post-processing clean-up techniques useful for increasing the quality of the output model.  First, we represent this topology of triangles as a set of unions.  Any subset of triangles with the same label that forms a connected component is represented as a single union using the Union-Find algorithm \cite{Unionfind}.  Unions that are composed of a small number of triangles are most likely mislabeled, since the smallest building features should still be sufficiently sampled.  The appropriate cut-off value depends on the value of $d_s$ used to form samples, but a value of 30 triangles is typically used.  All inside unions that have fewer than this many triangles are relabeled as outside. The set of unions is recomputed and then all outside unions that meet this criterion are relabeled as inside. Another post-processing smoothing process is to remove jagged edges from the boundaries between labelings.  Every triangle has three neighboring triangles, each sharing one of its edges.  If a triangle $t \in T$ has only one neighbor that shares the same labeling and that neighbor is connected to $t$'s shortest edge, then $t$ is considered to be a protrusion.  It is unlikely for building geometry to be correctly represented by such a protrusion, so all protrusions labeled as inside are relabeled as outside. After this relabeling, all outside protrusions are found and relabeled as inside.  An example of this processing is shown in Figure~\ref{fig:eigencrust_postprocessing}.
+
+The set of edges in $T$ that are shared by an ``inside'' triangle and an ``outside'' triangle are exported as boundary edge set, $B$.  Each element in $B$ is a line segment, which in total constitute a water-tight floor plan of the scanned area.
+
+\subsection{Fitting Edges With Lines and Curves}
+\label{ssec:eigencrust_fitting}
+
+Since there may exist areas in the building geometry that are insufficiently scanned or errors incurred during processing, it is important to utilize common architectural patterns to reduce these errors.  Additionally, applications may require a floor plan to be composed of parametric lines and curves.
+
+Local model-fitting approaches such as region growing are sub-optimal because unconnected architectural features may use the same geometric model.  For example, the back walls in a row of offices may lie on the same plane, even though they are in different rooms. Since we need to fit both curves and straight lines simultaneously, a reasonable technique for this situation is one that is non-local and flexible, such as Random Sample Consensus (RANSAC)~\cite{Ransac}.
+
+We apply RANSAC to the subset of samples used as vertices in the boundary edges $B$.  Each iteration randomly picks three samples from this set that have not yet been associated with a model.  These three points uniquely define a circle.  A line of best fit can also be obtained for these points.  Both the circle and the line models are compared to the subset of samples still unassigned.  Inlier sets for both of these models are computed.  An inlier is an unassigned sample that is both within a threshold distance of a model and whose normal vector is within a threshold angle to the model's normal vector at that location.  Only models that exceed a specified minimum number of inliers are considered.  The line or circle model found with the smallest average error is returned as a valid model and its inlier vertices are no longer considered for subsequent models.
+
+\begin{figure}[t]
+
+\begin{minipage}[b]{1.0\linewidth}
+  \centering
+  \centerline{\includegraphics[height=5.5cm]{3dimpvt2012/curvefit/circle_segments_example_highlighted}}
+\end{minipage}
+
+\caption[Fitting curves to floor plan walls.]{The walls of a circular room are fit to the same circle model (shown highlighted in teal), even though they are comprised of several connected components. }
+\label{fig:eigencrust_circle_segments_example}
+
+\end{figure}
+
+\begin{figure}[t]
+
+\begin{minipage}[b]{0.45\linewidth}
+  \centering
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/curvefit/backpack_cory_three_1_final_precurvefit}}
+  \centerline{(a)}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.45\linewidth}
+  \centering
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/curvefit/backpack_cory_three_1_final_curvefit}}
+  \centerline{(b)}
+\end{minipage}
+
+\caption[Sharpening floor plan corners with RANASC.]{(a) Watertight wall edges; (b) curve-fitting via RANSAC reduces sample location error and sharpens corners.}
+\label{fig:eigencrust_wall_straightening}
+
+\end{figure}
+
+This process continues until no new parametric model can be found.  The result is a set of models, where each model has a set of inlier samples and a parametric representation of either a line or a circle.  The topology defined in $B$ has not been altered, so its edge elements can be used to partition the inlier vertices of each model into a set of connected components, again with Union-Find~\cite{Unionfind}.  Any of these connected components composed of too few samples is most likely a misclassification.  Thus the elements of any of these components with fewer than 15 samples are reset to be unassigned.  Additionally, we wish to encourage models to extend along the edges defined in $B$.  If an unassigned sample is within 15 edge hops to samples belonging to a model, that sample is associated with the closest model.  These two steps encourages outlier samples to belong to models that are topologically close.  These steps also grow models to be adjacent, encouraging sharp corners.
+
+Once the revised parametric models and their respective inliers are computed, the inlier samples and edges in $B$ are replaced by edges that conform exactly to their models' locations.  This process reduces the overall number of samples and removes small perturbation errors from the floor plan.  Figure~\ref{fig:eigencrust_circle_segments_example} demonstrates the results of this process, which fits a circle to the walls of a round room with several entrances. Figure~\ref{fig:eigencrust_wall_straightening} shows how this process can also be applied to straight walls.
+
+\subsection{Conclusion}
+\label{ssec:eigencrust_conclusion}
+
+This section details a technique to generate 2D architectural floor plans.  By projecting each story's point set to two dimensions and performing a density analysis, we can yield an increase in wall location accuracy than by using a direct 3D approach. In Section~\ref{sec:fp_results}, we show several example models generated using this technique, and compare these models both to the ground-truth blueprints of the building as well as to other automatic as-built floor plan generation techniques.
+
+\section{Floor Plan Generation with Room Partitioning}
+\label{sec:visigrapp}
+
+% TODO visigrapp floorplan generation
+
+\section{Floor Plan Generation Results}
+\label{sec:fp_results}
+
+% TODO add results for eigencrust
+% TODO add results for visigrapp
 
 %---------------------------------------------------------------------------
 %---------------------------------------------------------------------------
