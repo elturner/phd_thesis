@@ -67,7 +67,7 @@
 %
 % http://grad.berkeley.edu/academic-progress/dissertation/#formatting-your-manuscript
 
-\newcommand{\mytitle}{Eric's Ph.D. Thesis}
+\newcommand{\mytitle}{3D Modeling of Interior Building Environments and Objects from Noisy Sensor Suites}
 \title{\mytitle}
 
 \newcommand{\myauthor}{Eric~Lee~Turner}
@@ -408,7 +408,7 @@ In the architecture community, there is a continuing push for use of a consolida
 It is important to distinguish between models that are as-designed compared to as-built.  Each phase of building development will produce a design, but it is still important to compare this design to the as-is nature of the building.  3D scanning of building environments is an important technology to be able to compare the result of construction to what was desired.  With current technology, there is still a fair amount of manual intervention that is  required to convert a 3D scan of a building into a suitable BIM file that can be used for such a comparison.
 
 % competing systems
-Traditional industry-standard building scanning uses static scanners.  Such scanners are mounted on tripods, and moved from area to area in the building~\cite{RoomSegmentation,HistWallRecon,BasicPlaneFit}. This scanning process is labor intensive and slow, but results in highly accurate point clouds after stitching.  In order to automate indoor scanning, many mobile systems have been introduced.  Wheeled platforms that carry scanning equipment and are manually pushed through the environment are popular~\cite{Carving, ProbabilisticRobotics}.  Mobility of such systems is limited, since they are unable to traverse rough terrain or stairs easily.  Others have investigated mounting laser range finders on unmanned aerial vehicles~\cite{Quadrotor,QuadrotorMIT}.  Such platforms are agile in that they can scan difficult-to-reach areas.  Such unmanned platforms are limited by short battery life and cannot scan for long durations.
+Traditional industry-standard building scanning uses static scanners.  Such scanners are mounted on tripods, and moved from area to area in the building~\cite{RoomSegmentation,HistWallRecon,BasicPlaneFit}. This scanning process is labor intensive and slow, but results in highly accurate point clouds after stitching.  In order to automate indoor scanning, many mobile systems have been introduced. Due to cost of full 3D laser range finders, the majority of indoor modeling systems use 2D LiDAR scanners.  Wheeled platforms that carry scanning equipment and are manually pushed through the environment are popular~\cite{Carving, ProbabilisticRobotics}.  Mobility of such systems is limited, since they are unable to traverse rough terrain or stairs easily.  Others have investigated mounting laser range finders on unmanned aerial vehicles~\cite{Quadrotor,QuadrotorMIT,SpectralClustering}.  Such platforms are agile in that they can scan difficult-to-reach areas.  Such unmanned platforms are limited by short battery life and cannot scan for long durations.
 
 % include system hardware description
 % our system and WHAT WE DO DIFFERENT AND WHY IT IS BETTER!!!!!!!!!
@@ -731,13 +731,85 @@ In this chapter, we discuss multiple methods to produce 2D floor plans of indoor
 
 Once wall sampling is performed, we have developed two different floor plan generation techniques.  In Section~\ref{sec:eigencrust}, we discuss a global optimization approach to generate watertight floor plan geometry based off of the Eigencrust algorithm~\cite{EigencrustShewchuk,Turner12}.  This method explicitly fits both straight and curved features into the floor plan geometry, in order to preserve curved building features.  In Section~\ref{sec:visigrapp}, we discuss our second floor plan generation approach.  This approach is adapted from our original algorithm, but no longer requires a global optimization step, allowing for faster processing~\cite{Turner14}.  Additionally, it explicitly partitions the floor plan geometry into individual rooms.  This method also introduces simplfication mechanisms that allow for minimal elements to represent the geometry while still preserving the watertight, volumetric topology.
 
-Lastly, in Section~\ref{fp_results}, we show several results comparing each of these methods, including multi-story models showing how these methods can operate on datasets taken over several levels of a building environment.  We also show comparisons of our automatically generated results to the ground-truth blueprints of the scanned environments.
+Lastly, in Section~\ref{sec:fp_results}, we show several results comparing each of these methods, including multi-story models showing how these methods can operate on datasets taken over several levels of a building environment.  We also show comparisons of our automatically generated results to the ground-truth blueprints of the scanned environments.
 
 % wall sampling technqiues
 \section{2D Wall Sampling}
 \label{sec:wall_sampling}
 
-% TODO section on wall sampling
+% overview of wall sampling: motivation
+The input data used during floor plan generation consist of points in the ($x$,$y$) horizontal plane, which we call wall samples.  These points depict locations of walls or vertical objects in the environment.  We assume that interior environments satisfy ``2.5-Dimensional'' geometry:  all walls are vertically aligned, while floors and ceilings are perfectly horizontal.  In many application scenarios only 2D scanners operating in one plane are used, so this assumption is needed to extract 3D information about the environment.  Many mapping systems use a horizontal LiDAR scanner to estimate a map of the area as a set of wall sample positions, while refining estimates for scanner poses.  These mobile mapping systems often have additional sensors capable of estimating floor and ceiling heights at each pose~\cite{Backpack,Quadrotor}.  The input to our algorithm is a set of 2D wall samples, where each sample is associated with the scanner pose that observed it, as well as estimates of the floor and ceiling heights at the wall sample location.
+
+% methods of wall sampling
+Wall samples can be derived in three different ways.  First, histogram analysis can be performed on the 3D point cloud generated for a building environment as discussed in Chapter~\ref{sec:pointcloud}, in order to generate a 2D sampling of wall positions~\cite{Turner12}.  This technique is discussed in Section~\ref{ssec:ws_from_pc}.  Second, wall samples can be exported directly from the grid-map generated alongside a particle filter during the localization step of scan processing~\cite{NickJournal,Turner14}.  This method is described in Section~\ref{ssec:ws_from_pf}.  Third, wall samples can be generated from a processed 3D volumetric model of the environment.  This last option is described in detail in Chapter~\ref{ch:better_floorplan}.
+
+% first wall sampling technique:  from a point cloud
+\subsection{Generating Wall Samples from Point Clouds}
+\label{ssec:ws_from_pc}
+
+% describe the basic idea of histogramming to find wall samples
+Given a 3D input point set, $P$, we wish to generate a floor plan for each story represented.  The coordinate system is defined so that the $z$-component represents height.  First, we compute how many stories are present in $P$ and partition $P$ into separate point sets $P_0$, $P_1$, ..., $P_f$ for each level by height, as discussed in Chapter~\ref{sec:pointcloud_level_split}.
+
+For each story $P_k$, the method for computing wall samples is to subsample the full 3D point-cloud to a set of representative 2D points~\cite{Turner12,Turner14,Turner14Journal,Okorn09}.  This process cannot be done in a streaming fashion, but can provide accurate estimates for wall positions.  Such an approach is useful when representing dense, highly complex point clouds with simple geometry.  Under the 2.5D assumption of the environment, wall samples can be detected by projecting 3D points onto the horizontal plane.  Horizontal areas with a high density of projected points are likely to correspond to vertical surfaces.  Our goal is to find these wall locations with a sparse sampling of points $S_k \subseteq P_k$.  By defining a grid along the x-y plane, we can find coordinate locations that are likely to represent walls.  The width of each grid cell is denoted by $d_s$, which should be smaller than the minimum feature size expected in a floor plan.  A typical value for this parameter is $5$~cm.  This grid partitions $P_k$ laterally.  For a grid cell $g$, let the neighborhood set $N_g$ be the subset of points of $P_k$ that are within a horizontal distance of $d_s$ from the center of $g$, as shown in Figure~\ref{fig:grid_filtering}.  Thus a given point can be in the neighborhood of multiple grid cells.
+
+% figure showing wall sampling process
+\begin{figure}
+
+\begin{minipage}{1.0\linewidth}
+  \centering
+  \centerline{\includegraphics[width=0.6\linewidth]{3dimpvt2012/wall_sampling/grid_filtering}}
+\end{minipage}
+
+\caption[Generating wall samples from 3D point clouds.]{A point set $P_k$ (small dots in blue) is partitioned by a grid in the $x$-$y$ plane (lines in black).  For each grid cell, a neighborhood of points (medium dots in red) is computed and the median position of the points (large dot in green) is taken as a wall sample.  The normal of this neighborhood (vector in dark green) is computed using PCA.}
+\label{fig:grid_filtering}
+
+\end{figure}
+
+% real-world example of wall sampling
+\begin{figure}
+
+\begin{minipage}[b]{0.45\linewidth}
+  \centering
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/wall_sampling/BHH-Lobby_topdown}}
+  \centerline{(a)}\medskip
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.45\linewidth}
+  \centering
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/wall_sampling/BHH-Lobby_wall_sampling}}
+  \centerline{(b)}\medskip
+\end{minipage}
+
+\caption[Wall sampling from static point cloud.]{(a) Point cloud of scanned area, viewed from above and colored by elevation; (b) wall sample locations generated from point cloud.  Clutter such as furniture or plants do not affect position of wall samples.}
+\label{fig:bhh_wall_sampling_example}
+
+\end{figure}
+
+We perform the following checks on $N_g$ to determine whether this neighborhood represents a portion of a wall.  The first assertion is that a wall must be densely sampled, so if $|N_g|$ is less than a threshold, it is rejected. Our scanners create point-clouds with thousands of points per square meter of surface, so a threshold of $|N_g| \geq 50$ points is sufficient.  The second check is to verify the height of a wall.  The vertical support of $N_g$ must be at least the minimum wall height threshold. The value of this height threshold may vary depending on application, but a length of $2$ meters works well to capture permanent wall features while ignoring furniture and other interior clutter.  We also wish to verify that the distribution of points is uniform vertically, which signifies that a flat surface was captured.  For this uniformity check, we compute the histogram of the heights of $N_g$ with 16 bins and enforce that at least 12 of these must be non-empty.  Additionally, at least three of the highest four bins must be non-empty, which ensures a neighborhood extends all the way to the ceiling.  If these requirements are fulfilled, $g$ is said to represent a wall.  The median horizontal position for the elements of $N_g$ is computed.  If this median lies within the bounds of $g$, then it is taken as a ``wall sample'' for $g$.
+
+The normal vector for this wall sample is calculated using Principal Components Analysis (PCA) \cite{PCA}.  Let $C$ be the $2 \times 2$ covariance matrix of the $x$-$y$ positions of the elements of $N_g$ and $e_1, e_2$ be the eigenvectors of $C$ with corresponding eigenvalues $\lambda_1, \lambda_2$.  
+Let $\lambda_1 \leq \lambda_2$.  The normal vector is chosen to be $\vec{n} = e_1$, as shown in Figure~\ref{fig:grid_filtering}.  The confidence of this normal estimate is computed as $c = 1 - \frac{2 \lambda_1}{\lambda_1 + \lambda_2}$.  If $c$ is less than 0.15, then the neighborhood points are not well-aligned and rejected as the location for a wall.
+
+If pose information for the scanner is known for each point, this normal vector's direction may be flipped to guarantee that it points towards the laser scanner.  Any wall samples captured far away from the scanner are thrown away as outliers.  This distance is typically 5-10 meters.  If a feature is not scanned within this distance, it is only partially captured and cannot be accurately represented. Performing the above operation for all grid cells results in a set of wall sample points $S_k \subseteq P_k$.  
+
+% houston wall samples figure
+\begin{figure}
+  \centering
+  \includegraphics[width=0.98\linewidth]{visigrapp/algorithm/input_points/houston_wall_samples_with_labels}
+  \caption[Wall samples from backpack point cloud.]{Example input wall samples of hotel hallways and lobby generated from a particle filter system. (a) Wall samples of full model; (b) close up of wall in model.}
+  \label{fig:backpack_wall_sample_example}
+\end{figure}
+
+The result is a set of wall samples, where each wall sample is represented by its 2D position, the minimum and maximum height values of the points that sample represents, and the poses of the scanners that observed the sample location.  As we discuss later, these scanner poses provide crucial line-of-sight information that facilitate floor plan reconstruction.  Figure~\ref{fig:bhh_wall_sampling_example} shows an example of collecting wall samples from a point-cloud of a hotel lobby.  While most examples in this dissertation will be generated using our backpack-mounted scanning system, this point cloud was created with static scanners, to showcase the versitility of our system. An example of wall samples generated from backpack scans for a hotel hallway is shown in Figure~\ref{fig:backpack_wall_sample_example}.  As shown, even though the walls are well sampled, noise in the localization estimate causes noisy wall samples with outliers.
+
+% second wall sampling technique:  from a particle filter
+\subsection{Generating Wall Samples from Particle Filter Grid Maps}
+\label{ssec:ws_from_pf}
+
+% using grid map
+Many mapping systems use a horizontal LiDAR scanner to estimate a map of the area as a set of wall sample positions, while refining estimates for scanner poses.  Such systems perform Simultaneous Localization and Mapping (SLAM) by defining a rough grid-map of the area while also estimating the pose of the system via a particle filter~\cite{NickJournal,Quadrotor}.  This grid-map is often represented by a set of 2D position samples that indicate the presence of walls or other obstacles~\cite{ProbabilisticRobotics}.  In such particle filtering approaches, the grid map can be used direction as a set of wall samples for floor plan model generation~\cite{Turner14}.  As discussed in Section~\ref{sec:visigrapp}, we have developed a technique for floor plan generation that is fast enough to work in a streaming, real-time fashion on this type of input data.  Particle filtering approaches to localization typically result in real-time mapping~\cite{fastslam03,toro07} and can therefore benefit from a real-time floor plan generation algorithm that delivers a live map of the environment. 
+
+These mobile mapping systems often have additional sensors capable of estimating floor and ceiling heights at each pose~\cite{Backpack,Quadrotor}.  The input to our algorithm is a set of 2D wall samples, where each sample is associated with the scanner pose that observed it, as well as estimates of the floor and ceiling heights at the wall sample location.  In Section~\ref{sec:fp_results}, we show comparisons of floor plans generated with both types of wall samples:  those generated from point cloud data and those generated from particle filter grid maps.
 
 % eigencrust floor plan reconstruction
 \section{Eigencrust Floor Plan Reconstruction}
@@ -760,9 +832,9 @@ Given a point cloud representing a subset of the interior of a building that can
 
 \end{figure}
 
-A crucial step in generating a point cloud is to register the poses of separate scan positions to a common coordinate system.  Any error in this process may result in duplicate instances of a scanned wall with slight misalignments.  Each instance of a wall may appear in $S_k$ and if the registration error is significant smoothing may be required to force these wall instances to become aligned.
+A crucial step in generating a point cloud is to register the poses of separate scan positions to a common coordinate system.  Any error in this process may result in duplicate instances of a scanned wall with slight misalignments.  A given wall position may be scanned from multiple disjoint poses, causing it to appear multiple times in the set of generated wall samples.  If the registration error is significant smoothing may be required to force these wall instances to become aligned~\cite{Turner12}.
 
-For a given sample $s \in S_k$ with normal vector $\vec{n}$, its smoothing set is a subset of $S_k$.  The position of $s$ is translated to be the mean position of this smoothing set. The smoothing set contains all samples that are (a) within some smoothing distance of $s$ along the $\pm \vec{n}$ direction, (b) no more than $3 d_s$ away from $s$ in the direction orthogonal to $\vec{n}$, and (c) whose normals are aligned to within $\frac{\pi}{8}$ radians of $\vec{n}$.  The smoothing distance must be less than the minimum allowable spacing between parallel walls, but at least as large as the expected registration error.  This step is not necessary if registration error is smaller than $d_s$.  An example of this smoothing process is shown in Figure~\ref{fig:sample_smoothing_results}.
+For a model with wall samples set $S_k$, a given sample $s \in S_k$ with normal vector $\vec{n}$ has a smoothing set that is a subset of $S_k$ within an anisometric neighborhood of $s$.  The position of $s$ is translated to be the mean position of this smoothing set. The smoothing set contains all samples that are (a) within some smoothing distance of $s$ along the $\pm \vec{n}$ direction, (b) no more than $3 d_s$ away from $s$ in the direction orthogonal to $\vec{n}$, and (c) whose normals are aligned to within $\frac{\pi}{8}$ radians of $\vec{n}$.  The smoothing distance must be less than the minimum allowable spacing between parallel walls, but at least as large as the expected registration error.  This step is not necessary if registration error is smaller than $d_s$.  An example of this smoothing process is shown in Figure~\ref{fig:sample_smoothing_results}.
 
 \subsection{Labeling Triangulation of Wall Samples}
 \label{ssec:eigencrust_triangulation}
@@ -906,11 +978,35 @@ This section details a technique to generate 2D architectural floor plans.  By p
 
 % TODO visigrapp floorplan generation
 
-\section{Floor Plan Generation Results}
+\subsection{Defining Interior Area}
+\label{ssec:visigrapp_carving}
+
+% TODO visigrapp floorplan carving
+
+\subsection{Labeling Rooms Within the Floor Plan}
+\label{ssec:room_label}
+
+A novel contribution of this technique is the use of room labeling to enhance building models, e.g.\ for thermal simulations of interior environments~\cite{Turner14,EnergyPlus}.  One motivation for existing work has been to capture line-of-sight information for fast rendering of building environments~\cite{WalkthroughRendering}.  This technique requires axis-aligned rectilinear building geometry, which often is not a valid assumption.  Others have partitioned building environments into submap segments with the goal of efficient localization and tracking~\cite{SpectralClustering}.  This approach is meant to create easily recognizable subsections of the environment, whereas our proposed room labeling technique uses geometric features to capture semantic room definitions for both architectural and building energy simulation applications.
+
+% TODO room labeling
+
+\subsection{Simplification of Floor Plan Geometry}
+\label{ssec:fp_simplify}
+
+% TODO floor plan simplification.  compare with ransac method in eigencrust
+
+\subsection{Extruding Floor Plan Geometry to 2.5D Models}
+\label{ssec:fp_extrusion}
+
+% TODO floor plan extrusion
+
+
+\section{Results}
 \label{sec:fp_results}
 
 % TODO add results for eigencrust
 % TODO add results for visigrapp
+% TODO compare pf and pc floorplans
 
 %---------------------------------------------------------------------------
 %---------------------------------------------------------------------------

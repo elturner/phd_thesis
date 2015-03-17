@@ -23,14 +23,14 @@ other applications:
 Thesis outline :
 
 
-	abstract (~1 page)
+x	abstract (~1 page)
 
-	dedication
+x	dedication
 
-	Table of contents
+x	Table of contents
 		- list of figures (~60 figures)
 	
-	Acknowledgements (1 page)
+x	Acknowledgements (1 page)
 
 x	Introduction (10-15 pages)
 		- motivation					\label{ch:introduction}
@@ -62,18 +62,19 @@ x	Pointcloud generation (5-10 pages)			\label{ch:preprocessing}
 	
 	Floorplan generation					\label{ch:floorplan}
 		- wall sampling techniques			\label{sec:wall_sampling}
-			- histogram binning of pointclouds
+			- histogram binning of pointclouds	\label{ssec:ws_from_pc}
 				(with and without normal analysis)
-			- unsuccessfuly attempts:
-				- extrema wall samples
-	
-		- volumetric approaches with triangles
+			- using dq's from particle filter	\label{ssec:ws_from_pf}
 		- Eigencrust					\label{sec:eigencrust}
 		- visigrapp					\label{sec:visigrapp}
 			- room detection				\label{ssec:room_label}
 			- simplification techniques			\label{ssec:fp_simplify}
 			- extruding to 2.5D model			\label{ssec:fp_extrusion}
 		- results					\label{sec:fp_results}
+			- compare eigencrust to groundtruth
+			- compare visigrapp to ground truth (mulford)
+			- compare eigencrust to visigrapp (cory)
+			- compare pf wall samples to pc wall samples (houston, office)
 		
 	Carving							\label{ch:carving}
 		- 3DV 2013 voxel carving
