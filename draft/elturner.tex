@@ -1103,9 +1103,335 @@ The 2D triangulation of a room is then used to create the floor and ceiling mesh
 \section{Results}
 \label{sec:fp_results}
 
-% TODO add results for eigencrust
-% TODO add results for visigrapp
+% overview of results
+In this section, we show several results for each of the methods described in this chapter, as well as comparing these methods to each other and to ground truth models of the scanned environments.  We first detail results of the eigencrust floor plan generation method in Section~\ref{ssec:eigencrust_results}.  Next, we detail results of the room partitioning floor plan generation method in Section~\ref{ssec:visigrapp_results}.  Lastly, we compare these methods in Section~\ref{ssec:fp_results_compare}.
+
+% eigencrust results
+\subsection{Eigencrust Results}
+\label{ssec:eigencrust_results}
+
+%%%%% CORY THREE RESULTS %%%%%
+
+\begin{figure}[t]
+
+% Floor #2
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_three_results/cory_three_2_wall_samples}}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_three_results/backpack_cory_three_2_final_triangles}}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_three_results/cory_three_2_boundary_snapped}}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_ground_truth/03_4_overlay}}
+\end{minipage}
+\centerline{(b)}
+\linebreak
+
+% Floor #1
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.2cm]{3dimpvt2012/cory_three_results/cory_three_1_wall_samples}}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_three_results/backpack_cory_three_1_final_triangles}}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.2cm]{3dimpvt2012/cory_three_results/cory_three_1_boundary_snapped_labeled}}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_ground_truth/03_3_overlay}}
+\end{minipage}
+\centerline{(c)}
+\linebreak
+
+% Floor #0
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_three_results/cory_three_0_wall_samples}}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_three_results/cory_three_0_triangles}}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_three_results/cory_three_0_boundary_snapped_labeled}}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.24\linewidth}
+  \centering
+  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_ground_truth/03_2_overlay}}
+\end{minipage}
+\centerline{(d)}
+\linebreak
+
+\caption[Example floor plan on three-story building.]{(a) Full point cloud for three-story model, taken with mobile scanning system; (b-d) Processing of each story, with (left to right) wall sample locations, triangulation labeling, watertight curve-fit model, and comparison against ground-truth blueprints.}
+\label{fig:cory_three_results}
+
+\end{figure}
+
+%%% BHH HALLWAY %%%
+
+\begin{figure}
+
+% point cloud
+\centering
+\begin{minipage}[b]{0.335\linewidth}
+  \centering
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/bhh_hallway/bhh-hallway_points}}
+\end{minipage}
+\begin{minipage}[b]{0.3\linewidth}
+  \centering
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/bhh_hallway/bhh-hallway_points_zoom}}
+\end{minipage}
+\linebreak 
+\linebreak 
+
+% wall samples
+\begin{minipage}[b]{0.3\linewidth}
+  \centering
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/bhh_hallway/bhh_hallway_wall_samples_boxed}}
+\end{minipage}
+\begin{minipage}[b]{0.3\linewidth}
+  \centering
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/bhh_hallway/bhh_hallway_wall_samples_zoom}}
+\end{minipage}
+\linebreak
+\linebreak 
+
+% boundary
+\begin{minipage}[b]{0.3\linewidth}
+  \centering
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/bhh_hallway/bhh_hallway_boundary_boxed}}
+  \centerline{(a)}
+\end{minipage}
+\begin{minipage}[b]{0.3\linewidth}
+  \centering
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/bhh_hallway/bhh_hallway_boundary_snapped_zoom}}
+  \centerline{(b)}
+\end{minipage}
+\linebreak 
+\linebreak 
+
+\caption[Hallway of hotel, captured with mobile scanner.]{Hallway of hotel, captured with mobile scanner.  (a) The full floor plan; (b) a close-up of a hallway intersection.  The point cloud (top) was converted into wall sampling locations (middle) and boundary edges were fit to these samples (bottom).}
+\label{fig:bhh_hallway_results}
+
+\end{figure}
+
+%%% BHH Lobby %%%
+
+\begin{figure}[t]
+
+\centering
+\begin{minipage}[b]{0.40\linewidth}
+  \centering
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/bhh_lobby/BHH-Lobby_topdown}}
+  \centerline{(a)}
+\end{minipage}
+\begin{minipage}[b]{0.40\linewidth}
+  \centering
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/bhh_lobby/BHH-Lobby_points_center}}
+  \centerline{(b)}
+\end{minipage}
+
+% wall samples
+\begin{minipage}[b]{0.35\linewidth}
+  \centering
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/bhh_lobby/bhh_lobby_wall_samples}}
+  \centerline{(c)}
+\end{minipage}
+% boundary
+\begin{minipage}[b]{0.35\linewidth}
+  \centering
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/bhh_lobby/bhh_lobby_boundary_snapped}}
+  \centerline{(d)}
+\end{minipage}
+
+\caption[Hotel lobby, captured with a static scanner.]{Hotel lobby, captured with a static scanner. (a) The captured point-cloud; (b) a close-up of the center columns; (c) the wall samples extracted from this point cloud; (d) the set of wall boundary edges.}
+\label{fig:bhh_lobby_results}
+
+\end{figure}
+
+In order to demonstrate the accuracy of the floor plan generation method discussed in Section~\ref{sec:eigencrust}, we apply it to a dataset representing the hallways in three stories of an academic office building, as shown in Figure~\ref{fig:cory_three_results}.  The input point-set has 17.4 million elements and the resultant wall samplings for each story are 5,544 samples, 5,357 samples, and 3,265 samples from bottom story to top respectively.  Our test code, written in unoptimized MATLAB and run on a personal laptop, processes these three stories in 371.4 seconds total.  These results show how our algorithm enforces water-tightness by fitting walls to the ends of any unscanned sections, such as the hallways labeled 1 and 2 in the third column of Figure~\ref{fig:cory_three_results}(c).  The resultant models are compared against the current building floor plans, as shown in the fourth column of Figure~\ref{fig:cory_three_results}.  In areas where the wall sampling is dense, our generated floor plan is accurate with respect to these ground-truth blueprints.
+
+Figure~\ref{fig:bhh_hallway_results} shows this same floor plan reconstruction method, applied to a scan taken of a single level of a hotel.  The input point-cloud has 5.8 million elements and the wall sampling produced 13,557 samples.  This set demonstrates a model that is composed of both curves and straight line-segments. Figure~\ref{fig:bhh_lobby_results} shows the lobby of this building, which has been statically scanned.  This dataset has an input point-cloud of 2.7 million points from which 3,568 2D wall samples were extracted. This model demonstrates the ability of our algorithm to capture structural features such as columns.  It shows how areas of high curvature can be modeled just as effectively as straight walls.
+
+While enforcing watertight models allows for walls to be created in areas that are not scanned, it may also cause undesired homography changes.  If two parallel walls are arbitrarily close, the space between them may become incorrectly labeled with neither wall existing in the final model.  An example of this issue can be seen in the north-west stairway in Figure~\ref{fig:cory_three_results}(d), labeled 3.  Another limitation is that the walls placed in areas of sparse scanning may be inaccurate.  The corridor in the south-east corner of the floor plan labeled 2 in Figure~\ref{fig:cory_three_results}(c) is not fully scanned, so a wall is represented at the edge of the scan area, even though the hallway continues much further in reality.  While the sparsity of a scan is typically due to the placement of the scanning system, it can also be caused by the partitioning of the original point-cloud into separate stories.  Note that the south-west stairwell in the same model, labeled 1, is sparsely sampled and as a result the north wall is incorrectly modeled at an angle.  In this case, the wall in question was thoroughly scanned, but higher in the stairway on the next story.  The immediate partitioning of levels in a point-cloud causes cross-level scans to become under-represented and introduces sparsity into the wall sampling.
+
+% visigrapp results
+\subsection{Room Labeling Results}
+\label{ssec:visigrapp_results}
+
+The approach discussed in Section~\ref{sec:visigrapp} works well on a variety of test cases, spanning several model types including offices, hotels, hospitals, and university buildings.  For the largest models, total processing time to compute an extruded 3D model from 2D wall samples is under 10 seconds.  Most of this time is spent on carving interior triangles, which can be performed real-time in a streaming manner during data acquisition, which typically lasts several minutes.
+% TODO how long was mulford?
+
+First, we show sample models resulting from our method in five different environments.  For all the models shown in Figures~\ref{fig:visigrapp_results_a} through~\ref{fig:visigrapp_results_e}, the scale is in units of meters, and the resolution is $5$~cm.  Figure~\ref{fig:visigrapp_results_a} corresponds to an office building, including cubicles and individual offices.  The largest room in this model, shown in teal, primarily contains cubicles.  The cubicle walls do not meet our height threshold of $H=2$ meters, so they are not captured by the wall samples.  Since cubicles are not an architectural feature of the environment, this effect is desirable.  The room shown in purple in the lower-left corner of this model also shows an example error in the building reconstruction.  The adjacent room to the right was briefly seen through a window, but its area was considered part of this purple room rather than being removed in the manner described in Section~\ref{sec:room_label}, resulting in a small extrusion remaining in the model.
+Figure~\ref{fig:visigrapp_results_d} shows a small test model of an apartment office complex and Figure~\ref{fig:visigrapp_results_b} denotes a hotel lobby, hallways, and side rooms.  The vast majority of this model is labeled as one room, consisting of the hallways of the building.  Since no part of these hallways are separated by doors, this result is desirable.  Figure~\ref{fig:visigrapp_results_c} represents an academic research lab, including conference rooms and student cubicles.  The upper portion of the center room, shown in blue, is a kitchenette area, with a counter-top.  Since the counter was not sufficiently captured by the wall samples, it is not represented in the 2.5D extrusion of the model. Figure~\ref{fig:visigrapp_results_e} shows the hallways of an academic building.
+
+% lbnl results
+\begin{figure}
+	\centering
+	
+	\begin{minipage}[b]{0.95\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/results/models/dq/lbnl}}
+	\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.95\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/results/models/2d/snapshot_lbnl00}}
+	\centerline{(b)}
+	\end{minipage}
+	%\hfill
+	\begin{minipage}[b]{0.95\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/results/models/3d/snapshot_lbnl00_cropped}}
+	\centerline{(c)}
+	\end{minipage}
+
+	\caption[Generated floor plan of an office building.]{Office building: (a) Input represented by 12,823 wall samples; (b) generates floor plan with 19 rooms; (c) the extruded 2.5D mesh of the environment. Extruded 3D mesh represented with 6,084 triangles.  Total processing time required is 7.5 seconds.}
+	\label{fig:visigrapp_results_a}
+\end{figure}
+%(a) This building is represented by 12,823 wall samples, which are used to generated a 3D extruded mesh of 6,084 triangles with 19 rooms.  Total run-time for this model was 7.5 seconds.  
+
+% oceanview office results
+\begin{figure}[t]
+	\centering
+	
+	\begin{minipage}[b]{0.50\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/results/models/dq/oceanview_office_pf_dq}}
+	\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/results/models/2d/oceanview_office_pf_floorplan}}
+	\centerline{(b)}
+	\end{minipage}
+	%\hfill
+	\begin{minipage}[b]{0.95\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/results/models/3d/snapshot_oceanview_office00}}
+	\centerline{(c)}
+	\end{minipage}
+
+	\caption[Floor plan of an apartment complex office.]{Apartment complex office: (a) Input represented by 3,462 wall samples; (b) generates floor plan with 5 rooms; (c) extruded 3D mesh represented with 512 triangles.  Total processing time required is 1.2 seconds.}
+	\label{fig:visigrapp_results_d}
+\end{figure}
+%(d) This input has 2,957 wall samples that generated a 3D model of 844 triangles with five labeled rooms, generated in 1.2 seconds.
+
+% houston results
+\begin{figure}
+	\centering
+	
+	\begin{minipage}[b]{0.4950\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/results/models/dq/houston}}
+	\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.4950\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/results/models/2d/snapshot_houston00}}
+	\centerline{(b)}
+	\end{minipage}
+	%\hfill
+	\begin{minipage}[b]{0.95\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/results/models/3d/snapshot_houston00}}
+	\centerline{(c)}
+	\end{minipage}
+
+	\caption[Floor plan of a hotel lobby and hallways.]{Hotel lobby and hallways: (a) Input represented by 33,582 wall samples; (b) generates floor plan with 5 rooms; (c) extruded 3D mesh represented with 5,012 triangles.  Total processing time required is 8.5 seconds.}
+	\label{fig:visigrapp_results_b}
+\end{figure}
+%(b) The input for this model has 33,582 wall samples, which produced a 3D mesh with 5,012 triangles composing 5 rooms in 8.5 seconds.  
+%This model is also the largest example output, covering over 260 meters of hallways. 
+
+% trust results
+\begin{figure}[t]
+	\centering
+	
+	\begin{minipage}[b]{0.495\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/results/models/dq/trust}}
+	\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.495\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/results/models/2d/snapshot_trust00}}
+	\centerline{(b)}
+	\end{minipage}
+	%\hfill
+	\begin{minipage}[b]{0.95\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/results/models/3d/snapshot_trust00_cropped}}
+	\centerline{(c)}
+	\end{minipage}
+
+	\caption[Floor plan of a university office area.]{University office area: (a) Input represented by 12,183 wall samples; (b) generates floor plan with 4 rooms; (c) extruded 3D mesh represented with 4,912 triangles.  Total processing time required is 7 seconds.}
+	\label{fig:visigrapp_results_c}
+\end{figure}
+%(c) The input data for this area have 12,183 wall samples, which generated a 3D model with 4,912 triangles and 4 labeled rooms in 7 seconds.  
+
+% cory 307 results
+\begin{figure}[t]
+	\centering
+	
+	\begin{minipage}[b]{0.4\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/results/models/dq/cory307}}
+	\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.4\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/results/models/2d/snapshot_cory30700}}
+	\centerline{(b)}
+	\end{minipage}
+	%\hfill
+	\begin{minipage}[b]{0.75\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/results/models/3d/snapshot_cory30700}}
+	\centerline{(c)}
+	\end{minipage}
+
+	\caption[Floor plan of a university office area and hallway.]{University office building: (a) Input represented by 12,125 wall samples; (b) generates floor plan with 7 rooms; (c) extruded 3D mesh represented with 3,604 triangles.  Total processing time required is 4.5 seconds.}
+	\label{fig:visigrapp_results_e}
+\end{figure}
+%(e) with 12,125 wall samples.  The computed model contains 3,604 triangles depicting 7 rooms, and was generated in 4.5 seconds.
+
+% show example textured model
+Since these models were generated with a system that captures imagery in addition to laser range points, these models can also be texture-mapped with the scenery of the environment~\cite{Cheng13}.  Figure~\ref{fig:visigrapp_texture} depicts the hallways of an academic building with and without texturing.
+
+\begin{figure}[t]
+   \centering
+   \frame{\includegraphics[width=0.95\linewidth]{visigrapp/results/coryf2_2d_texture_pics/snapshot05}}
+   \centerline{(a)}
+   \hfill
+   \frame{\includegraphics[width=0.95\linewidth]{visigrapp/results/coryf2_2d_texture_pics/snapshot03}}
+   \centerline{(b)}
+   \caption[Interior view of a texture-mapped extruded floor plan.]{Interior view of 3D extruded reconstructed model: (a) without and (b) with texture-mapping~\cite{Cheng13}.}
+   \label{fig:visigrapp_texture}
+\end{figure}
+
+% TODO add journal results, including hospital and mulford
+
+% comparison of results
+\subsection{Comparing Floor Plan Results}
+\label{ssec:fp_results_compare}
+
 % TODO compare pf and pc floorplans
+% TODO compare eigencrust and visigrapp
+%	- reference cory3story(d) to discuss how visigrapp is better with topo errors
+
+We demonstrate efficient approaches to automatically generate floor plans of building interiors at real-time speeds.  Classifying and labeling the rooms within each generated floor plan allows for simplification schemes that can preserve fine details at doorways.  These room labels allow for accurate 2.5D extrusion from noisy floor and ceiling height estimates of the input points.  The resulting model is suitable for visualization, simulation, and navigation applications.  Current limitations of this algorithm include the verticality assumption made about observed building features.  If the horizontal cross-section of an environment changes dramatically between different heights, the modeling techniques presented in this paper does not accurately portray the actual geometry.
 
 %---------------------------------------------------------------------------
 %---------------------------------------------------------------------------
@@ -1117,6 +1443,27 @@ The 2D triangulation of a room is then used to create the floor and ceiling mesh
 \label{ch:carving}
 
 % TODO chapter on carving
+
+% results section for 3D carving
+\section{Results}
+
+% comparison of 3D carving method to 2.5D extruded floorplan
+Our 2.5D approach produces simplified models when compared to surface reconstruction techniques that preserve fine detail with more complex output.  Specifically, the 3D carving method includes interior objects such as furniture.  Figure~\ref{fig:visigrapp_compare_to_carving} compares the models resulting from our 2.5D method described in Chapter~\ref{sec:visigrapp} with that of the 3D building modeling technique for hotel hallways~\cite{Turner14}.  The two methods result in 2,944 triangles and 4.1 millions triangles, respectively.
+
+\begin{figure}
+   \centering
+   \begin{minipage}[b]{0.49\linewidth}
+   \includegraphics[width=1.0\linewidth]{visigrapp/results/compare/snapshot10}
+   \centerline{(a)}
+   \end{minipage}
+   \hfill
+   \begin{minipage}[b]{0.49\linewidth}
+   \includegraphics[width=1.0\linewidth]{visigrapp/results/compare/snapshot09}
+   \centerline{(b)}
+   \end{minipage}
+   \caption[Comparison of 2.5D simple model with a 3D carved model.]{Comparison of models from (a) our 2.5D simple modeling approach with (b) the approach discussed in this chapter.}
+   \label{fig:visigrapp_compare_to_carving}
+\end{figure}
 
 %---------------------------------------------------------------------------
 %---------------------------------------------------------------------------
