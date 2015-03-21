@@ -440,7 +440,7 @@ Floor-plan modeling techniques are based on the idea of sampling positional info
 \subsection{Simplified 3D Modeling}
 \label{ssec:background_planefit}
 
-Since building features are almost entirely planar, a popular approach is to explicitly fit planar elements to the input point-clouds.  Sanchez and Zakhor use PCA plane-fitting to find floors, walls, and ceilings explicitly in the point-cloud~\cite{Victors}. Since this method was applied to ambulatory data, it resulted in missing components, holes, and double-surfacing due to mis-registration.  Xiong et al also perform plane-fitting in a similar fashion, but also analyze the computed planes for the locations of windows and doors, which are represented as holes in the surface~\cite{Xiong13}.  Adan et al find planes by first generating a floor-plan, then extrude the floor-plan into a 3D model~\cite{WallFinder}.  One limitation with these methods is that they are not necessarily watertight, though floor plan extrusion can also be done in a watertight fashion~\cite{Mura14,Turner14,Cabral14}.  These approaches allow for accurate wall geometry and reduce the complexity of the output model. Extruded floor plans also allow for models to explicitly define floors, walls, and ceiling surfaces.  
+Since building features are almost entirely planar, a popular approach is to explicitly fit planar elements to the input point-clouds.  This assumption allows for plane-fitting to be performed on the input point-cloud, either by a histogram approach or random consensus~\cite{HistWallRecon,BasicPlaneFit}.  Such approaches do not guarantee watertightness of the resulting mesh and can require substantial post-processing.  Sanchez and Zakhor use PCA plane-fitting to find floors, walls, and ceilings explicitly in the point-cloud, as well as explicitly fitting staircases~\cite{Victors}. Since this method was applied to ambulatory data, it resulted in missing components, holes, and double-surfacing due to mis-registration.  Xiong et al also perform plane-fitting in a similar fashion, but also analyze the computed planes for the locations of windows and doors, which are represented as holes in the surface~\cite{Xiong13}.  Adan et al find planes by first generating a floor-plan, then extrude the floor-plan into a 3D model~\cite{WallFinder}.  One limitation with these methods is that they are not necessarily watertight, though floor plan extrusion can also be done in a watertight fashion~\cite{Mura14,Turner14,Cabral14}.  These approaches allow for accurate wall geometry and reduce the complexity of the output model. Extruded floor plans also allow for models to explicitly define floors, walls, and ceiling surfaces.  Being able to make assumptions about the planarity of an environment has been used successfully to model only the major features of scanned objects even in the presence of high noise~\cite{Lafarge13}.
 
 Other approaches have focused to perform volumetric processing to ensure watertightness when computing simplified 3D models.  Xiao et al find horizontal cross-sections of the building, forming a sequence of 2D CSG models that are then stacked together and simplified~\cite{Museums}.  While this approach does lead to aesthetically-pleasing models, it assumes manhattan-world models, which leads to topological errors if an insufficient number of cross-sections are recovered.  Oseau et al use a voxelization approach, with a follow-up graph-cut step to remove small details in the environment, leaving only floors, walls, and ceilings~\cite{Oesau13}.  This optimization step, however, can also cause significant deformations in the final geometry depending on the input parameters. 
 
@@ -1421,8 +1421,6 @@ Since these models were generated with a system that captures imagery in additio
    \label{fig:visigrapp_texture}
 \end{figure}
 
-% TODO add journal results, including hospital and mulford
-
 % comparison of results
 \subsection{Comparing Floor Plan Results}
 \label{ssec:fp_results_compare}
@@ -1432,6 +1430,32 @@ Since these models were generated with a system that captures imagery in additio
 %	- reference cory3story(d) to discuss how visigrapp is better with topo errors
 
 We demonstrate efficient approaches to automatically generate floor plans of building interiors at real-time speeds.  Classifying and labeling the rooms within each generated floor plan allows for simplification schemes that can preserve fine details at doorways.  These room labels allow for accurate 2.5D extrusion from noisy floor and ceiling height estimates of the input points.  The resulting model is suitable for visualization, simulation, and navigation applications.  Current limitations of this algorithm include the verticality assumption made about observed building features.  If the horizontal cross-section of an environment changes dramatically between different heights, the modeling techniques presented in this paper does not accurately portray the actual geometry.
+
+% section on lmimiations
+\section{Limitations}
+\label{sec:fp_limitations}
+
+The method of generating a 3D model by extruding a 2D floor plan requires assumptions about the building geometry, which can lead to limitations in the accuracy of the final model.  This method assumes a 2.5D nature for the building environment, specifically that all surfaces are either perfectly vertical or horizontal.  Additionally, this method assumes a single height per room, which means drop ceilings and other vertical variations are not captured.
+
+% cory 299 with texture
+\begin{figure}
+   \centering
+   \begin{minipage}[b]{0.49\linewidth}
+   \includegraphics[width=1.0\linewidth]{visigrapp/results/coryf2_2d_texture_pics/snapshot00}
+   \centerline{(a)}
+   \end{minipage}
+   \hfill
+   \begin{minipage}[b]{0.49\linewidth}
+   \includegraphics[width=1.0\linewidth]{visigrapp/results/coryf2_2d_texture_pics/snapshot01}
+   \centerline{(b)}
+   \end{minipage}
+   \caption[Limitations of 2.5D models.]{A texture-mapped extruded floor plan of a classroom environment: (a) the front of the room; (b) the same view from a different angle.  Note that the projection screen is represented as a vertical surface extending from floor to ceiling in the 2.5D extrusion.  Due to this limitation in the geometry representation, the texture on the lower portion of this surface is incorrect.}
+   \label{fig:cory299_texture}
+\end{figure}
+
+This reduction is especially noticable in the lack of furniture geometry.  As we discuss in Chapter~\ref{ch:better_carving}, the lack of furniture in a 2.5D extruded model can be useful for further processing, but as a final model it presents some challenges.  We can observe this quality in Figure~\ref{fig:cory299_texture}.  This figure shows a classroom environment, represented by a texture-mapped 2.5D extruded floor plan model.  The classroom contains several pieces of furniture as well as a projector screen in the front.  Since the projector screen is a large vertical surface, it was classified as a ``wall'' and included in the model geometry.  This model geometry represents the screen extending fully to the floor, whereas it does not do so in reality.  As such, the texture-mapping of this geometry is incorrect in the lower section, since the texture does not match the reconstructed geometry.  While the texture looks reasonable from the angle viewed in Figure~\ref{fig:cory299_texture}a, the change in angle in Figure~\ref{fig:cory299_texture}b highlights this inaccuracy.  
+
+This model also shows how the lack of furniture in the reconstruction geometry causes the texture of furniture from the imagery to be projected onto the floors and walls, causing distortion.  These models were texture-mapped using the techniques described in~\cite{Cheng14}, which assumes that any geometry observed in the camera imagery is correctly represented in the reconstructed model.  Since this model is missing furniture geometry, the texture gets distorted. 
 
 %---------------------------------------------------------------------------
 %---------------------------------------------------------------------------
@@ -1447,9 +1471,22 @@ We demonstrate efficient approaches to automatically generate floor plans of bui
 % results section for 3D carving
 \section{Results}
 
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+% CHAPTER:  Comparing 2D and 3D models
+%---------------------------------------------------------------------------
+%---------------------------------------------------------------------------
+
+\chapter{Comparisons of 2.5D and 3D Models}
+\label{ch:fp_carving_compare}
+
+% topic sentence for this chapter
+In this chapter, we show comparisons between the surface reconstruction techniques described in Chapters~\ref{ch:floorplan} and~\ref{ch:carving}.  In doing so, we analyze the size of the produced models and associated run times, compare our results to state-of-the-art methods, and discuss limitations.  We also show examples of these models with texture-mapping applied~\ref{Cheng14,Turner14Journal}.  While this dissertation does not focus on the texture-mapping procedure, such processing is useful for determining the qualitative accuracy of the model geometry, and how it aligns with the captured camera imagery.
+
 % comparison of 3D carving method to 2.5D extruded floorplan
 Our 2.5D approach produces simplified models when compared to surface reconstruction techniques that preserve fine detail with more complex output.  Specifically, the 3D carving method includes interior objects such as furniture.  Figure~\ref{fig:visigrapp_compare_to_carving} compares the models resulting from our 2.5D method described in Chapter~\ref{sec:visigrapp} with that of the 3D building modeling technique for hotel hallways~\cite{Turner14}.  The two methods result in 2,944 triangles and 4.1 millions triangles, respectively.
 
+% basic comparison of two methods
 \begin{figure}
    \centering
    \begin{minipage}[b]{0.49\linewidth}
@@ -1464,6 +1501,153 @@ Our 2.5D approach produces simplified models when compared to surface reconstruc
    \caption[Comparison of 2.5D simple model with a 3D carved model.]{Comparison of models from (a) our 2.5D simple modeling approach with (b) the approach discussed in this chapter.}
    \label{fig:visigrapp_compare_to_carving}
 \end{figure}
+
+% figure with third-party comparison
+\begin{figure}[t]
+
+	\begin{minipage}[b]{0.58\linewidth}
+		\centerline{\includegraphics[height=4.3cm]{jstsp2014/compare/pointcloud_bright}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.4\linewidth}
+		\centerline{\includegraphics[height=4.3cm]{jstsp2014/compare/mura13_triangles.png}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.58\linewidth}
+		\centerline{\includegraphics[height=4.3cm]{jstsp2014/compare/carving_triangles_bright}}
+		\centerline{(c)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.4\linewidth}
+		\centerline{\includegraphics[height=4.3cm]{jstsp2014/compare/floorplan_triangles_bright}}
+		\centerline{(d)}\medskip
+	\end{minipage}
+
+	\caption[Comparison of models to existing approach.]{Comparison to state-of-the-art method: (a) Static point-cloud scans from VmmlLab set of~\cite{Mattausch14}; (b) reconstruction of dataset using method described in~\cite{Mura13}; (c) reconstruction of dataset using method from this Chapter; (d) reconstruction of dataset using method from Chapter~\ref{sec:visigrapp}.}
+	\label{fig:stateofartcompare}
+
+\end{figure}
+
+% compare to third-party reconstruction techniques
+We compare our reconstruction schemes from Chapter~\ref{ch:carving} to static scanning systems, even though they were originally designed to work with ambulatory acquisition systems~\cite{Backpack}.  As shown in Figure~\ref{fig:stateofartcompare}, point-clouds generated from traditional static-scanning technologies can be used as inputs for our reconstruction techniques. The represented scans in Figure~\ref{fig:stateofartcompare}a are taken from the VmmlLab dataset of~\cite{Mattausch14}.  The original paper for this dataset details segmentation of point-clouds, and not surface reconstruction, but the same group has also developed surface reconstruction approaches~\cite{Mura13,Mura14}. This dataset contains 133 million points from three scan locations, representing a 20 foot $\times$ 30 foot room.  We can convert these data to be used by our techniques by treating each scan location as a pose in the path of an assumed mobile system.  A comparison to a state-of-the-art method is shown in Figure~\ref{fig:stateofartcompare}b, which generates a model of floors, walls, and ceilings also using floor plan generation techniques~\cite{Mura13}.  This model is represented with 12 triangles.  The models shown in Figures~\ref{fig:stateofartcompare}c and~\ref{fig:stateofartcompare}d are constructed from the methods described in Chapters~\ref{ch:carving} and~\ref{ch:floorplan}, respectively.  The detailed model in Figure~\ref{fig:stateofartcompare}c is represented by 6.6 million triangles, while the simple model shown in Figure~\ref{fig:stateofartcompare}d is represented by 124 triangles.  The remainder of the examples shown in this section are generated from our ambulatory system.  Note that the main difference between these two sources of scans is the level of mis-registration noise. Unlike ambulatory systems, which can result in mis-registration up to 27~cm~\cite{NickJournal}, static scanning systems can be accurate to 0.25~cm~\cite{Mura13}.
+
+% pier 15
+\begin{figure}[t]
+
+	% top row
+	\begin{minipage}[t]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.3cm]{jstsp2014/joint/pier15/pier15_camera}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.3cm]{jstsp2014/joint/pier15/pier15_carving01}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.3cm]{jstsp2014/joint/pier15/pier15_carving00_compressed}}
+		\centerline{(c)}\medskip
+	\end{minipage}
+	
+	% bottom row
+	\begin{minipage}[b]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.3cm]{jstsp2014/joint/pier15/pier15_pointcloud00_compressed}}
+		\centerline{(d)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.3cm]{jstsp2014/joint/pier15/pier15_floorplan01}}
+		\centerline{(e)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.30\linewidth}
+		\centerline{\includegraphics[height=3.3cm]{jstsp2014/joint/pier15/pier15_floorplan00_compressed}}
+		\centerline{(f)}\medskip
+	\end{minipage}
+	
+	\caption[Comparison of models of construction environment.]{Close-up of models generated with the techniques described in this paper:  (a) photograph of scanned area; (b) surface carving model from Chapter~\ref{ch:carving}; (c) surface carving with textures; (d) point-cloud of scanned area; (e) extruded floor plan model from Chapter~\ref{ch:floorplan}; (f) extruded floor plan with texturing.}
+	\label{fig:compare_pier15}
+
+\end{figure}
+
+% discuss runtime and memory usage of each process
+
+Run-time analysis was performed on the dataset shown in Figure~\ref{fig:compare_pier15}.  The input to this dataset contains 25 million points.  The code was run on a laptop with an Intel i7-2620M processor with 8 GB of RAM.  All approaches presented in this paper were implemented in C++ as single-threaded programs.  The voxel carving method described in Chapter~\ref{ch:carving}, at 5~cm resolution, took 55 minutes of processing.  The surface reconstruction of these voxels took 1 minute and 2 seconds.  Previous voxel carving schemes processed similar models of 15 million points in 16 hours at the same resolution~\cite{Carving}.  Computation time was recorded for this same dataset with a resolution of 2~cm.  Voxel carving took 12 hours and 10 minutes at this resolution and surface meshing took 9.5 minutes.
+
+The same input point-cloud was processed using the 2.5D modeling approach described in Chapter~\ref{ch:floorplan} on the same hardware.  The processing step of extracting wall samples from the input point-cloud took 84.3 seconds.  Once these wall samples were generated, the process of generating the mesh took a total of 3.5 seconds.  This step includes data i/o, the floor plan generation, and the 3D extrusion of the floor plan.  While our surface carving routine is efficient when compared to other similar techniques, generating a model using 2D information is orders of magnitude quicker.  Since the floor plan generation technique can be applied in a streaming fashion to input grid-map data, it could be able to run in real-time for compatible SLAM systems.
+
+The texture-mapping process requires more computation time than the surface reconstruction schemes.  Using a single-threaded implementation on the same hardware, texturing the output surface of the voxel carving method as shown in Figure~\ref{fig:compare_pier15} took 10 hours and 44 minutes.  The texture-mapping of the surface generated from the floor plan extrusion approach took 113 minutes. The shorter time to texture-map this surface is due to the far fewer number of elements in the output mesh.
+
+% Mission bay figure, showing limitation of texture projection
+\begin{figure}[t]
+	\centerline{\includegraphics[width=0.82\linewidth]{jstsp2014/joint/missionbay/OR_comparison}}
+	\caption[Comparison of surface reconstruction methods for hosiptal operating rooms.]{Surface reconstruction of a hospital's operating room area:  (a) Floor plan of environment generated using method from Chapter~\ref{ch:floorplan}; (b) surface carving model from Chapter~\ref{ch:carving}; (c) surface carving with textures; (d) extruded floor plan model from Chapter~\ref{ch:floorplan}; (e) extruded floor plan with textures.  Note that the objects in the environment are not represented in the mesh of the extruded floor plan, so their texture is projected to the back wall of the room.}
+	\label{fig:comparison_missionbay}
+\end{figure}
+
+While using an extruded floor plan mesh to generate a texture-mapped model is far more computationally efficient, this method has its own set of limitations.  By effectively removing the geometry for furniture and other objects in the environment, this method creates a disparity between what is seen in the camera imagery and the reconstructed mesh.  As such, the texture for these objects is incorrectly projected onto the wall surfaces behind the objects, as shown in Figure~\ref{fig:comparison_missionbay}.  The advantage of a fully-3D meshing method is the preservation of fine detail in the geometry, while the advantage of the floor plan extrusion method is speed, simplicity, and a higher proportion of large, planar surfaces that allow for efficient texturing.
+
+% houston figure
+\begin{figure}
+
+	% top row
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[height=4.4cm]{jstsp2014/joint/houston/houston_3D_interior_2}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[height=4.4cm]{jstsp2014/joint/houston/results_houston_2_3d_compressed}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[height=4.4cm]{jstsp2014/joint/houston/houston_2D_interior_2}}
+		\centerline{(c)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[height=4.4cm]{jstsp2014/joint/houston/results_houston_2_2d_compressed}}
+		\centerline{(d)}\medskip
+	\end{minipage}
+	
+	% bottom row
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[height=4.4cm]{jstsp2014/joint/houston/houston_3D_interior_3}}
+		\centerline{(e)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[height=4.4cm]{jstsp2014/joint/houston/results_houston_3_3d_compressed}}
+		\centerline{(f)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[height=4.4cm]{jstsp2014/joint/houston/houston_2D_interior_3}}
+		\centerline{(g)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[height=4.4cm]{jstsp2014/joint/houston/houston3_2_compressed}}
+		\centerline{(h)}\medskip
+	\end{minipage}
+
+	\caption{Modeling results of hotel lobby: (a) Desk area modeled with method from Chapter~\ref{ch:carving}; (b) texture-mapping applied; (c) area modeled with method from Chapter~\ref{ch:floorplan}; (d) texture-mapping applied; (e) main lobby area modeled with method from Chapter~\ref{ch:carving}; (f) texture-mapping applied; (g) area modeled with method from Chapter~\ref{ch:floorplan}; (h) texture-mapping applied.}
+	\label{fig:comparison_houston}
+
+\end{figure}
+
+% discuss data product size (compare output of 2D vs 3D meshing)
+Figure~\ref{fig:comparison_houston} shows the results of modeling the scans collected in a hotel lobby.  The input point clouds for this model consisted of 70.4 million points, which comprised 5.16 GB on disk.  The generated models cover 2,317 square meters, or about 25,000 square feet.  The surface carving model, as shown in Figures~\ref{fig:comparison_houston}a and~\ref{fig:comparison_houston}e, is represented by 2.65 million triangles.  The extruded floor plan, as shown in Figures~\ref{fig:comparison_houston}c and~\ref{fig:comparison_houston}g, is modeled with 2,944 triangles.  This reduction by a factor of a thousand means that finer details in the model such as furniture or drop ceilings are not present, but can aid in many applications, including texture-mapping.
+
+% talk about size of textured models
+The size of the resulting texture-mapped models is much larger due to the generated high-resolution textures from camera imagery.  The texture-mapping of the surface carving model, as shown in Figures~\ref{fig:comparison_houston}b and~\ref{fig:comparison_houston}d, is 1.45 GB on disk comprised of textures for 1,277 distinct surfaces.  The texture-mapping of the extruded floor plan depicted in Figures~\ref{fig:comparison_houston}f and~\ref{fig:comparison_houston}h takes up 488 MB on disk with 566 surfaces.  The largest surface for texturing is the floor of the main lobby area, whose texture is represented by a $14210 \times 10555$ image.  A video fly-through of these models can be found online~\cite{video}.
+
+% lead into next two chapters, discuss how methods can improve each other
+While the 2D floor plans, 2.5D extruded models, and the full 3D complex models all have their respective uses and applications, we see that they represent the building in fundamentally different ways.  As such, these modeling methods can be used to enhance each other, using one method to improve the quality of another.  In Chapter~\ref{ch:better_floorplans}, we discuss how analysis of the 3D complex model can be used to improve the results of the 2D floor plans and their corresponding extruded models.  In Chapter~\ref{ch:better_carving}, we discuss how the opposite can also be applied, where the 2D floor plans are used to improve the quality of the 3D models, including added analysis about separating the 3D geometry of furniture from the rest of the building model.
 
 %---------------------------------------------------------------------------
 %---------------------------------------------------------------------------
@@ -1483,7 +1667,7 @@ Our 2.5D approach produces simplified models when compared to surface reconstruc
 %---------------------------------------------------------------------------
 
 \chapter{Improvements of 3D Complex Models using 2D Floor Plan Models}
-\label{ch:better_floorplans}
+\label{ch:better_carving}
 
 % TODO chapter on better carving
 

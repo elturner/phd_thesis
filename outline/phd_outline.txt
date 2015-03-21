@@ -71,10 +71,11 @@ x	Pointcloud generation (5-10 pages)			\label{ch:preprocessing}
 			- simplification techniques			\label{ssec:fp_simplify}
 			- extruding to 2.5D model			\label{ssec:fp_extrusion}
 		- results					\label{sec:fp_results}
-			- compare eigencrust to groundtruth
-			- compare visigrapp to ground truth (mulford)
-			- compare eigencrust to visigrapp (cory)
+			- compare eigencrust to groundtruth		\label{ssec:eigencrust_results}
+			- compare visigrapp to ground truth (mulford)	\label{ssec:visigrapp_results}
+			- compare eigencrust to visigrapp (cory)	\label{ssec:fp_results_compare}
 			- compare pf wall samples to pc wall samples (houston, office)
+		- limitations					\label{sec:fp_limitations}
 		
 	Carving							\label{ch:carving}
 		- 3DV 2013 voxel carving
@@ -85,6 +86,8 @@ x	Pointcloud generation (5-10 pages)			\label{ch:preprocessing}
 			- explain what's going on with noisypath
 			- everything regarding the wedge model
 			- chunking of scans
+
+	Comparisons of 2.5D and 3D Models			\label{ch:fp_carving_compare}
 
 	Improving floorplans with carving  			\label{ch:better_floorplans}
 		- level-splitting with octree, improves on pointcloud level split
