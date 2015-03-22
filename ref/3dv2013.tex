@@ -1,4 +1,12 @@
 \documentclass[10pt,twocolumn,letterpaper]{article}
+%
+% COMMENT the above and UNCOMMENT the following
+% for avideh approved formatting
+%
+%\documentclass[22pt,onecolumn,letterpaper]{article}
+%\usepackage{setspace}
+%\doublespacing
+
 
 \usepackage{cvpr}
 \usepackage{times}
@@ -12,436 +20,422 @@
 % If you comment hyperref and then uncomment it, you should delete
 % egpaper.aux before re-running latex.  (Or just hit 'q' on the first latex
 % run, let it finish, and you should be clear).
-%\usepackage[pagebackref=true,breaklinks=true,letterpaper=true,colorlinks,bookmarks=false]{hyperref}
+\usepackage[pagebackref=true,breaklinks=true,letterpaper=true,colorlinks,bookmarks=false]{hyperref}
+
 
 \cvprfinalcopy % *** Uncomment this line for the final submission
 
-\def\cvprPaperID{****} % *** Enter the 3DV Paper ID here
+\def\cvprPaperID{44} % *** Enter the 3DV Paper ID here
 \def\httilde{\mbox{\tt\raisebox{-.5ex}{\symbol{126}}}}
 
 % Pages are numbered in submission mode, and unnumbered in camera-ready
-%\ifcvprfinal\pagestyle{empty}\fi
-\setcounter{page}{4321}
+\ifcvprfinal\pagestyle{empty}\fi
 \begin{document}
 
 %%%%%%%%% TITLE
-\title{\LaTeX\ Author Guidelines for 3DV Proceedings}
+\title{Watertight Planar Surface Meshing of Indoor Point-Clouds with Voxel Carving}
 
-\author{First Author\\
-Institution1\\
-Institution1 address\\
-{\tt\small firstauthor@i1.org}
+\author{Eric Turner and Avideh Zakhor\\
+Department of Electrical Engineering and Computer Science\\
+University of California Berkeley\\
+Berkeley, CA 94720 \\
+{\tt\small elturner@eecs.berkeley.edu, avz@eecs.berkeley.edu}
 % For a paper whose authors are all at the same institution,
 % omit the following lines up until the closing ``}''.
 % Additional authors and addresses can be added with ``\and'',
 % just like the second author.
 % To save space, use either the email address or home page, not both
-\and
-Second Author\\
-Institution2\\
-First line of institution2 address\\
-{\tt\small secondauthor@i2.org}
 }
 
 \maketitle
-%\thispagestyle{empty}
+% \thispagestyle{empty}
 
 %%%%%%%%% ABSTRACT
 \begin{abstract}
-   The ABSTRACT is to be in fully-justified italicized text, at the top
-   of the left-hand column, below the author and affiliation
-   information. Use the word ``Abstract'' as the title, in 12-point
-   Times, boldface type, centered relative to the column, initially
-   capitalized. The abstract is to be in 10-point, single-spaced type.
-   Leave two blank lines after the Abstract, then begin the main text.
-   Look at previous 3DIMPVT/3DIM/3DPVT abstracts to get a feel for style and length.
+3D modeling of building architecture from point-cloud scans is a rapidly advancing field.  These models are used in augmented reality, navigation, and energy simulation applications.  State-of-the-art scanning produces accurate point-clouds of building interiors containing hundreds of millions of points.  Current surface reconstruction techniques either do not preserve sharp features common in a man-made structures, do not guarantee watertightness, or are not constructed in a scalable manner.  This paper presents an approach that generates watertight triangulated surfaces from input point-clouds, preserving the sharp features common in buildings.  The input point-cloud is converted into a voxelized representation, utilizing a memory-efficient data structure.  The triangulation is produced by analyzing planar regions within the model.  These regions are represented with an efficient number of elements, while still preserving triangle quality.  This approach can be applied to data of arbitrary size to result in detailed models.  We apply this technique to several data sets of building interiors and analyze the accuracy of the resulting surfaces with respect to the input point-clouds. 
 \end{abstract}
 
 %%%%%%%%% BODY TEXT
 \section{Introduction}
 
-Please follow the steps outlined below when submitting your manuscript to
-the IEEE Computer Society Press.  This style guide now has several
-important modifications (for example, you are no longer warned against the
-use of sticky tape to attach your artwork to the paper), so all authors
-should read this new version.
+\begin{figure*}[t]
 
-%-------------------------------------------------------------------------
-\subsection{Language}
+% show pointcloud of building
 
-All manuscripts must be in English.
+	\begin{minipage}[b]{0.3\linewidth}
+	%\centerline{\includegraphics[height=2.5cm]{figures/pointcloud_of_my_desk.PNG}}
+	\centerline{\includegraphics[height=2.5cm]{figures/results/coryInside_no_roof_pointcloud_cropped.jpg}}
+	\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.3\linewidth}
+	%\centerline{\includegraphics[height=2.5cm]{figures/results/snapshot_mydesk_r05_p00.png}}
+	\centerline{\includegraphics[height=2.5cm]{figures/results/coryInside_no_roof_surface00_cropped.jpg}}
+	\centerline{(b)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.3\linewidth}
+	%\centerline{\includegraphics[height=2.5cm]{figures/results/snapshot_mydesk_r05_p_withtris01.png}}
+	\centerline{\includegraphics[height=2.5cm]{figures/results/coryInside_no_roof_triangles00_cropped.png}}
+	\centerline{(c)}\medskip
+	\end{minipage}
 
-\subsection{Dual submission}
-
-By submitting a manuscript to 3DV, the authors assert that it has not been
-previously published in substantially similar form. Furthermore, no paper
-which contains significant overlap with the contributions of this paper
-either has been or will be submitted during the 3DV 2013 review period to
-{\bf either a journal} or any conference or any
-workshop.
- {\bf Papers violating this condition will be rejected and a list of violating authors may be included in the proceedings.}
-
-If there are papers that may appear to the reviewers
-to violate this condition, then it is your responsibility to: (1)~cite
-these papers (preserving anonymity as described in Section 1.6 below),
-(2)~argue in the body of your paper why your 3DV paper is non-trivially
-different from these concurrent submissions, and (3)~include anonymized
-versions of those papers in the supplemental material.
-
-\subsection{Paper length}
-3DV papers may be between 6 pages and 8 pages. Overlength papers will simply not be reviewed.  This includes papers
-where the margins and formatting are deemed to have been significantly
-altered from those laid down by this style guide.  Note that this
-\LaTeX\ guide already sets figure captions and references in a smaller font.
-The reason such papers will not be reviewed is that there is no provision for
-supervised revisions of manuscripts.  The reviewing process cannot determine
-the suitability of the paper for presentation in eight pages if it is
-reviewed in eleven. 
-
-%-------------------------------------------------------------------------
-\subsection{The ruler}
-The \LaTeX\ style defines a printed ruler which should be present in the
-version submitted for review.  The ruler is provided in order that
-reviewers may comment on particular lines in the paper without
-circumlocution.  If you are preparing a document using a non-\LaTeX\
-document preparation system, please arrange for an equivalent ruler to
-appear on the final output pages.  The presence or absence of the ruler
-should not change the appearance of any other content on the page.  The
-camera ready copy should not contain a ruler. (\LaTeX\ users may uncomment
-the \verb'\cvprfinalcopy' command in the document preamble.)  Reviewers:
-note that the ruler measurements do not align well with lines in the paper
---- this turns out to be very difficult to do well when the paper contains
-many figures and equations, and, when done, looks ugly.  Just use fractional
-references (e.g.\ this line is $095.5$), although in most cases one would
-expect that the approximate location will be adequate.
-
-\subsection{Mathematics}
-
-Please number all of your sections and displayed equations.  It is
-important for readers to be able to refer to any particular equation.  Just
-because you didn't refer to it in the text doesn't mean some future reader
-might not need to refer to it.  It is cumbersome to have to use
-circumlocutions like ``the equation second from the top of page 3 column
-1''.  (Note that the ruler will not be present in the final copy, so is not
-an alternative to equation numbers).  All authors will benefit from reading
-Mermin's description of how to write mathematics.%: \url{http://www.cvpr.org/doc/mermin.pdf}.
-
-
-\subsection{Blind review}
-
-Many authors misunderstand the concept of anonymizing for blind
-review.  Blind review does not mean that one must remove
-citations to one's own work---in fact it is often impossible to
-review a paper unless the previous citations are known and
-available.
-
-Blind review means that you do not use the words ``my'' or ``our''
-when citing previous work.  That is all.  (But see below for
-techreports)
-
-Saying ``this builds on the work of Lucy Smith [1]'' does not say
-that you are Lucy Smith, it says that you are building on her
-work.  If you are Smith and Jones, do not say ``as we show in
-[7]'', say ``as Smith and Jones show in [7]'' and at the end of the
-paper, include reference 7 as you would any other cited work.
-
-An example of a bad paper just asking to be rejected:
-\begin{quote}
-\begin{center}
-    An analysis of the frobnicatable foo filter.
-\end{center}
-
-   In this paper we present a performance analysis of our
-   previous paper [1], and show it to be inferior to all
-   previously known methods.  Why the previous paper was
-   accepted without this analysis is beyond me.
-
-   [1] Removed for blind review
-\end{quote}
-
-
-An example of an acceptable paper:
-
-\begin{quote}
-\begin{center}
-     An analysis of the frobnicatable foo filter.
-\end{center}
-
-   In this paper we present a performance analysis of the
-   paper of Smith \etal [1], and show it to be inferior to
-   all previously known methods.  Why the previous paper
-   was accepted without this analysis is beyond me.
-
-   [1] Smith, L and Jones, C. ``The frobnicatable foo
-   filter, a fundamental contribution to human knowledge''.
-   Nature 381(12), 1-213.
-\end{quote}
-
-If you are making a submission to another conference at the same time,
-which covers similar or overlapping material, you may need to refer to that
-submission in order to explain the differences, just as you would if you
-had previously published related work.  In such cases, include the
-anonymized parallel submission~\cite{Authors12} as additional material and
-cite it as
-\begin{quote}
-[1] Authors. ``The frobnicatable foo filter'', F\&G 2012 Submission ID 324,
-Supplied as additional material {\tt fg324.pdf}.
-\end{quote}
-
-Finally, you may feel you need to tell the reader that more details can be
-found elsewhere, and refer them to a technical report.  For conference
-submissions, the paper must stand on its own, and not {\em require} the
-reviewer to go to a techreport for further details.  Thus, you may say in
-the body of the paper ``further details may be found
-in~\cite{Authors12b}''.  Then submit the techreport as additional material.
-Again, you may not assume the reviewers will read this material.
-
-Sometimes your paper is about a problem which you tested using a tool which
-is widely known to be restricted to a single institution.  For example,
-let's say it's 1969, you have solved a key problem on the Apollo lander,
-and you believe that the 3DV70 audience would like to hear about your
-solution.  The work is a development of your celebrated 1968 paper entitled
-``Zero-g frobnication: How being the only people in the world with access to
-the Apollo lander source code makes us a wow at parties'', by Zeus \etal.
-
-You can handle this paper like any other.  Don't write ``We show how to
-improve our previous work [Anonymous, 1968].  This time we tested the
-algorithm on a lunar lander [name of lander removed for blind review]''.
-That would be silly, and would immediately identify the authors. Instead
-write the following:
-\begin{quotation}
-\noindent
-   We describe a system for zero-g frobnication.  This
-   system is new because it handles the following cases:
-   A, B.  Previous systems [Zeus et al. 1968] didn't
-   handle case B properly.  Ours handles it by including
-   a foo term in the bar integral.
-
-   ...
-
-   The proposed system was integrated with the Apollo
-   lunar lander, and went all the way to the moon, don't
-   you know.  It displayed the following behaviours
-   which show how well we solved cases A and B: ...
-\end{quotation}
-As you can see, the above text follows standard scientific convention,
-reads better than the first version, and does not explicitly name you as
-the authors.  A reviewer might think it likely that the new paper was
-written by Zeus \etal, but cannot make any decision based on that guess.
-He or she would have to be sure that no other authors could have been
-contracted to solve problem B.
-
-FAQ: Are acknowledgements OK?  No.  Leave them for the final copy.
-
-
-\begin{figure}[t]
-\begin{center}
-\fbox{\rule{0pt}{2in} \rule{0.9\linewidth}{0pt}}
-   %\includegraphics[width=0.8\linewidth]{egfigure.eps}
-\end{center}
-   \caption{Example of caption.  It is set in Roman so that mathematics
-   (always set in Roman: $B \sin A = A \sin B$) may be included without an
-   ugly clash.}
-\label{fig:long}
-\label{fig:onecol}
-\end{figure}
-
-\subsection{Miscellaneous}
-
-\noindent
-Compare the following:\\
-\begin{tabular}{ll}
- \verb'$conf_a$' &  $conf_a$ \\
- \verb'$\mathit{conf}_a$' & $\mathit{conf}_a$
-\end{tabular}\\
-See The \TeX book, p165.
-
-The space after \eg, meaning ``for example'', should not be a
-sentence-ending space. So \eg is correct, {\em e.g.} is not.  The provided
-\verb'\eg' macro takes care of this.
-
-When citing a multi-author paper, you may save space by using ``et alia'',
-shortened to ``\etal'' (not ``{\em et.\ al.}'' as ``{\em et}'' is a complete word.)
-However, use it only when there are three or more authors.  Thus, the
-following is correct: ``
-   Frobnication has been trendy lately.
-   It was introduced by Alpher~\cite{Alpher02}, and subsequently developed by
-   Alpher and Fotheringham-Smythe~\cite{Alpher03}, and Alpher \etal~\cite{Alpher04}.''
-
-This is incorrect: ``... subsequently developed by Alpher \etal~\cite{Alpher03} ...''
-because reference~\cite{Alpher03} has just two authors.  If you use the
-\verb'\etal' macro provided, then you need not worry about double periods
-when used at the end of a sentence as in Alpher \etal.
-
-For this citation style, keep multiple citations in numerical (not
-chronological) order, so prefer \cite{Alpher03,Alpher02,Authors12} to
-\cite{Alpher02,Alpher03,Authors12}.
-
-
-\begin{figure*}
-\begin{center}
-\fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
-\end{center}
-   \caption{Example of a short caption, which should be centered.}
-\label{fig:short}
+\caption{Example processing of office building interior.  Ceiling has been removed for visualization:  (a) Input point-cloud; (b) Output surface; (c) Triangulation of surface.}
+\label{fig:mydesk}
 \end{figure*}
 
-%------------------------------------------------------------------------
-\section{Formatting your paper}
+% why do we care about modeling building interiors
+%	- virtual walkthroughs
+%	- augmented reality
+%	- energy simulation
+%	...
+Point-cloud scans of building interiors are useful in the fields of architecture, civil engineering, and construction.  It is often desirable to use these point-clouds to construct meshed surfaces for texturing or geometric analysis.  Meshed triangulations allow for the efficient representation of the scanned geometry and can be used for virtual walk-throughs of environments, augmented reality, indoor navigation applications, and energy simulation analysis.  These applications rely on the accuracy of a model as well as its compact representation.
 
-All text must be in a two-column format. The total allowable width of the
-text area is $6\frac78$ inches (17.5 cm) wide by $8\frac78$ inches (22.54
-cm) high. Columns are to be $3\frac14$ inches (8.25 cm) wide, with a
-$\frac{5}{16}$ inch (0.8 cm) space between them. The main title (on the
-first page) should begin 1.0 inch (2.54 cm) from the top edge of the
-page. The second and following pages should begin 1.0 inch (2.54 cm) from
-the top edge. On all pages, the bottom margin should be 1-1/8 inches (2.86
-cm) from the bottom edge of the page for $8.5 \times 11$-inch paper; for A4
-paper, approximately 1-5/8 inches (4.13 cm) from the bottom edge of the
-page.
+% what are the specifics of problem, what we want in a solution?
+%	- Huge data
+%	- Lots of planar surfaces, sharp edges, non-organic
+%	- Lots of small details (furniture)
+%	- noisy
+%	- watertight
+%	- speed / scalability
+%	- efficiently sized output
+One of the primary challenges of indoor modeling is the sheer size of the input point-clouds.  Scans of single floors of buildings result in point-clouds that contain at least hundreds of millions of points, often larger than the physical memory in a personal computer.  Man-made geometry is typically composed of planar regions and sharp corners, but many conventional surface reconstruction schemes assume a certain degree of smoothness and result in rounded or blobby output if applied to these models~\cite{Powercrust,OctreeSculpting,Carving,ProgressiveMesh,Poisson,Eigencrust}.  In addition to large flat regions, building interiors also contain many small details, such as furniture.  A surface reconstruction scheme must be able to preserve these fine details while remaining robust to registration errors and noise from the input point-cloud.  The point-cloud may also have gaps or missing data, but an output mesh must remain watertight.  Lastly, all of these concerns should be addressed in an algorithm that exports models that use an efficient number of triangles.
 
-%-------------------------------------------------------------------------
-\subsection{Margins and page numbering}
+% why are existing approaches not good enough?
+%	- Too slow / too complex / not scalable
+%	- unsuited for planar models
+%	- don't preserve detail
+%	- not watertight
+%	- too many elements
 
-All printed material, including text, illustrations, and charts, must be kept
-within a print area 6-7/8 inches (17.5 cm) wide by 8-7/8 inches (22.54 cm)
-high.  Page numbers should be in footer with page numbers, centered and .75
-inches from the bottom of the page and make it start at the correct page
-number rather than the 4321 in the example.  To do this fine the line (around
-line 23)  
-\begin{verbatim}
-%\ifcvprfinal\pagestyle{empty}\fi
-\setcounter{page}{4321}
-\end{verbatim}
-where the number 4321 is your assigned starting page.  
+% What is the basic, high-level approach being suggested
+%	- Make a grid
+%	- Carve interior voxels
+%	- find planar surfaces
+%	- Triangulate
+%	- analysis
 
-Make sure the first page is numbered by commenting out the first page being
-empty on line 46
-\begin{verbatim}
-%\thispagestyle{empty}
-\end{verbatim}
+% why is this awesome?
 
+We propose a scheme that meets all of these requirements.  We partition space volumetrically into interior and exterior sets to ensure the boundary between these areas is watertight.  This paper presents a method that applies this partitioning on a discretized voxel grid.  The input point-cloud is used to separate the interior and exterior voxels based on a carving method.  The resulting carved voxels are used to define a boundary representing the surface.  This boundary is segmented into planar regions, which are in turn triangulated.  The resulting watertight surface sharply represents large features such as walls, floors, and ceilings while still preserving fine detail such as furniture and stair-cases.  The surface is adaptively triangulated with an efficient number of high-quality triangles.
 
-%-------------------------------------------------------------------------
-\subsection{Type-style and fonts}
+% outline of paper
 
-Wherever Times is specified, Times Roman may also be used. If neither is
-available on your word processor, please use the font closest in
-appearance to Times to which you have access.
+Section~\ref{sec:carving} describes the voxel carving method used to define interior and exterior voxels.  Section~\ref{sec:surface} describes the surface reconstruction approach that fits planar regions to the carved voxels, and triangulates them efficiently.  Section~\ref{sec:examples} shows qualitative results of the output, while Section~\ref{sec:analysis} demonstrates the accuracy of the computed mesh.
 
-MAIN TITLE. Center the title 1-3/8 inches (3.49 cm) from the top edge of
-the first page. The title should be in Times 14-point, boldface type.
-Capitalize the first letter of nouns, pronouns, verbs, adjectives, and
-adverbs; do not capitalize articles, coordinate conjunctions, or
-prepositions (unless the title begins with such a word). Leave two blank
-lines after the title.
+\section{Background}
 
-AUTHOR NAME(s) and AFFILIATION(s) are to be centered beneath the title
-and printed in Times 12-point, non-boldface type. This information is to
-be followed by two blank lines.
+% discuss motivation for volumetric approach to carving and why voxels are a good choice
 
-The ABSTRACT and MAIN TEXT are to be in a two-column format.
+The state-of-the-art surface reconstruction techniques applied to building architecture often do not employ a volumetric approach.  These methods commonly assume that building geometry is piece-wise planar, with the orientation of planar elements as either perfectly horizontal or vertical.  This assumption allows for plane-fitting to be performed on the input point-cloud, either by a histogram approach or random consensus~\cite{HistWallRecon,Victors,BasicPlaneFit}.  Such approaches do not guarantee watertightness of the resulting mesh and can require substantial post-processing.  While similar techniques exist that ensure watertightness, they are unable to capture fine details~\cite{Museums}.  Such methods often have difficulty preserving the correct genus or connectivity of the final mesh and fail to capture the locations of doorways or short hallways.  The carving method described in this paper results in much higher detail.
 
-MAIN TEXT. Type main text in 10-point Times, single-spaced. Do NOT use
-double-spacing. All paragraphs should be indented 1 pica (approx. 1/6
-inch or 0.422 cm). Make sure your text is fully justified---that is,
-flush left and flush right. Please do not place any additional blank
-lines between paragraphs.
+There exist techniques that attempt to mitigate the above factors for architecture modeling, but they often require computationally expensive global optimizations~\cite{Pons10}.  Those approaches work well for a limited modeling environment, but do not scale well.  The largest tested model in~\cite{Pons10} consists of 3.3 million points, whereas the example models in this paper contain 13 million to 115 million points.  The desired technique is one that uses a volumetric approach to ensure watertightness and preserves sharp, planar features as well as fine detail, but is fast and memory efficient even with large models.  An alternate approach to generating models of high detail is to use a classification scheme on the input point-cloud.  Such schemes are capable of preserving the fine detail in the model, such as staircases~\cite{Victors} or furniture~\cite{Kim12, SearchClassifyPointcloud, Shao12}.  Unfortunately, these techniques are heavily dependant on the variance of the database of shapes available.  Any mislabeling causes errors in the output mesh.
 
-Figure and table captions should be 9-point Roman type as in
-Figures~\ref{fig:onecol} and~\ref{fig:short}.  Short captions should be centred.
+There have been several algorithms that reconstruct surfaces from point-clouds using a volumetric approach~\cite{Powercrust,Eigencrust}.  These methods compute a Delaunay Tetrahedralization of the input points and use those simplices to partition space into interior and exterior domains.  Since the output surfaces of these schemes are composed of a subset of the original points, the size of the generated model scales with the density of the input point-cloud.  Further, these methods assume that the point-clouds are modeling smooth and continuous surfaces, which is not the case in building modeling.  These algorithms may also require a global optimization step~\cite{Eigencrust}.  While advancements have been made to perform these computations in an efficient and out-of-core manner~\cite{RealTimeEigenCrust,StreamingDelaunay}, the resulting models are too large to be practical for graphical or simulation applications.
 
-\noindent Callouts should be 9-point Helvetica, non-boldface type.
-Initially capitalize only the first word of section titles and first-,
-second-, and third-order headings.
+Algorithms such as Poisson Surface Reconstruction allow the user to specify a resolution parameter for the generation of more compact models~\cite{Poisson}.  These schemes guarantee watertightness by using an implicit surface to model the point-cloud~\cite{UnorganizedPoints}.  While these approaches can be applied to large models using distributed computing techniques~\cite{OutOfCorePoisson,ParallelPoisson}, they are unsuited for modeling man-made architecture.  The output models of these methods lack sharp features because they generate implicit surfaces using Gaussian basis functions.  Additionally, many common triangulation schemes for implicit surfaces result in uniform elements~\cite{DualContouring,MarchingCubes}, which are undesirable for large, flat surfaces that can be modeled just as accurately with fewer elements.  If these approaches are used on a discretized voxel grid, undesirable artifacts of the discretization are preserved, requiring the final mesh to be smoothed, thus reducing accuracy~\cite{Carving}.  Algorithms that adaptively mesh an isosurface or simplify an existing mesh rely on the local feature size of a model~\cite{QEM,ProgressiveMesh,Isostuffing,AdaptiveMeshing}.  Models with flat regions or sharp corners, where the curvature approaches zero or infinity, can become degenerate or have poor quality.  The goal of this paper is to create models that are composed entirely of such areas, so these techniques are not appropriate.
 
-FIRST-ORDER HEADINGS. (For example, {\large \bf 1. Introduction})
-should be Times 12-point boldface, initially capitalized, flush left,
-with one blank line before.
+Models of building interiors are rich with flat surfaces and right angles.  This prior knowledge supports the use of primitives that have these same aspects.  Examples include voxel and octree structures, which are used in many carving techniques~\cite{OctreeSculpting,Carving,SpaceTime,VoxelSurfaceArea,Yang05}.  The advantage to such approaches is that they are robust to noise and registration errors in the input point-cloud.  One of the challenges with voxel representations is memory and computational intensity, thus becoming tractable only when performed in a distributed or parallel fashion~\cite{ParallelOctree}.  Some voxel carving approaches can also inadvertently remove small details~\cite{Carving}.  This paper modifies voxel carving to address these issues and introduces memory-efficient data structures that produce models that preserve fine details with an efficient number of elements.
 
-SECOND-ORDER HEADINGS. (For example, { \bf 1.1. Database elements})
-should be Times 11-point boldface, initially capitalized, flush left,
-with one blank line before, and one after. If you require a third-order
-heading (we discourage it), use 10-point Times, boldface, initially
-capitalized, flush left, preceded by one blank line, followed by a period
-and your text on the same line.
+\section{Approach}
+\label{sec:approach}
 
-%-------------------------------------------------------------------------
-\subsection{Footnotes}
+%%%% COMMENT this paragraph for final submission, and uncomment below
+%%%% paragraph
+%In this paper we consider surface reconstruction of 3D models of building interiors that are dominated by piece-wise planar geometry.  These models can be acquired with a mobile scanning device that traverses the hallways and rooms of a building.  Our data collection system has three Hokuyo UTM-30LX laser range finders that scan along the plane orthogonal to the direction of motion.  This orientation allows for detailed scans of local geometry as the operator walks by~\cite{Carving,Sweep}.  The laser scans and camera imagery are used to recover the location of the scanner within the building at each timestep, allowing for a full point-cloud of the geometry to be constructed~\cite{Localization}.  An example point-cloud is shown in Figure~\ref{fig:mydesk}a.
 
-Please use footnotes\footnote {This is what a footnote looks like.  It
-often distracts the reader from the main flow of the argument.} sparingly.
-Indeed, try to avoid footnotes altogether and include necessary peripheral
-observations in
-the text (within parentheses, if you prefer, as in this sentence).  If you
-wish to use a footnote, place it at the bottom of the column on the page on
-which it is referenced. Use Times 8-point type, single-spaced.
+%%%% UNCOMMENT this paragraph for final submission, use instead of above
+%%%% paragraph.
+In this paper we consider surface reconstruction of 3D models of building interiors that are dominated by piece-wise planar geometry.  These models can be acquired with a mobile scanning device that traverses the hallways and rooms of a building.  The example input point-clouds used in this paper are produced from an ambulatory scanning system mounted on a human operator as a backpack~\cite{Backpack}.  This system has three Hokuyo UTM-30LX laser range finders that scan along the plane orthogonal to the direction of motion.  This orientation allows for detailed scans of local geometry as the operator walks by~\cite{Carving,Sweep}.  The laser scans and camera imagery are used to recover the location of the scanner within the building at each timestep, allowing for a full point-cloud of the geometry to be constructed~\cite{Localization}.  An example point-cloud is shown in Figure~\ref{fig:mydesk}a.
 
+Our proposed method computes a meshed surface from this point-cloud using the following steps.  First, The point-cloud is used to determine the locations in the volume that are {\it interior} and {\it exterior} via a voxel carving scheme.  We introduce a novel data structure that allows the carving to be computed in a memory efficient and scalable manner.  Second, once interior and exterior voxels are labeled, the surface defined between these two labelings is segmented into planar regions, as shown in Figure~\ref{fig:mydesk}b.  Each region is meshed with triangles that are proportional to its size, as shown in Figure~\ref{fig:mydesk}c.  The result accurately and efficiently depicts the geometry of the building.
 
-%-------------------------------------------------------------------------
-\subsection{References}
+\subsection{Voxel carving}
+\label{sec:carving}
 
-List and number all bibliographical references in 9-point Times,
-single-spaced, at the end of your paper. When referenced in the text,
-enclose the citation number in square brackets, for
-example~\cite{Authors12}.  Where appropriate, include the name(s) of
-editors of referenced books.
+% make figure of prism carving and interpolation
+\begin{figure*}[t]
 
-\begin{table}
-\begin{center}
-\begin{tabular}{|l|c|}
-\hline
-Method & Frobnability \\
-\hline\hline
-Theirs & Frumpy \\
-Yours & Frobbly \\
-Ours & Makes one's heart Frob\\
-\hline
-\end{tabular}
-\end{center}
-\caption{Results.   Ours is better.}
-\end{table}
+  \begin{minipage}[b]{0.3\linewidth}
+  \centerline{\includegraphics[height=2.7cm]{figures/diagrams/triangle_prism_carve_a.pdf}}
+  \centerline{(a)}\medskip
+  \end{minipage}
+  \begin{minipage}[b]{0.3\linewidth}
+  \centerline{\includegraphics[height=2.7cm]{figures/diagrams/triangle_prism_carve_b.pdf}}
+  \centerline{(b)}\medskip
+  \end{minipage}
+  \begin{minipage}[b]{0.3\linewidth}
+  \centerline{\includegraphics[height=2.7cm]{figures/diagrams/triangle_prism_carve_c.pdf}}
+  \centerline{(c)}\medskip
+  \end{minipage}
 
-%-------------------------------------------------------------------------
-\subsection{Illustrations, graphs, and photographs}
+\caption{(a) The input point-cloud is used in conjunction with the track of each scanner to define interior space to carve; (b) Carving is performed using ray-tracing from scanner location to an interpolation of the input points; (c) The result is a set of voxels labeled as {\it interior}.}
+\label{fig:carving}
+\end{figure*}
 
-All graphics should be centered.  Please ensure that any point you wish to
-make is resolvable in a printed copy of the paper.  Resize fonts in figures
-to match the font in the body text, and choose line widths which render
-effectively in print.  Many readers (and reviewers), even of an electronic
-copy, will choose to print your paper in order to read it.  You cannot
-insist that they do otherwise, and therefore must not assume that they can
-zoom in to see tiny details on a graphic.
+This interior/exterior volume classification is performed on a voxel grid.  Given an input resolution size $r$, each voxel is a cube whose sides are length $r$.  Initially, all voxels are assumed to be {\it exterior}, referring to any space outside of the scanned volume or space that is represented by solid objects.  The process of {\it carving} refers to relabeling a voxel from exterior to interior, which occurs when a voxel is found to intersect the line segment from the scanner to a corresponding scan point.  If a laser passes through a voxel, that voxel is considered interior space.
 
-When placing figures in \LaTeX, it's almost always best to use
-\verb+\includegraphics+, and to specify the  figure width as a multiple of
-the line width as in the example below
-{\small\begin{verbatim}
-   \usepackage[dvips]{graphicx} ...
-   \includegraphics[width=0.8\linewidth]
-                   {myfile.eps}
-\end{verbatim}
-}
+For each laser scanner, there exists a track in space that represents the scanner's movement during data collection.  This track is represented by a sequence of positions $T = (\vec{t}_{1},\,\vec{t}_{2},\,\vec{t}_{3},\,...,\,\vec{t}_{N})$, where $N$ is the number of locations sampled during data collection.  These track samples are shown as purple circles in Figure~\ref{fig:carving}a.
 
+At the $i^{\text{th}}$ timestep, each scanner sweeps an arc defined by the set of points $P_{i} = \{\vec{p}_{i,1},\,\vec{p}_{i,2},\,...,\,\vec{p}_{i,j},\,...,\,\vec{p}_{i,M}\}$, where $M$ is the number of samples along the arc.  Each scanline is shown in solid red in Figure~\ref{fig:carving}a.  These scanlines can be interpolated in two dimensions, indexed by $i$ and $j$.  The first interpolates the laser scans temporally, while the second interpolates the scans spatially along the scan arc.  These interpolations are shown as dashed lines in Figure~\ref{fig:carving}a.  By performing bilinear interpolation, a continuous surface of scans can be estimated from each scan point $\vec{p}_{i,j}$, shown as the interior of the quadrilateral ($\vec{p}_{i,j}$, $\vec{p}_{i,j+1}$, $\vec{p}_{i+1,j+1}$, $\vec{p}_{i+1,j}$).  To efficiently determine which voxels are intersected by this interpolation, the carving operations are performed using ray-tracing between interpolated scanner position $\vec{s}$ and interpolated scan point position $\vec{f}$.  Each pair $(\vec{s}, \vec{f})$ denotes a line segment to carve.  An example set of these segments is shown in green in Figure~\ref{fig:carving}b.  By spacing these segments no more than distance $r$ apart, each voxel within the interpolated volume is assured to be carved.  We perform ray-tracing on each segment and relabel every intersected voxel as {\it interior}.  This step produces a set of voxels as shown in Figure~\ref{fig:carving}c.
 
-%-------------------------------------------------------------------------
-\subsection{Color}
+\paragraph*{Voxel data structure}
 
-Color is valuable, and will be visible to readers of the electronic copy.
-However ensure that, when printed on a monochrome printer, no important
-information is lost by the conversion to grayscale.
+In most common voxel representations, each voxel in 3D space is explicitly stored in an array in memory.  Even though this approach is straight-forward and easy to use, its memory usage is proportional to the volume represented.  For sizeable models, this memory footprint rapidly becomes intractable, necessitating splitting models into smaller chunks and processing each separately~\cite{Carving}.  This step adds redundant computation and storage overhead.  Adaptive approaches such as octrees reduce memory consumption by only representing the subset of relevant volume, but they still explicitly represent volume, an approach that rapidly fills memory~\cite{OctreeSculpting,Yang05}.
 
-%------------------------------------------------------------------------
-\section{Final copy}
+Rather than storing all relevant voxels in memory, in this paper we propose a data structure that implicitly represents the interior and exterior voxels by only explicitly storing the boundary voxels.  A boundary voxel is defined to be one that is labeled as exterior, but has at least one face incident to a voxel labeled interior.  The number of boundary voxels is proportional to the surface area of a model, so storing the boundary only requires $O(n^2)$ memory, whereas the full volume would require $O(n^3)$ memory to store, where $n$ is the characteristic length of a model.
 
-You must include your signed IEEE copyright release form when you submit
-your finished paper. We MUST have this form before your paper can be
-published in the proceedings.
+The data structure used during carving is a map between boundary voxel locations $v \in \mathbb{Z}^3$ and six boolean flags $(f_1,f_2,...,f_6) \in \{\texttt{false},\texttt{true}\}^6$, with the following invariants.  Each of these flags represents one of the six faces of the referenced voxel.  Marking $f_i = \texttt{true}$ indicates that the neighboring voxel of $v$ that shares face $f_i$ must be interior.  If $f_i = \texttt{false}$, then this neighboring voxel is exterior, which may mean it is also a boundary voxel.
 
+Figure~\ref{fig:boundary_carving} demonstrates in 2D how a voxel representation of the full model can be built from a starting configuration using ray-tracing as a primitive operation, while still respecting the above invariants.  The starting configuration for the 2D map is shown in Figure~\ref{fig:boundary_carving}a, with a single interior voxel represented using four boundary voxels.  This interior voxel is initialized to be at the scanner's start position, which is known to be interior.  Dark green lines indicate faces marked as $\texttt{true}$.  Recall that interior voxels denoted in white are not explicitly stored in the map while the boundary voxels, denoted in light green, are stored explicitly.  During the carving process, if a voxel $v$ is designated to be carved then any of its faces that are flagged as $\texttt{false}$ must be incident to exterior voxels, as shown in Figure~\ref{fig:boundary_carving}b.  Each of these neighboring exterior voxels, $v^{\prime}$, is added to the map, as they are now boundary voxels, and the face of $v^{\prime}$ that is incident to $v$ is flagged as $\texttt{true}$.  Lastly, $v$ is removed from the map, which now represents that $v$ is part of the interior volume, as seen in Figure~\ref{fig:boundary_carving}c.  Any carving attempt on a voxel that is not in the map can be ignored, since all carving initiates from within the interior volume.  By using only this operation, the map invariants are preserved and will always consistently define an interior volume.
+
+% show boundary carving
+\begin{figure}[t]
+
+  \centerline{\includegraphics[width=0.9\linewidth]{figures/diagrams/boundary_voxel_carving.png}}
+  \centerline{(a)\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,(b)\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,(c)\,\,\,\,\,}
+\caption{A 2D example of carving a voxel.  Stored boundary voxels are shown in green.  White voxels are not explicitly stored. (a) The initial map configuration; (b) Voxel $v$ is carved by removing $v$ from the map and adding additional boundary voxels $v^{\prime}$ to the map; (c) $v$ is represented as interior volume.}
+\label{fig:boundary_carving}
+\end{figure}
+
+% show dgrid figure
+%\begin{figure}[t]
+
+%  \centerline{\includegraphics[height=4.0cm]{figures/diagrams/2d_dgrid_example_cropped.png}}
+
+%\caption{A 2D represention of the voxel map structure used.  The blue squares are the interior area represented, but only the green circles are actually stored.}
+%\label{fig:dgrid}
+%\end{figure}
+
+\paragraph*{Preserving fine detail}
+
+This carving process may not preserve features for point-clouds with low noise, but high detail.  Specifically, objects whose feature length is on the order of one voxel size may be carved away.  This issue can be a serious problem if two rooms are separated by a thin wall.  Scanning both of these rooms may carve away this wall, resulting in a final model that shows only one, double-sized room.  In order to preserve these features, we store a second voxel set that specifies the voxels that are intersected by the input point-cloud.  While the original point-cloud is often much too large to be stored in memory at once, this discretization is much smaller and is on the same order of memory usage as the map of boundary voxels.
+
+During the carving of each line segment, if ray-tracing encounters a voxel that is marked to contain input points, then the carving of that segment is truncated just before this voxel.  No features that are represented in the point-cloud are ever carved away.  Since ray-tracing already occurs on a voxelized grid, this occlusion check does not add any appreciable complexity to the computation.
+
+\paragraph*{Memory usage}
+
+Data storage is an important factor in our algorithm.  While the scheme described above only requires a small subset of the point-cloud to be in memory at any given time, it is also important to make sure that the intermediary and output data structures are reasonably sized.  Figure~\ref{fig:bhh_hallway} shows a moderate-size model depicting the corridors in a hotel, represented with a 6.3 GB point-cloud.  The voxel carving, at a resolution of 5 cm, requires 12.7 MB of memory.  If a conventional voxel grid structure were used to represent the entire bounding box, then 94.4 MB of memory would be required at this resolution.
+
+\subsection{Surface reconstruction}
+\label{sec:surface}
+
+% highlight overall approach, and a few technical challenges
+
+Our procedure for surface reconstruction of voxels can be broken into two parts.  First, estimates of planar regions are found around the boundary faces of these voxels.  These regions are formed from connected sets of voxel faces, all of which are positioned on best-fit planes.  Second, each region is triangulated, forming a mesh.  This triangulation lies along the best-fit plane for each region, with elements whose sizes are proportional to the size of the region.
+
+\paragraph*{Region growing on voxel faces}
+
+The first task is to determine the connectivity along the carved voxel faces. An example of such a carving for a flight of stairs is shown in Figure~\ref{fig:stairs_voxels}a.  Since these faces are squares that form a watertight surface and lie on an axis-aligned grid, each face has exactly four neighbors.  If a voxel face and its neighbor are both oriented in the same direction, \eg both have normal vectors in the Z+ direction, then one can immediately perform a flood-fill operation in order to group these faces into planar regions.  The faces belonging to each region lie exactly on a plane.  The results of this flood-fill operation is shown in Figure~\ref{fig:stairs_voxels}b.
+
+Since the voxels are a discretized representation of the volume, any flat surface of the environment that is not axis-aligned is represented as a zig-zag pattern of voxels.  By fitting planes that only approximate the voxel faces, the output model can contain surfaces that are not axis-aligned.  The approximating planes are found by performing Principle Component Analysis (PCA) on connected subsets of voxel faces~\cite{PCA}.  For any connected set of voxel faces $V$, PCA is performed on the four corners of all the faces to estimate a best-fit plane.  If $V$ is well-modeled by this plane, then the elements of $V$ are grouped together as one planar region.  $V$ is considered well-modeled if the maximum distance of $V$ from the plane is at most $r$.  This threshold guarantees that any voxels intersected by the modeling plane are incident to the faces in $V$.
+
+Starting with the regions found in the flood-fill operation above, adjacent regions of voxel faces are progressively merged by attempting to model their union with a single best-fit plane.  If this plane meets the threshold described above, then the two adjacent regions are replaced by one region representing their union.  This step is referred to as {\it region growing}.  Even though this stage reduces the total number of regions, it typically results in an over-fitting of too many regions.  An example of this stage is shown in Figure~\ref{fig:stairs_voxels}c.
+
+In order to yield a more aesthetically pleasing output, we further relax these region definitions.  If two adjacent regions are fit by planes whose normal vectors are within $15^{\circ}$, then they are replaced by a single region defined by their union.  The result of this processing yields plane definitions that closely resemble an intuitive labeling of the floors, walls, and ceilings.  This final region labeling is shown in Figure~\ref{fig:stairs_voxels}d. 
+
+% show figure of original, flood-filled, and colored voxel faces
+\begin{figure}[t]
+
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[height=2.5cm]{figures/stairs_voxels/bhh_stairs_voxels_zoom01.png}}
+	\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[height=2.5cm]{figures/stairs_voxels/bhh_stairs_regions00.png}}
+	\centerline{(b)}\medskip
+	\end{minipage}
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[height=2.5cm]{figures/stairs_voxels/bhh_stairs_regions02.png}}
+	\centerline{(c)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[height=2.5cm]{figures/stairs_voxels/bhh_stairs_regions03.png}}
+	\centerline{(d)}\medskip
+	\end{minipage}
+
+	\caption{(a) Example carved voxels at the top of a flight of stairs; (b) Regions colored based on voxel face flood-fill; (c) Region growing by finding best-fit planes to voxel faces; (d) Regions relaxed to merge planes that are nearly parallel}
+	\label{fig:stairs_voxels}
+\end{figure}
+
+\paragraph*{Triangulation of regions}
+
+Once the set of voxel faces has been partitioned into planar regions, it is necessary to triangulate these regions.  Since the output mesh represents the planar regions found in the previous section, an optimum approach would adapt the size of triangles based on the size of these planar regions.
+
+Taking advantage of the existing voxel grid helps ensure that each region is represented with good quality triangles.  This grid allows for regions to be triangulated with a 2D variant of Isosurface Stuffing techniques, which provide strict bounds on resulting triangle angles~\cite{Isostuffing}.  An example region of voxel faces is shown in Figure~\ref{fig:triangulation}a.  Since this region is best-fit by a plane that is not axis aligned, the region is composed of voxel faces in a zig-zag pattern.  The voxel faces that are most aligned with the normal vector of the region's plane, shown in red, are considered the dominant faces of the region.  These dominant faces are projected along their corresponding axis to generate an axis-aligned 2D projection of the region.  This projection is shown with black dashed lines in Figure~\ref{fig:triangulation}a.  The triangulation is found by populating a quadtree that is aligned to the projected grid with the faces of this region.  An example of this quadtree is shown in Figure~\ref{fig:triangulation}b.  The tree is triangulated by placing vertices at the center and corners of the leaf nodes, as shown in Figure~\ref{fig:triangulation}c.  This step results in larger triangles for larger leaf nodes, while still controlling the quality of the output triangles.  This triangulation is projected back onto the plane defined by the region, to result in triangulated representation of this region in 3D space.
+
+% show cartoon of triangulation of region, including quadtree
+\begin{figure}[t]
+
+	\begin{minipage}[b]{0.48\linewidth}
+		\centerline{\includegraphics[height=3.0cm]{figures/project_plane/dominant_axis_project_a.png}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.48\linewidth}
+		\centerline{\includegraphics[height=3.0cm]{figures/project_plane/2dtri2.png}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	
+	\begin{minipage}[b]{0.48\linewidth}
+		\centerline{\includegraphics[height=3.0cm]{figures/project_plane/2dtri3.png}}
+		\centerline{(c)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.48\linewidth}
+		\centerline{\includegraphics[height=3.0cm]{figures/snapshot_triangles_corner00.png}}
+		\centerline{(d)}\medskip
+	\end{minipage}
+
+	\caption{(a) The dominant faces of a planar region (shown in red) are projected to the dominant axis-aligned plane; (b) Projected faces represented in a quadtree structure to reduce number of elements; (c) This quadtree can be triangulated efficiently while ensuring high-quality triangles; (d) An example output of the triangulation of three regions in the corner of a room.}
+	\label{fig:triangulation}
+
+\end{figure}
+
+Since the connectivity between voxel faces is well-defined, the connectivity of the output triangulation is also well-defined.  To ensure that the borders between planar regions are represented sharply, the vertices that are shared by multiple regions are snapped onto the intersection of those regions.  This fits the intersection between two regions to a line, and the intersection of three or more regions to a point in space.  This step yields a watertight mesh across regions, as can be seen in the intersection of three regions at the corner of a room in Figure~\ref{fig:triangulation}d.  To limit self-intersections in the final surface, the vertices that are shared by multiple regions are allowed to be displaced up to a distance threshold from their original position in the voxel grid.  This threshold is relaxed as the angle between the regions in question approaches $90^{\circ}$.  The corners between walls and ceilings remain sharp, while the transition between regions that are close to parallel is smooth.  If such a threshold did not exist for the boundaries between near-parallel regions, their shared vertices could produce undesirable artifacts.
+
+\section{Results}
+\label{sec:results}
+
+\begin{figure}[t]
+
+	\begin{minipage}[b]{0.48\linewidth}
+	\centerline{\includegraphics[width=0.96\linewidth]{figures/visual_compare/snapshot_coryf3_marching_cubes_no_planes00.png}}
+	\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.48\linewidth}
+	\centerline{\includegraphics[width=0.96\linewidth]{figures/visual_compare/snapshot_coryf3_elturner_model00.png}}
+	\centerline{(b)}\medskip
+	\end{minipage}
+
+	\caption{A visual comparison between (a) an existing voxel carving method~\cite{Carving} and (b) the proposed method at 5 cm resolution.}
+	\label{fig:mc_compare}
+
+\end{figure}
+
+The results of our surface reconstruction procedure are analyzed quantitatively and qualitatively.  For quantitative analysis, the resulting mesh is compared to an existing voxel carving scheme, which uses Marching Cubes to generate a final output~\cite{Carving}.  Figure~\ref{fig:mc_compare} shows a qualitative comparison of the two schemes.
+
+\subsection{Example output meshes}
+\label{sec:examples}
+
+% show coolest results
+
+\begin{figure}[t]
+	\begin{minipage}[b]{0.98\linewidth}
+	\centerline{\includegraphics[width=0.96\linewidth]{figures/results/snapshot_newparkmall00_cropped.jpg}}
+	%\centerline{(a)}
+	\end{minipage}
+	%\begin{minipage}[b]{0.98\linewidth}
+	%\centerline{\includegraphics[width=0.96\linewidth]{figures/results/newparkmall.png}}
+	%\centerline{(b)}
+	%\end{minipage}
+	%\caption{(a) Surface reconstruction of a shopping mall; (b) input point-cloud.  Resolution is 10 cm.}
+	\caption{Surface reconstruction of a shopping mall.  Resolution is 10 cm.}
+	\label{fig:newparkmall}
+\end{figure}
+
+\begin{figure}[t]
+	\begin{minipage}[b]{0.98\linewidth}
+	\centerline{\includegraphics[width=0.76\linewidth]{figures/results/walmart_full_color00.jpg}}
+	%\centerline{\includegraphics[width=0.96\linewidth]{figures/results/walmart_mesh_snapshot00.png}}
+	%\centerline{(a)}
+	\end{minipage}
+	%\hfill
+	%\begin{minipage}[b]{0.48\linewidth}
+	%\centerline{\includegraphics[width=0.96\linewidth]{figures/results/walmart_pointcloud.png}}
+	%\centerline{(b)}
+	%\end{minipage}
+	\caption{Surface reconstruction of a warehouse-sized retail shopping center, shown from top-down.  Each planar region is given a random color.  Resolution is 10 cm.}
+	%\caption{(a) Surface reconstruction of a warehouse-sized retail shopping center; (b) input point-cloud.  Resolution is 10 cm.}
+	\label{fig:walmart}
+\end{figure}
+
+\begin{figure}[t]
+	\begin{minipage}[b]{0.48\linewidth}
+	\centerline{\includegraphics[width=\linewidth]{figures/results/snapshot_cory540_r05_p_nice00.jpg}}
+	\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.48\linewidth}
+	%\centerline{\includegraphics[width=\linewidth]{figures/results/540Cory_PointCloudScreen.png}}
+	\centerline{\includegraphics[width=\linewidth]{figures/results/cory540.jpg}}
+	\centerline{(b)}\medskip
+	\end{minipage}
+	\caption{(a) Surface reconstruction of a $10.5 \texttt{m} \times 9.5 \texttt{m}$ conference room with table; (b) corresponding input point-cloud.  Resolution is 5 cm.}
+	\label{fig:cory540}
+\end{figure}
+
+\begin{figure}[t]
+	%\centerline{\includegraphics[height=3.5cm]{figures/results/snapshot_pier15_r05_p_nice00.png}}
+	\centerline{\includegraphics[width=0.96\linewidth]{figures/results/pier15_pointcloud_depth.jpg}}
+	\centerline{(a)}\medskip
+	%\centerline{\includegraphics[height=3.5cm]{figures/results/pier15.PNG}}
+%	\centerline{\includegraphics[width=0.9\linewidth]{figures/results/pier15_surface_depthmap01.png}}
+%	\centerline{(b)}\medskip
+	\centerline{\includegraphics[width=0.96\linewidth]{figures/results/pier15_triangles00.jpg}}
+	\centerline{(b)}
+	\caption{(a) Point-cloud of a construction site, colored by depth; (b) Triangle elements of generated surface.  Resolution is 5 cm.}
+	\label{fig:pier15}
+\end{figure}
+
+\begin{figure}[t]
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[height=2.5cm]{figures/results/snapshot_bhh_r05_full_nice01.png}}
+	\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[height=2.5cm]{figures/results/bhhhallwaytop.png}}
+	\centerline{(b)}
+	\end{minipage}
+	\caption{(a) Surface reconstruction of hotel hallway, showing full top-down view; (b) Corresponding full top-down view of input point-cloud.}
+	\label{fig:bhh_hallway}
+\end{figure}
+
+The proposed algorithm was run on several datasets, which range in size from a single conference room to full floors of buildings such as hotels and shopping malls.  The results are shown for sections of these models, along with the corresponding views of the original point-clouds.  For these models, large flat areas are represented by fewer, larger triangles.
+
+Figure~\ref{fig:newparkmall} shows the reconstruction of a shopping mall's food court.  The input point-cloud contains significant noise due to the amount of glass surfaces in the model, since most storefronts in the mall are glass.  In the food court, the restaurants are well-modeled, as well as the ceiling and skylights.  Figure~\ref{fig:walmart} shows our largest model, with 220 million points.  This model represents the aisles of a retail store, covering an area of $112.2\texttt{m} \times 77.5\texttt{m}$ using 2.7 million triangles.  A smaller dataset is shown in Figure~\ref{fig:cory540}, representing a $10.5\texttt{m} \times 9.5\texttt{m}$ conference room with a hexagonal table in the center.  This table, along with the podium to the left, is well-represented in the output.  The ceiling of the conference room is inset with hanging lights, which can also be seen in the model.  Figure~\ref{fig:pier15} shows a modeling of a construction site.  The surfaces of the room are represented by large regions, while the detail of objects is preserved.  Lastly, Figure~\ref{fig:bhh_hallway} shows an example of the full extent of a $96.7\texttt{m} \times 75.7\texttt{m}$ H-shaped hotel hallway.  The input point-cloud has 84 million points while the output model contains 933,000 triangles grouped into 3,096 planar regions.
+
+Run-time analysis was performed on the dataset shown in Figure~\ref{fig:pier15}.  The input to this dataset contains 25 million points.  The code was run on a personal laptop with an Intel i7-2620M processor.  The voxel carving, at 5 centimeter resolution, took 55 minutes of processing time.  The surface reconstruction of these voxels took 1 minute and 2 seconds.  Previous voxel carving schemes processed similar models of 15 million points in 16 hours at the same resolution~\cite{Carving}.  Computation time was recorded for this same dataset with a resolution of 2 cm.  Voxel carving took 12 hours and 10 minutes for this resolution, while surface reconstruction took 9.5 minutes.
+
+\subsection{Mesh error analysis}
+\label{sec:analysis}
+
+% show graphs of accuracy with respect to resolution
+\begin{figure}[t]
+	\centerline{\includegraphics[width=0.95\linewidth]{figures/graphs/rms_graph.png}}
+	\centerline{(a)}
+	\centerline{\includegraphics[width=0.95\linewidth]{figures/graphs/bias_graph.png}}
+	\centerline{(b)}
+	\caption{(a) The root-mean-squared error and (b) bias of the input point-cloud with respect to the output of surface reconstruction schemes.  This plot compares the proposed method of this paper with the voxel carving approach in a previous method~\protect\cite{Carving}.}
+	\label{fig:accuracy_plots}
+\end{figure}
+
+Accuracy of the output mesh is evaluated with respect to the input point-cloud.  The distance of each input point to the nearest position on the output mesh is computed.  For a given model, the root-mean-squared error is computed across all input points. Many fine details of the point-cloud cannot be represented perfectly in the final mesh, since they are the size of one voxel or smaller.  As a result, even a perfect surface reconstruction of the voxels has finite error with respect to the point-cloud.  By fitting regions directly to the voxels rather than triangulating with Marching Cubes, the error of the output surface can be mitigated.  As shown in Figure~\ref{fig:accuracy_plots}a, at all resolutions the RMS error of the proposed method is lower than that of previous carving scheme~\cite{Carving}.
+
+A positive bias indicates an input point is inside the carved volume, while a negative value indicates a point is outside. As shown in Figure~\ref{fig:accuracy_plots}b, the proposed method yields a negative bias, since all carving is stopped before the input points are reached, ensuring no detail is carved away.  The method in~\cite{Carving} carves through to the voxel containing the points, so its bias is positive and many small features are removed due to over-carving.  Note that the absolute value of the bias at each resolution is lower for our proposed method than the method in~\cite{Carving}.  This analysis was performed using the model shown in Figure~\ref{fig:cory540}.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+% did we deliver on original promise?
+% why was this a good project?
+
+This paper provides a mechanism for converting a point-cloud into a watertight triangulated mesh, with special consideration to modeling planar regions.  Using a voxelized volumetric representation allows for a watertight output.  By performing planar fitting on the input voxel faces before triangulation, the triangles can be adapted to the best-fit planes, resulting in fewer elements.  This algorithm is novel in that it preserves sharp features, and the memory usage and computational performance of the method presented is favorable compared to other approaches.
+
+Although the current implementation is not fast enough to be used in real-time applications, the nature of the voxel carving process described in this paper allows for the input point-cloud to be streaming as surface reconstruction occurs, since only the most recently captured points are needed at any given time.  The extension to streaming input would allow for surface visualization during data acquisition.
+
+%Please direct any questions to the production editor in charge of these
+%proceedings at the IEEE Computer Society Press: Phone (714) 821-8380, or
+%Fax (714) 761-1784.
 
 {\small
 \bibliographystyle{ieee}
 \bibliography{egbib}
 }
+
 
 \end{document}
