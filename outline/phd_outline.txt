@@ -83,20 +83,26 @@ x	Floorplan generation					\label{ch:floorplan}
 		- section on probabilistic models of input scans		\label{sec:fss_stats}
 			- expand A LOT on mathematics of probabiltiy
 				- explain what's going on with noisypath
+				- everything regarding the carving map EXPAND
 		- 3DV 2013 voxel carving					\label{sec:3dv2013}
 			- voxel labeling					\label{ssec:voxel_labeling}
+			- dgrid structure					\label{ssec:voxel_carving_data_structure}
+			- preserving detail					\label{ssec:voxel_carving_preserving_detail}
 			- planar region fitting					\label{ssec:voxel_region_fitting}
 			- triangulation						\label{ssec:voxel_triangulation}
 		- octree carving: everything in siggraph paper about 3D stuff   \label{sec:procarve}
-			- everything regarding the carving map EXPAND
-			- everything regarding the wedge model EXPAND
+			- everything regarding the wedge model			\label{ssec:procarve_wedge_and_chunk}
 			- chunking of scans
+			- discuss the octree data structure			\label{ssec:procarve_octree}
 			- everything regarding multithreaded procarve processing
+			- isosurface computation				\label{ssec:procarve_boundary}
+			- improvements made to planar region fitting		
 			- (save fp for later)
 			- (save furniture segmentation for later)
+			- compare planar results to 3dv2013			\label{ssec:compare_3dv2013_procarve}
 		- results							\label{sec:carving_results}
 			- all of voxel carve results				\label{ssec:3dv2013_results}
-			- compare procarve and voxel_carve (cory520?)
+			- add results for mulford and other large procarve stuff
 
 x	Comparisons of 2.5D and 3D Models			\label{ch:fp_carving_compare}
 
