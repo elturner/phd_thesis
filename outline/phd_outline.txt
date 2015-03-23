@@ -15,6 +15,8 @@ other applications:
 
 	hardware development
 
+	indoor navigation
+
 	arpa-e grant
 		- floorplans used as input for window detection, plugload, lights
 		- simplicity requirements of EnergyPlus
@@ -93,7 +95,7 @@ x	Floorplan generation					\label{ch:floorplan}
 			- (save fp for later)
 			- (save furniture segmentation for later)
 		- results							\label{sec:carving_results}
-			- all of voxel carve results
+			- all of voxel carve results				\label{ssec:3dv2013_results}
 			- compare procarve and voxel_carve (cory520?)
 
 x	Comparisons of 2.5D and 3D Models			\label{ch:fp_carving_compare}
@@ -106,16 +108,19 @@ x	Comparisons of 2.5D and 3D Models			\label{ch:fp_carving_compare}
 
 	Improving carving with floorplans			\label{ch:better_carving}
 		- removing explosions (see journal paper)
+		- siggraph 'main idea' section
 		- merging fp and oct
 		- refining furniture
 		- representing furniture and building separately
 
 	Applications and Analysis				\label{ch:applications}
 		- error analysis of meshes to pointclouds?
+			- see 3dv2013
 		- Energy related
 			- discuss failed attempt to simplify voxel carving
 			- floorplan input for window detection, plugload, lights
 			- simplicity requirements of EnergyPlus
+		- indoor navigation (see jliang stuff)
 		- wifi maps
 		- pressure maps? temperature maps?
 

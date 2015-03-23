@@ -1600,7 +1600,7 @@ This section describes our voxel carving method for surface reconstruction of bu
 \subsection{Voxel Labeling}
 \label{ssec:voxel_labeling}
 
-This interior/exterior volume classification is performed on a voxel grid.  Given an input resolution size $r$, each voxel is a cube whose sides are length $r$.  Initially, all voxels are assumed to be {\it exterior}, referring to any space outside of the scanned volume or space that is represented by solid objects.  The process of {\it carving} refers to relabeling a voxel from exterior to interior, which occurs when a voxel is found to intersect the line segment from the scanner to a corresponding scan point.  If a laser passes through a voxel, that voxel is considered interior space.
+This interior/exterior volume classification is performed on a voxel grid~\cite{Turner13}.  Given an input resolution size $r$, each voxel is a cube whose sides are length $r$.  Initially, all voxels are assumed to be {\it exterior}, referring to any space outside of the scanned volume or space that is represented by solid objects.  The process of {\it carving} refers to relabeling a voxel from exterior to interior, which occurs when a voxel is found to intersect the line segment from the scanner to a corresponding scan point.  If a laser passes through a voxel, that voxel is considered interior space.
 
 % TODO use same symbols as in statistics section
 For each laser scanner, there exists a track in space that represents the scanner's movement during data collection.  This track is represented by a sequence of positions $T = (\vec{t}_{1},\,\vec{t}_{2},\,\vec{t}_{3},\,...,\,\vec{t}_{N})$, where $N$ is the number of locations sampled during data collection.  These track samples are shown as purple circles in Figure~\ref{fig:voxel_carving}a.
@@ -1739,12 +1739,141 @@ Since the connectivity between voxel faces is well-defined, the connectivity of 
 
 % results section for 3D carving
 \section{Results}
+\label{sec:carving_results}
 
 % TODO results figures of 3d carving from both 3dv2013 and siggraph
 
-%\paragraph*{Memory usage}
+% results from just 3dv2013
+\subsection{Voxel Carving Results}
+\label{ssec:3dv2013_results}
 
-Data storage is an important factor in our algorithm.  While the scheme described above only requires a small subset of the point-cloud to be in memory at any given time, it is also important to make sure that the intermediary and output data structures are reasonably sized.  Figure~\ref{fig:bhh_hallway} shows a moderate-size model depicting the corridors in a hotel, represented with a 6.3 GB point-cloud.  The voxel carving, at a resolution of 5 cm, requires 12.7 MB of memory.  If a conventional voxel grid structure were used to represent the entire bounding box, then 94.4 MB of memory would be required at this resolution.
+% figure: comparing with carving method
+\begin{figure}
+	
+	\centering
+	\begin{minipage}[b]{0.27\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/visual_compare/coryf3_pic}}
+	\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.35\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/visual_compare/snapshot_coryf3_marching_cubes_no_planes00}}
+	\centerline{(b)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.35\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/visual_compare/snapshot_coryf3_elturner_model00}}
+	\centerline{(c)}\medskip
+	\end{minipage}
+
+	\caption{A visual comparison of meshing method for a hallway model:  (a) photograph of scanned area; (b) an existing voxel carving method~\cite{Carving}; (c) the proposed method at 5 cm resolution.}
+	\label{fig:mc_compare}
+
+\end{figure}
+
+The results of our surface reconstruction procedure are analyzed quantitatively and qualitatively.  For quantitative analysis, the resulting mesh is compared to an existing voxel carving scheme, which uses Marching Cubes to generate a final output~\cite{Carving}.  Figure~\ref{fig:mc_compare} shows a qualitative comparison of the two schemes.  Note that the corners where the floor meets the walls or where the walls meet the ceiling are preserved in our proposed method, whereas in traditional marching cubes, they are rounded off.  Further, since our method explicitly fits planar regions to the mesh, the output mesh contains less surface noise.  Additionally, by using adaptive triangulation of these regions, the mesh can be represented with far fewer elements.
+
+% show coolest results
+
+% new park mall
+\begin{figure}
+	\begin{minipage}[t]{0.4\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/results/snapshot_newparkmall00_cropped.jpg}}
+	\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.55\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/results/newparkmall.png}}
+	\centerline{(b)}
+	\end{minipage}
+	\caption[Voxel carving result for a large shopping mall.]{Voxel carving result for a large shopping mall:  (a) Surface reconstruction of a shopping mall; (b) input point-cloud.  Resolution is 10 cm.}
+	\label{fig:3dv2013_newparkmall}
+\end{figure}
+
+% walmart
+\begin{figure}[p]
+	\begin{minipage}[b]{0.98\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/results/walmart_full_color00}}
+	\centerline{(a)}
+	\end{minipage}
+	\begin{minipage}[b]{0.48\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/results/walmart_mesh_snapshot00}}
+	\centerline{(b)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.48\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/results/walmart_pointcloud}}
+	\centerline{(c)}
+	\end{minipage}
+	\caption[Voxel carving of warehouse-sized retail center.]{Surface reconstruction of a warehouse-sized retail shopping center using voxel carving technique: (a) output mesh, shown from top-down, with each region given random color; (b) closer view of shopping aisles in output mesh; (c) corresponding view of raw point-cloud scans.  Resolution is 10 cm.}
+	\label{fig:3dv2013_walmart}
+\end{figure}
+
+% cory 540
+\begin{figure}
+	\begin{minipage}[b]{0.48\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/results/snapshot_cory540_r05_p_nice00}}
+	\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.48\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/results/cory540}}
+	\centerline{(b)}\medskip
+	\end{minipage}
+	\caption[Voxel carving result of conference room.]{Voxel carving result of a $10.5 \texttt{m} \times 9.5 \texttt{m}$ conference room with table: (a) The output mesh; (b) corresponding input point-cloud.  Resolution is 5 cm.}
+	\label{fig:3dv2013_cory540}
+\end{figure}
+
+% pier 15
+\begin{figure}
+
+	\centering
+	\begin{minipage}[b]{0.98\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/results/pier15_triangles00}}
+	\centerline{(a)}
+	\end{minipage}
+	\begin{minipage}[b]{0.98\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/results/pier15_pointcloud_depth}}
+	\centerline{(b)}\medskip
+	\end{minipage}
+
+	\caption[Voxel carving results of a construction area.]{Voxel carving results of a construction site:  (a) output mesh includes several people and a static scanning station; (b) point-cloud of same view, colored by depth.  Resolution is 5~cm.}
+	\label{fig:3dv2013_pier15}
+\end{figure}
+
+% bhh hallway
+\begin{figure}[t]
+
+	% top-down view
+	\centering
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/results/snapshot_bhh_r05_full_nice01.png}}
+	\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/results/bhhhallwaytop.png}}
+	\centerline{(b)}
+	\end{minipage}
+	\\
+	% interior view
+	\begin{minipage}[b]{0.75\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/results/snapshot_bhh_r05_mirror_nice00}}
+	\centerline{(c)}
+	\end{minipage}
+
+	% caption
+	\caption[Voxel carving results of hotel hallways.]{Voxel carving results of the hallways in a hotel: (a) output mesh of hotel hallway, showing full top-down view; (b) corresponding full top-down view of input point-cloud; (c) output mesh of interior of hallway, showing a mirror and shelf.  Model generated at 5~cm resolution.}
+	\label{fig:3dv2013_bhh_hallway}
+\end{figure}
+
+The proposed algorithm was run on several datasets, which range in size from a single conference room to full floors of buildings such as hotels and shopping malls.  The results are shown for sections of these models, along with the corresponding views of the original point-clouds.  For these models, large flat areas are represented by fewer, larger triangles.
+
+Figure~\ref{fig:3dv2013_newparkmall} shows the reconstruction of a shopping mall's food court.  The input point-cloud contains significant noise due to the amount of glass surfaces in the model, since most storefronts in the mall are glass.  In the food court, the restaurants are well-modeled, as well as the ceiling and skylights.  Figure~\ref{fig:3dv2013_walmart} shows our largest model, with 220 million input scan points.  This model represents the aisles of a retail store, covering an area of $112.2\texttt{m} \times 77.5\texttt{m}$ using 2.7 million triangles.  A smaller dataset is shown in Figure~\ref{fig:3dv2013_cory540}, representing a $10.5\texttt{m} \times 9.5\texttt{m}$ conference room with a hexagonal table in the center.  This table, along with the podium to the left, is well-represented in the output.  The ceiling of the conference room is inset with hanging lights, which can also be seen in the model.  
+
+Figure~\ref{fig:3dv2013_pier15} shows a modeling of a construction site.  The surfaces of the room are represented by large regions, while the detail of objects is preserved.  Run-time analysis was performed on the dataset shown in Figure~\ref{fig:3dv2013_pier15}.  The input to this dataset contains 25 million points.  The code was run on a personal laptop with an Intel i7-2620M processor.  The voxel carving, at 5 centimeter resolution, took 55 minutes of processing time.  The surface reconstruction of these voxels took 1 minute and 2 seconds.  Previous voxel carving schemes processed similar models of 15 million points in 16 hours at the same resolution~\cite{Carving}.  Computation time was recorded for this same dataset with a resolution of 2 cm.  Voxel carving took 12 hours and 10 minutes for this resolution, while surface reconstruction took 9.5 minutes.
+
+Lastly, Figure~\ref{fig:3dv2013_bhh_hallway} shows an example of the full extent of a $96.7\texttt{m} \times 75.7\texttt{m}$ H-shaped hotel hallway.  The input point-cloud has 84 million points while the output model contains 933,000 triangles grouped into 3,096 planar regions.  Data storage is an important factor in our algorithm.  While the scheme described above only requires a small subset of the point-cloud to be in memory at any given time, it is also important to make sure that the intermediary and output data structures are reasonably sized.  Figure~\ref{fig:3dv2013_bhh_hallway} shows a moderate-size model depicting the corridors in a hotel, represented with a 6.3 GB point-cloud.  The voxel carving, at a resolution of 5 cm, requires 12.7 MB of memory.  If a conventional voxel grid structure were used to represent the entire bounding box, then 94.4 MB of memory would be required at this resolution.
 
 
 %---------------------------------------------------------------------------
