@@ -14,7 +14,11 @@
 %\setlength{\headsep}{10pt}
 
 % *** GRAPHICS RELATED PACKAGES ***
-\usepackage[pdftex]{graphicx}
+\usepackage{float}
+\usepackage{placeins}
+%\usepackage[demo,pdftex]{graphicx}  % compiles really fast, but show figs as black
+\usepackage[pdftex]{graphicx}  % actually include full figures
+
 % declare the path(s) where your graphic files are
 \graphicspath{{../figures/}}
 % and their extensions so you won't have to specify these with
@@ -297,10 +301,12 @@ This section describes common techniques for surface reconstruction from input p
 Powercrust is a volumetric surface reconstruction approach that yields watertight models from point-cloud data~\cite{Powercrust}.  It computes the interior median axis of a shape using the voronoi diagram of the input scan points.  By taking the union of the inner polar balls, the elements of the Delaunay Triangulation that form the interior of the shape can be found, and are used to approximate the modeled volume.  While this approach is popular, one weakness is that it is sensitive to noise in the input scans.  Fortunately, other techniques have improved on this methodology to account for noisy input
 
 % Accounting for noise in volumetric scans
-An approach to account for the noise in the Powercrust algorithm is to remove sufficiently small polar balls from consideration, which are likely to be due to input noise~\cite{NoisyPowercrust}.  Another approach is to perform spectral clustering on the tetrahedralization of the points~\cite{EigencrustShewchuk}.  This approach, dubbed Eigencrust, allows for substantially improved robustness to noise.  An important consideration, though, is that the noise models tested are randomly positioned outlier points and randomly perturbed input points.  Both of these approaches assume that the randomness is independent and identically distributed from point-to-point.  Such characteristics are not the dominant case when dealing with noise from mis-registration of scans, which is the most common source of noise from mobile scanning systems.
+An approach to account for the noise in the Powercrust algorithm is to remove sufficiently small polar balls from consideration, which are likely to be due to input noise~\cite{NoisyPowercrust}.  Another approach is to perform spectral clustering on the tetrahedralization of the points~\cite{EigencrustShewchuk}.  This approach, dubbed Eigencrust, allows for substantially improved robustness to noise.  An important consideration, though, is that the noise models tested are randomly positioned outlier points and randomly perturbed input points.  Both of these approaches assume that the randomness is independent and identically distributed from point-to-point.  Such characteristics are not the dominant case when dealing with noise from mis-registration of scans, which is the most common source of noise from mobile scanning systems.  Further, these methods assume that the point-clouds are modeling smooth and continuous surfaces, which is not the case in building modeling.  These algorithms may also require a global optimization step~\cite{EigencrustShewchuk}.  While advancements have been made to perform these computations in an efficient and out-of-core manner~\cite{RealTimeEigenCrust,StreamingDelaunay}, the resulting models are too large to be practical for graphical or simulation applications.
 
 % Isosurface and the reign of SDFs
-Another technique used to produce watertight models is to define implicit functions on the scanned volume, and use an isosurface of this volume as the exported mesh.  Once an implicit function is defined, techniques such as Marching Cubes or Dual Contours can be used to mesh the surface~\cite{MarchingCubes,DualContouring}. A popular method for defining this implicit function is to use Signed-Distance Fields~\cite{SignedDistanceFields}.  Another popular approach is Poisson Surface Reconstruction~\cite{Poisson}.  Both of these methods are more robust at mis-registration errors than the previous algorithms.  One downside of their use in the area of modeling man-made objects is that they yield smooth, continuous surfaces.  Such results tend to look overly organic when modeling objects with flat regions or sharp corners.  This issue can be alleviated somewhat by using dual contour isosurface meshing rather than marching cubes, since it preserves sharp edges in the scalar field, but with these methods, the scalar field itself can be overly-smoothed.
+Another technique used to produce watertight models is to define implicit functions on the scanned volume, and use an isosurface of this volume as the exported mesh.  Once an implicit function is defined, techniques such as Marching Cubes or Dual Contours can be used to mesh the surface~\cite{MarchingCubes,DualContouring}. A popular method for defining this implicit function is to use Signed-Distance Fields~\cite{SignedDistanceFields}.  Other popular approaches such as Poisson Surface Reconstruction allow the user to specify a resolution parameter for the generation of more compact models~\cite{Poisson}.  These schemes guarantee watertightness by using an implicit surface to model the point-cloud~\cite{UnorganizedPoints}.  While these approaches can be applied to large models using distributed computing techniques~\cite{OutOfCorePoisson,ParallelPoisson}, they are unsuited for modeling man-made architecture.  The output models of these methods lack sharp features because they generate implicit surfaces using Gaussian basis functions.  Additionally, many common triangulation schemes for implicit surfaces result in uniform elements~\cite{DualContouring,MarchingCubes}, which are undesirable for large, flat surfaces that can be modeled just as accurately with fewer elements.  If these approaches are used on a discretized voxel grid, undesirable artifacts of the discretization are preserved, requiring the final mesh to be smoothed, thus reducing accuracy~\cite{Carving}.  Algorithms that adaptively mesh an isosurface or simplify an existing mesh rely on the local feature size of a model~\cite{QEM,ProgressiveMesh,Isostuffing,AdaptiveMeshing}.  Models with flat regions or sharp corners, where the curvature approaches zero or infinity, can become degenerate or have poor quality.  The goal of this paper is to create models that are composed entirely of such areas, so these techniques are not appropriate.
+
+Models of building interiors are rich with flat surfaces and right angles.  This prior knowledge supports the use of primitives that have these same aspects.  Examples include voxel and octree structures, which are used in many carving techniques~\cite{OctreeSculpting,Carving,SpaceTime,VoxelSurfaceArea,Yang05}.  The advantage to such approaches is that they are robust to noise and registration errors in the input point-cloud.  One of the challenges with voxel representations is memory and computational intensity, thus becoming tractable only when performed in a distributed or parallel fashion~\cite{ParallelOctree}.  Some voxel carving approaches can also inadvertently remove small details~\cite{Carving}.  This paper modifies voxel carving to address these issues and introduces memory-efficient data structures that produce models that preserve fine details with an efficient number of elements.
 
 % typical hardware set-up for traditional surface reconstruction
 An important note is that traditional surface reconstruction techniques, as described above, are written for and tested with common point-cloud test-sets, such as the Stanford Bunny or Dragon.  These models are scanned with precision 3D scanners that yield relatively low noise and minimal mis-registration when compared to scans of larger areas such as buildings.  These approaches are also designed to model isolated objects.  The goal of my thesis is to model buildings, which are scanned at a much larger scale and produce much higher rates of noise and mis-registration.  While watertight volumetric processing is still useful for our applications, different techniques must be applied compared to isolated objects.
@@ -1276,12 +1282,96 @@ Figure~\ref{fig:bhh_hallway_results} shows this same floor plan reconstruction m
 
 While enforcing watertight models allows for walls to be created in areas that are not scanned, it may also cause undesired homography changes.  If two parallel walls are arbitrarily close, the space between them may become incorrectly labeled with neither wall existing in the final model.  An example of this issue can be seen in the north-west stairway in Figure~\ref{fig:cory_three_results}(d), labeled 3.  Another limitation is that the walls placed in areas of sparse scanning may be inaccurate.  The corridor in the south-east corner of the floor plan labeled 2 in Figure~\ref{fig:cory_three_results}(c) is not fully scanned, so a wall is represented at the edge of the scan area, even though the hallway continues much further in reality.  While the sparsity of a scan is typically due to the placement of the scanning system, it can also be caused by the partitioning of the original point-cloud into separate stories.  Note that the south-west stairwell in the same model, labeled 1, is sparsely sampled and as a result the north wall is incorrectly modeled at an angle.  In this case, the wall in question was thoroughly scanned, but higher in the stairway on the next story.  The immediate partitioning of levels in a point-cloud causes cross-level scans to become under-represented and introduces sparsity into the wall sampling.
 
+% comparison of results
+\subsection{Comparing Floor Plan Results}
+\label{ssec:fp_results_compare}
+
+% figure comparing eigencrust and visigrapp
+\begin{figure}[h]
+
+	% wall samples
+	\centering
+	\begin{minipage}[b]{0.3\linewidth}
+	\centering
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/compare/wall_samples_cory3story_level0}}
+	\centerline{(a)}
+	\end{minipage}%
+	\hfill
+	% eigencrust
+	\begin{minipage}[b]{0.3\linewidth}
+	\centering
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/compare/eigencrust_cory3story_level0}}
+	\centerline{(b)}
+	\end{minipage}%
+	\hfill
+	% visigrapp
+	\begin{minipage}[b]{0.3\linewidth}
+	\centering
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/compare/visigrapp_cory3story_level0}}
+	\centerline{(c)}
+	\end{minipage}
+
+	% caption and label
+	\caption[Comparison of proposed floor plan methods.]{Comparison of the floor plan generation methods described in Sections~\ref{sec:eigencrust} and~\ref{sec:visigrapp}:  (a) the wall samples of an office hallway environment; (b) the floor plan generated by the method described in Section~\ref{sec:eigencrust}; (c) the floor plan generated by the method described in Section~\ref{sec:visigrapp}.}
+	\label{fig:fp_eigencrust_visigrapp_compare}
+
+\end{figure}
+
+% compare pf and pc floorplans in a figure
+\begin{figure}
+
+	% wall samples
+	\centering
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/results/models/dq/oceanview_office}}
+	\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/results/models/dq/oceanview_office_pf_dq}}
+	\centerline{(b)}
+	\end{minipage}
+
+	% floorplan
+	\centering
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/results/models/2d/snapshot_oceanview_office_no_triangles00}}
+	\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{visigrapp/results/models/2d/oceanview_office_pf_floorplan}}
+	\centerline{(b)}
+	\end{minipage}
+
+	% caption and label
+	\caption[Comparison between floor plans generated from point clouds and grid-maps.]{Comparison between floor plans generated using wall samples from point clouds and particle filter grid-maps:  (a) Wall samples of a small office complex generated from 3D point cloud; (b) wall samples generated from particle filter grid-map; (c) floor plan generated using wall samples from (a); (d) floor plan generated using wall samples from (b).}
+	\label{fig:pf_pc_compare}
+
+\end{figure}
+
+% compare eigencrust and visigrapp
+The floor plan methods described in this chapter use different techniques to accomplish the same goal of exporting 2D floor plan geometry.  Although both methods are volumetric in nature, they result in dramatically different levels of quality in their output.  A comparison between the two methods is made in Figure~\ref{fig:fp_eigencrust_visigrapp_compare}.  The input wall samples for an office hallway environment are shown in Figure~\ref{fig:fp_eigencrust_visigrapp_compare}a.  From these wall samples, a floor plan was generated using both the methods described in Sections~\ref{sec:eigencrust} and~\ref{sec:visigrapp}, shown in Figures~\ref{fig:fp_eigencrust_visigrapp_compare}b and~\ref{fig:fp_eigencrust_visigrapp_compare}c, respectively~\cite{Turner12,Turner14}.
+
+The outputs of this methods are noticably different in several locations.  First, the location marked (1) indicates a corner of a hallway.  Since the floor plan method described in Section~\ref{sec:eigencrust} performs explicit line fitting on the output walls, the corner of this hallway is much simpler than when compared to that same location on the output of the method described in Section~\ref{sec:visigrapp}.  However, this simplification results in a loss of the inlet geometry of doorways in that hallway.  Next, the location marked (2) shows a dramatic topology error in Figure~\ref{fig:fp_eigencrust_visigrapp_compare}b, whereas the topology is correct in Figure~\ref{fig:fp_eigencrust_visigrapp_compare}c.  This error is due to the eigencrust computation performed by the former method, which can lead to topologically inconsistent labeling of narrow features such as a thin wall between two rooms.  Next, location (3) is similar to the location marked by (1), in that it is a hallway corner that was over-simplified in Figure~\ref{fig:fp_eigencrust_visigrapp_compare}b yet preserved in Figure~\ref{fig:fp_eigencrust_visigrapp_compare}c.  In this case, not only has the line-fitting process removed doorway inlet geometry, but this geometry has been replaced by corners that are no longer the correct angle or orientation.  Another important distinction between the two models is shown at location (4), where a portion of a hallway extending to the left was scanned, but not fully traversed.  The output shown in Figure~\ref{fig:fp_eigencrust_visigrapp_compare}b removed all geometry of this hallway, due to the lack of density in wall samples, yet the model shown in Figure~\ref{fig:fp_eigencrust_visigrapp_compare}c preserved some of this hallway, showing that it is less sensitve to wall sample density.  Lastly, position (5) indicates the one of the downsides to aggressive line fitting.  In Figure~\ref{fig:fp_eigencrust_visigrapp_compare}b, line fitting was used, which caused corners to be clipped and replaced by walls at a 45~degree angle.  Figure~\ref{fig:fp_eigencrust_visigrapp_compare}c shows this same geometry, but its simplification method is less aggressive, resulting in more faithful geometry.
+
+% other features of visigrapp
+In addition to the comparisons made above, there are several advancements of the latter floorplan generation scheme~\cite{Turner14}.  In addition to generating watertight geometry of the scanned environment, it also partitions the geometry into separate rooms.  This method also preserves height information of the walls of the floor plan, allowing for the 2D geometry to be extruded into a 2.5D mesh.  Since these methods were not present in the previous method~\cite{Turner12}, no comparisons can be made for these features.
+
+% compare pf and pc floorplans
+As mentioned in Section~\ref{sec:wall_sampling}, floor plan geometry is generated using an input of wall sample positions.  These wall samples can be generated either from a 3D point cloud or from the 2D grid-map generated by the particle filter of the localization procedure~\cite{NickJournal}.  While either of these methods can produce wall samples, each has their benefits and detriments.
+
+% analysis of pf pc comparison
+Figure~\ref{fig:pf_pc_compare} shows a comparison between floor plans generated using these two methods of computing wall samples.  In Figure~\ref{fig:pf_pc_compare}a, we show example wall samples generated from a 3D point cloud generated from scans of the environment, with the corresponding floor plan shown in Figure~\ref{fig:pf_pc_compare}c.  In Figure~\ref{fig:pf_pc_compare}b, we show wall samples generated from the 2D particle filter grid-map of the same environment, with the corresponding floor plan shown in Figure~\ref{fig:pf_pc_compare}d.  Note that the 2D floor plan generated using the particle filter grid map is much cleaner, with sharper corners and fewer topological errors.  The wall samples generated from the point cloud data are likely to miss some wall features if they are obstructed by non-planar objects, such as furniture or shelves occluding the wall area.  However, the particle filter grid-map version of the wall samples show in Figure~\ref{fig:pf_pc_compare}b do not contain any height information, since they are strictly 2D data.  As such, they are unable to accurately produce an extruded 2.5D model of the environment.  In Chapter~\ref{ch:better_floorplans}, we dicuss methods to have the best of both worlds:  floor plans that have accurate and clean features while still retaining full 3D data.
+
+% summary
+We demonstrate efficient approaches to automatically generate floor plans of building interiors at real-time speeds.  Classifying and labeling the rooms within each generated floor plan allows for simplification schemes that can preserve fine details at doorways.  These room labels allow for accurate 2.5D extrusion from noisy floor and ceiling height estimates of the input points.  The resulting model is suitable for visualization, simulation, and navigation applications.  Current limitations of this algorithm include the verticality assumption made about observed building features.  If the horizontal cross-section of an environment changes dramatically between different heights, the modeling techniques presented in this paper does not accurately portray the actual geometry.
+
 % visigrapp results
 \subsection{Room Labeling Results}
 \label{ssec:visigrapp_results}
 
 The approach discussed in Section~\ref{sec:visigrapp} works well on a variety of test cases, spanning several model types including offices, hotels, hospitals, and university buildings.  For the largest models, total processing time to compute an extruded 3D model from 2D wall samples is under 10 seconds.  Most of this time is spent on carving interior triangles, which can be performed real-time in a streaming manner during data acquisition, which typically lasts several minutes.
-% TODO how long was mulford?
 
 First, we show sample models resulting from our method in five different environments.  For all the models shown in Figures~\ref{fig:visigrapp_results_a} through~\ref{fig:visigrapp_results_e}, the scale is in units of meters, and the resolution is $5$~cm.  Figure~\ref{fig:visigrapp_results_a} corresponds to an office building, including cubicles and individual offices.  The largest room in this model, shown in teal, primarily contains cubicles.  The cubicle walls do not meet our height threshold of $H=2$ meters, so they are not captured by the wall samples.  Since cubicles are not an architectural feature of the environment, this effect is desirable.  The room shown in purple in the lower-left corner of this model also shows an example error in the building reconstruction.  The adjacent room to the right was briefly seen through a window, but its area was considered part of this purple room rather than being removed in the manner described in Section~\ref{sec:room_label}, resulting in a small extrusion remaining in the model.
 Figure~\ref{fig:visigrapp_results_d} shows a small test model of an apartment office complex and Figure~\ref{fig:visigrapp_results_b} denotes a hotel lobby, hallways, and side rooms.  The vast majority of this model is labeled as one room, consisting of the hallways of the building.  Since no part of these hallways are separated by doors, this result is desirable.  Figure~\ref{fig:visigrapp_results_c} represents an academic research lab, including conference rooms and student cubicles.  The upper portion of the center room, shown in blue, is a kitchenette area, with a counter-top.  Since the counter was not sufficiently captured by the wall samples, it is not represented in the 2.5D extrusion of the model. Figure~\ref{fig:visigrapp_results_e} shows the hallways of an academic building.
@@ -1417,28 +1507,24 @@ Since these models were generated with a system that captures imagery in additio
    \hfill
    \frame{\includegraphics[width=0.95\linewidth]{visigrapp/results/coryf2_2d_texture_pics/snapshot03}}
    \centerline{(b)}
-   \caption[Interior view of a texture-mapped extruded floor plan.]{Interior view of 3D extruded reconstructed model: (a) without and (b) with texture-mapping~\cite{Cheng13}.}
-   \label{fig:visigrapp_texture}
+   \caption[Interior view of a texture-mapped extruded floor plan.]{Interior view of 3D extruded reconstructed model: (a) without and (b) with texture-mapping~\cite{Cheng13}.
+   \protect
+   \label{fig:visigrapp_texture}}
 \end{figure}
 
-% comparison of results
-\subsection{Comparing Floor Plan Results}
-\label{ssec:fp_results_compare}
-
-% TODO compare pf and pc floorplans
-% TODO compare eigencrust and visigrapp
-%	- reference cory3story(d) to discuss how visigrapp is better with topo errors
-
-We demonstrate efficient approaches to automatically generate floor plans of building interiors at real-time speeds.  Classifying and labeling the rooms within each generated floor plan allows for simplification schemes that can preserve fine details at doorways.  These room labels allow for accurate 2.5D extrusion from noisy floor and ceiling height estimates of the input points.  The resulting model is suitable for visualization, simulation, and navigation applications.  Current limitations of this algorithm include the verticality assumption made about observed building features.  If the horizontal cross-section of an environment changes dramatically between different heights, the modeling techniques presented in this paper does not accurately portray the actual geometry.
-
-% section on lmimiations
+% section on limiations
+\FloatBarrier
 \section{Limitations}
 \label{sec:fp_limitations}
 
 The method of generating a 3D model by extruding a 2D floor plan requires assumptions about the building geometry, which can lead to limitations in the accuracy of the final model.  This method assumes a 2.5D nature for the building environment, specifically that all surfaces are either perfectly vertical or horizontal.  Additionally, this method assumes a single height per room, which means drop ceilings and other vertical variations are not captured.
 
+This reduction is especially noticable in the lack of furniture geometry.  As we discuss in Chapter~\ref{ch:better_carving}, the lack of furniture in a 2.5D extruded model can be useful for further processing, but as a final model it presents some challenges.  We can observe this quality in Figure~\ref{fig:cory299_texture}.  This figure shows a classroom environment, represented by a texture-mapped 2.5D extruded floor plan model.  The classroom contains several pieces of furniture as well as a projector screen in the front.  Since the projector screen is a large vertical surface, it was classified as a ``wall'' and included in the model geometry.  This model geometry represents the screen extending fully to the floor, whereas it does not do so in reality.  As such, the texture-mapping of this geometry is incorrect in the lower section, since the texture does not match the reconstructed geometry.  While the texture looks reasonable from the angle viewed in Figure~\ref{fig:cory299_texture}a, the change in angle in Figure~\ref{fig:cory299_texture}b highlights this inaccuracy.  
+
+This model also shows how the lack of furniture in the reconstruction geometry causes the texture of furniture from the imagery to be projected onto the floors and walls, causing distortion.  These models were texture-mapped using the techniques described in~\cite{Cheng14}, which assumes that any geometry observed in the camera imagery is correctly represented in the reconstructed model.  Since this model is missing furniture geometry, the texture gets distorted. 
+
 % cory 299 with texture
-\begin{figure}
+\begin{figure}[H]
    \centering
    \begin{minipage}[b]{0.49\linewidth}
    \includegraphics[width=1.0\linewidth]{visigrapp/results/coryf2_2d_texture_pics/snapshot00}
@@ -1449,13 +1535,11 @@ The method of generating a 3D model by extruding a 2D floor plan requires assump
    \includegraphics[width=1.0\linewidth]{visigrapp/results/coryf2_2d_texture_pics/snapshot01}
    \centerline{(b)}
    \end{minipage}
-   \caption[Limitations of 2.5D models.]{A texture-mapped extruded floor plan of a classroom environment: (a) the front of the room; (b) the same view from a different angle.  Note that the projection screen is represented as a vertical surface extending from floor to ceiling in the 2.5D extrusion.  Due to this limitation in the geometry representation, the texture on the lower portion of this surface is incorrect.}
-   \label{fig:cory299_texture}
+
+   \caption[Limitations of 2.5D models.]{A texture-mapped extruded floor plan of a classroom environment: (a) the front of the room; (b) the same view from a different angle.  Note that the projection screen is represented as a vertical surface extending from floor to ceiling in the 2.5D extrusion.  Due to this limitation in the geometry representation, the texture on the lower portion of this surface is incorrect.
+   \protect
+   \label{fig:cory299_texture}}
 \end{figure}
-
-This reduction is especially noticable in the lack of furniture geometry.  As we discuss in Chapter~\ref{ch:better_carving}, the lack of furniture in a 2.5D extruded model can be useful for further processing, but as a final model it presents some challenges.  We can observe this quality in Figure~\ref{fig:cory299_texture}.  This figure shows a classroom environment, represented by a texture-mapped 2.5D extruded floor plan model.  The classroom contains several pieces of furniture as well as a projector screen in the front.  Since the projector screen is a large vertical surface, it was classified as a ``wall'' and included in the model geometry.  This model geometry represents the screen extending fully to the floor, whereas it does not do so in reality.  As such, the texture-mapping of this geometry is incorrect in the lower section, since the texture does not match the reconstructed geometry.  While the texture looks reasonable from the angle viewed in Figure~\ref{fig:cory299_texture}a, the change in angle in Figure~\ref{fig:cory299_texture}b highlights this inaccuracy.  
-
-This model also shows how the lack of furniture in the reconstruction geometry causes the texture of furniture from the imagery to be projected onto the floors and walls, causing distortion.  These models were texture-mapped using the techniques described in~\cite{Cheng14}, which assumes that any geometry observed in the camera imagery is correctly represented in the reconstructed model.  Since this model is missing furniture geometry, the texture gets distorted. 
 
 %---------------------------------------------------------------------------
 %---------------------------------------------------------------------------
@@ -1466,10 +1550,202 @@ This model also shows how the lack of furniture in the reconstruction geometry c
 \chapter{Complex 3D Model Generation}
 \label{ch:carving}
 
-% TODO chapter on carving
+% motivation introduction to chapter
+The methods described in this chapter compute a fully-detailed 3D meshed surface from the raw scans taken from our ambulatory scanning system discussed in Chapter~\ref{ch:hardware}.  The goal of these approaches is to preserve all detail of the scanned environment.  Such models are important for visualization and analysis purposes, where detail is more important than minimalism of representation.  Such models are also used to aid in the processing of indoor navigation algorithms, which require accurate depth maps~\cite{Liang13}.  Objects within the environment, such as furniture and light fixtures, are preserved in these methods.  As we discuss in Chapter~\ref{ch:better_carving}, these objects can be explicitly detected and modeled separately.
+
+% overview of chapter contents
+This chapter describes two separate algorithms we developed to to perform this task.  Both methods generate watertight 3D meshes that utilize adaptive triangle sizes in order to ensure efficiency of representation.  In Section~\ref{sec:fss_stats}, we discuss probabilistic analysis that is performed on the raw data scans, which can be used to aid the volumetric labeling of the model environment.  Next, in Section~\ref{sec:3dv2013}, we detail our first complex carving technique, which represents the environment volumetrically by an advancing voxel boundary.  We refer to this technique as ``voxel carving'', whcih produces a piece-wise planar, watertight model of the interior environment of the building~\cite{Turner13}.  In Section~\ref{sec:procarve}, we introduce a new method that expands on the voxel carving method by introducing the probablistic models discussed in Section~\ref{sec:fss_stats}.  This method also performs the volumetric labeling using an octree structure rather than voxels, to allow for adaptive resolutions within the model and to allow efficient parallel processing.  Again, the method results in a watertight mesh of the environment that can be represented via piece-wise planar surfaces.  Lastly, in Section~\ref{sec:carving_results}, we show comparitive results of these two methods on real-world data.
+
+% section on probability analysis on input data
+\section{Statistical Models of Input Scans}
+\label{sec:fss_stats}
+
+% TODO section on fss statistics, including lots of expansion on
+%	noisypath
+%	sensor noise model
+%	time synchronization noise model
+%	transformation probability model between system and sensor and point
+
+% section on voxel carving
+\section{Voxel Carving Surface Reconstruction}
+\label{sec:3dv2013}
+
+% section introduction
+This section describes our voxel carving method for surface reconstruction of building interiors.  First, a point-cloud is generated of a scanned environment, as shown in Figure~\ref{fig:3dv2013_mydesk}a.  The point-cloud is used to determine the locations in the volume that are {\it interior} and {\it exterior} via a voxel carving scheme.  We introduce a novel data structure that allows the carving to be computed in a memory efficient and scalable manner.  Second, once interior and exterior voxels are labeled, the surface defined between these two labelings is segmented into planar regions, as shown in Figure~\ref{fig:3dv2013_mydesk}b.  Each region is meshed with triangles that are proportional to its size, as shown in Figure~\ref{3dv2013_fig:mydesk}c.  The result accurately and efficiently depicts the geometry of the building.
+
+% example output of this technique
+\begin{figure}[t]
+
+	% show pointcloud of building
+	\begin{minipage}[b]{0.3\linewidth}
+	\centerline{\includegraphics[height=2.7cm]{3dv2013/results/coryInside_no_roof_pointcloud_cropped}}
+	\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.3\linewidth}
+	\centerline{\includegraphics[height=2.7cm]{3dv2013/results/coryInside_no_roof_surface00_cropped}}
+	\centerline{(b)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.3\linewidth}
+	\centerline{\includegraphics[height=2.7cm]{3dv2013/results/coryInside_no_roof_triangles00_cropped}}
+	\centerline{(c)}\medskip
+	\end{minipage}
+
+\caption[Example processing of office building interior.]{Example processing of office building interior.  Ceiling has been removed for visualization:  (a) Input point-cloud; (b) Output surface; (c) Triangulation of surface.}
+\label{fig:3dv2013_mydesk}
+\end{figure}
+
+% labeling voxels as interior/exterior
+\subsection{Voxel Labeling}
+\label{ssec:voxel_labeling}
+
+This interior/exterior volume classification is performed on a voxel grid.  Given an input resolution size $r$, each voxel is a cube whose sides are length $r$.  Initially, all voxels are assumed to be {\it exterior}, referring to any space outside of the scanned volume or space that is represented by solid objects.  The process of {\it carving} refers to relabeling a voxel from exterior to interior, which occurs when a voxel is found to intersect the line segment from the scanner to a corresponding scan point.  If a laser passes through a voxel, that voxel is considered interior space.
+
+% TODO use same symbols as in statistics section
+For each laser scanner, there exists a track in space that represents the scanner's movement during data collection.  This track is represented by a sequence of positions $T = (\vec{t}_{1},\,\vec{t}_{2},\,\vec{t}_{3},\,...,\,\vec{t}_{N})$, where $N$ is the number of locations sampled during data collection.  These track samples are shown as purple circles in Figure~\ref{fig:voxel_carving}a.
+
+At the $i^{\text{th}}$ timestep, each scanner sweeps an arc defined by the set of points $P_{i} = \{\vec{p}_{i,1},\,\vec{p}_{i,2},\,...,\,\vec{p}_{i,j},\,...,\,\vec{p}_{i,M}\}$, where $M$ is the number of samples along the arc.  Each scanline is shown in solid red in Figure~\ref{fig:voxel_carving}a.  These scanlines can be interpolated in two dimensions, indexed by $i$ and $j$.  The first interpolates the laser scans temporally, while the second interpolates the scans spatially along the scan arc.  These interpolations are shown as dashed lines in Figure~\ref{fig:voxel_carving}a.  By performing bilinear interpolation, a continuous surface of scans can be estimated from each scan point $\vec{p}_{i,j}$, shown as the interior of the quadrilateral ($\vec{p}_{i,j}$, $\vec{p}_{i,j+1}$, $\vec{p}_{i+1,j+1}$, $\vec{p}_{i+1,j}$).  To efficiently determine which voxels are intersected by this interpolation, the carving operations are performed using ray-tracing between interpolated scanner position $\vec{s}$ and interpolated scan point position $\vec{f}$.  Each pair $(\vec{s}, \vec{f})$ denotes a line segment to carve.  An example set of these segments is shown in green in Figure~\ref{fig:voxel_carving}b.  By spacing these segments no more than distance $r$ apart, each voxel within the interpolated volume is assured to be carved.  We perform ray-tracing on each segment and relabel every intersected voxel as {\it interior}.  This step produces a set of voxels as shown in Figure~\ref{fig:voxel_carving}c.
+
+% make figure of prism carving and interpolation
+\begin{figure}
+
+  \begin{minipage}[b]{0.3\linewidth}
+  \centerline{\includegraphics[height=2.7cm]{3dv2013/diagrams/triangle_prism_carve_a}}
+  \centerline{(a)}\medskip
+  \end{minipage}
+  \begin{minipage}[b]{0.3\linewidth}
+  \centerline{\includegraphics[height=2.7cm]{3dv2013/diagrams/triangle_prism_carve_b}}
+  \centerline{(b)}\medskip
+  \end{minipage}
+  \begin{minipage}[b]{0.3\linewidth}
+  \centerline{\includegraphics[height=2.7cm]{3dv2013/diagrams/triangle_prism_carve_c}}
+  \centerline{(c)}\medskip
+  \end{minipage}
+
+\caption[Method of interpolating scans to carve voxels.]{(a) The input point-cloud is used in conjunction with the track of each scanner to define interior space to carve; (b) Carving is performed using ray-tracing from scanner location to an interpolation of the input points; (c) The result is a set of voxels labeled as {\it interior}.}
+\label{fig:voxel_carving}
+\end{figure}
+
+In most common voxel representations, each voxel in 3D space is explicitly stored in an array in memory.  Even though this approach is straight-forward and easy to use, its memory usage is proportional to the volume represented.  For sizeable models, this memory footprint rapidly becomes intractable, necessitating splitting models into smaller chunks and processing each separately~\cite{Carving}.  This step adds redundant computation and storage overhead.  Adaptive approaches such as octrees reduce memory consumption by only representing the subset of relevant volume, but they still explicitly represent volume, an approach that rapidly fills memory~\cite{OctreeSculpting,Yang05}.
+
+Rather than storing all relevant voxels in memory, in this paper we propose a data structure that implicitly represents the interior and exterior voxels by only explicitly storing the boundary voxels.  A boundary voxel is defined to be one that is labeled as exterior, but has at least one face incident to a voxel labeled interior.  The number of boundary voxels is proportional to the surface area of a model, so storing the boundary only requires $O(n^2)$ memory, whereas the full volume would require $O(n^3)$ memory to store, where $n$ is the characteristic length of a model.
+
+The data structure used during carving is a map between boundary voxel locations $v \in \mathbb{Z}^3$ and six boolean flags $(f_1,f_2,...,f_6) \in \{\texttt{false},\texttt{true}\}^6$, with the following invariants.  Each of these flags represents one of the six faces of the referenced voxel.  Marking $f_i = \texttt{true}$ indicates that the neighboring voxel of $v$ that shares face $f_i$ must be interior.  If $f_i = \texttt{false}$, then this neighboring voxel is exterior, which may mean it is also a boundary voxel.
+
+Figure~\ref{fig:dgrid_boundary_carving} demonstrates in 2D how a voxel representation of the full model can be built from a starting configuration using ray-tracing as a primitive operation, while still respecting the above invariants.  The starting configuration for the 2D map is shown in Figure~\ref{fig:dgrid_boundary_carving}a, with a single interior voxel represented using four boundary voxels.  This interior voxel is initialized to be at the scanner's start position, which is known to be interior.  Dark green lines indicate faces marked as $\texttt{true}$.  Recall that interior voxels denoted in white are not explicitly stored in the map while the boundary voxels, denoted in light green, are stored explicitly.  During the carving process, if a voxel $v$ is designated to be carved then any of its faces that are flagged as $\texttt{false}$ must be incident to exterior voxels, as shown in Figure~\ref{fig:dgrid_boundary_carving}b.  Each of these neighboring exterior voxels, $v^{\prime}$, is added to the map, as they are now boundary voxels, and the face of $v^{\prime}$ that is incident to $v$ is flagged as $\texttt{true}$.  Lastly, $v$ is removed from the map, which now represents that $v$ is part of the interior volume, as seen in Figure~\ref{fig:dgrid_boundary_carving}c.  Any carving attempt on a voxel that is not in the map can be ignored, since all carving initiates from within the interior volume.  By using only this operation, the map invariants are preserved and will always consistently define an interior volume.
+
+% show boundary carving
+\begin{figure}[t]
+
+  \centerline{\includegraphics[width=0.9\linewidth]{3dv2013/diagrams/boundary_voxel_carving}}
+  \centerline{(a)\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,(b)\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,\,(c)\,\,\,\,\,}
+\caption[A 2D example of carving a voxel.]{A 2D example of carving a voxel.  Stored boundary voxels are shown in green.  White voxels are not explicitly stored. (a) The initial map configuration; (b) Voxel $v$ is carved by removing $v$ from the map and adding additional boundary voxels $v^{\prime}$ to the map; (c) $v$ is represented as interior volume.}
+\label{fig:dgrid_boundary_carving}
+\end{figure}
+
+%\paragraph*{Preserving fine detail}
+
+This carving process may not preserve features for point-clouds with low noise, but high detail.  Specifically, objects whose feature length is on the order of one voxel size may be carved away.  This issue can be a serious problem if two rooms are separated by a thin wall.  Scanning both of these rooms may carve away this wall, resulting in a final model that shows only one, double-sized room.  In order to preserve these features, we store a second voxel set that specifies the voxels that are intersected by the input point-cloud.  While the original point-cloud is often much too large to be stored in memory at once, this discretization is much smaller and is on the same order of memory usage as the map of boundary voxels.
+
+During the carving of each line segment, if ray-tracing encounters a voxel that is marked to contain input points, then the carving of that segment is truncated just before this voxel.  No features that are represented in the point-cloud are ever carved away.  Since ray-tracing already occurs on a voxelized grid, this occlusion check does not add any appreciable complexity to the computation.
+
+% voxel carving surface reconstruction
+\subsection{Planar Region Fitting}
+\label{ssec:voxel_region_fitting}
+
+% show figure of original, flood-filled, and colored voxel faces
+\begin{figure}[t]
+
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/stairs_voxels/bhh_stairs_voxels_zoom01}}
+	\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/stairs_voxels/bhh_stairs_regions00}}
+	\centerline{(b)}\medskip
+	\end{minipage}
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/stairs_voxels/bhh_stairs_regions02}}
+	\centerline{(c)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/stairs_voxels/bhh_stairs_regions03}}
+	\centerline{(d)}\medskip
+	\end{minipage}
+
+	\caption[Method of region fitting to voxel carving.]{(a) Example carved voxels at the top of a flight of stairs; (b) Regions colored based on voxel face flood-fill; (c) Region growing by finding best-fit planes to voxel faces; (d) Regions relaxed to merge planes that are nearly parallel}
+	\label{fig:stairs_voxels}
+\end{figure}
+
+% highlight overall approach, and a few technical challenges
+Our procedure for surface reconstruction of voxels can be broken into two parts.  First, estimates of planar regions are found around the boundary faces of these voxels.  These regions are formed from connected sets of voxel faces, all of which are positioned on best-fit planes.  Second, each region is triangulated, forming a mesh.  This triangulation lies along the best-fit plane for each region, with elements whose sizes are proportional to the size of the region.
+
+%\paragraph*{Region growing on voxel faces}
+
+The first task is to determine the connectivity along the carved voxel faces. An example of such a carving for a flight of stairs is shown in Figure~\ref{fig:stairs_voxels}a.  Since these faces are squares that form a watertight surface and lie on an axis-aligned grid, each face has exactly four neighbors.  If a voxel face and its neighbor are both oriented in the same direction, e.g.\ both have normal vectors in the Z+ direction, then one can immediately perform a flood-fill operation in order to group these faces into planar regions.  The faces belonging to each region lie exactly on a plane.  The results of this flood-fill operation is shown in Figure~\ref{fig:stairs_voxels}b.
+
+Since the voxels are a discretized representation of the volume, any flat surface of the environment that is not axis-aligned is represented as a zig-zag pattern of voxels.  By fitting planes that only approximate the voxel faces, the output model can contain surfaces that are not axis-aligned.  The approximating planes are found by performing Principle Component Analysis (PCA) on connected subsets of voxel faces~\cite{PCA}.  For any connected set of voxel faces $V$, PCA is performed on the four corners of all the faces to estimate a best-fit plane.  If $V$ is well-modeled by this plane, then the elements of $V$ are grouped together as one planar region.  $V$ is considered well-modeled if the maximum distance of $V$ from the plane is at most $r$.  This threshold guarantees that any voxels intersected by the modeling plane are incident to the faces in $V$.
+
+Starting with the regions found in the flood-fill operation above, adjacent regions of voxel faces are progressively merged by attempting to model their union with a single best-fit plane.  If this plane meets the threshold described above, then the two adjacent regions are replaced by one region representing their union.  This step is referred to as {\it region growing}.  Even though this stage reduces the total number of regions, it typically results in an over-fitting of too many regions.  An example of this stage is shown in Figure~\ref{fig:stairs_voxels}c.
+
+In order to yield a more aesthetically pleasing output, we further relax these region definitions.  If two adjacent regions are fit by planes whose normal vectors are within $15^{\circ}$, then they are replaced by a single region defined by their union.  The result of this processing yields plane definitions that closely resemble an intuitive labeling of the floors, walls, and ceilings.  This final region labeling is shown in Figure~\ref{fig:stairs_voxels}d. 
+
+% meshing of planar regions
+\subsection{Triangulation of Regions}
+\label{ssec:voxel_triangulation}
+
+Once the set of voxel faces has been partitioned into planar regions, it is necessary to triangulate these regions.  Since the output mesh represents the planar regions found in the previous section, an optimum approach would adapt the size of triangles based on the size of these planar regions.
+
+Taking advantage of the existing voxel grid helps ensure that each region is represented with good quality triangles.  This grid allows for regions to be triangulated with a 2D variant of Isosurface Stuffing techniques, which provide strict bounds on resulting triangle angles~\cite{Isostuffing}.  An example region of voxel faces is shown in Figure~\ref{fig:triangulation}a.  Since this region is best-fit by a plane that is not axis aligned, the region is composed of voxel faces in a zig-zag pattern.  The voxel faces that are most aligned with the normal vector of the region's plane, shown in red, are considered the dominant faces of the region.  These dominant faces are projected along their corresponding axis to generate an axis-aligned 2D projection of the region.  This projection is shown with black dashed lines in Figure~\ref{fig:triangulation}a.  The triangulation is found by populating a quadtree that is aligned to the projected grid with the faces of this region.  An example of this quadtree is shown in Figure~\ref{fig:triangulation}b.  The tree is triangulated by placing vertices at the center and corners of the leaf nodes, as shown in Figure~\ref{fig:triangulation}c.  This step results in larger triangles for larger leaf nodes, while still controlling the quality of the output triangles.  This triangulation is projected back onto the plane defined by the region, to result in triangulated representation of this region in 3D space.
+
+% show cartoon of triangulation of region, including quadtree
+\begin{figure}[t]
+
+	\begin{minipage}[b]{0.48\linewidth}
+		\centerline{\includegraphics[height=5.0cm]{3dv2013/project_plane/dominant_axis_project_a}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.48\linewidth}
+		\centerline{\includegraphics[height=5.0cm]{3dv2013/project_plane/2dtri2}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	
+	\begin{minipage}[b]{0.48\linewidth}
+		\centerline{\includegraphics[height=5.0cm]{3dv2013/project_plane/2dtri3}}
+		\centerline{(c)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.48\linewidth}
+		\centerline{\includegraphics[height=5.0cm]{3dv2013/snapshot_triangles_corner00}}
+		\centerline{(d)}\medskip
+	\end{minipage}
+
+	\caption[Triangulation of planar regions in voxel carving.]{(a) The dominant faces of a planar region (shown in red) are projected to the dominant axis-aligned plane; (b) Projected faces represented in a quadtree structure to reduce number of elements; (c) This quadtree can be triangulated efficiently while ensuring high-quality triangles; (d) An example output of the triangulation of three regions in the corner of a room.}
+	\label{fig:triangulation}
+
+\end{figure}
+
+Since the connectivity between voxel faces is well-defined, the connectivity of the output triangulation is also well-defined.  To ensure that the borders between planar regions are represented sharply, the vertices that are shared by multiple regions are snapped onto the intersection of those regions.  This fits the intersection between two regions to a line, and the intersection of three or more regions to a point in space.  This step yields a watertight mesh across regions, as can be seen in the intersection of three regions at the corner of a room in Figure~\ref{fig:triangulation}d.  To limit self-intersections in the final surface, the vertices that are shared by multiple regions are allowed to be displaced up to a distance threshold from their original position in the voxel grid.  This threshold is relaxed as the angle between the regions in question approaches $90^{\circ}$.  The corners between walls and ceilings remain sharp, while the transition between regions that are close to parallel is smooth.  If such a threshold did not exist for the boundaries between near-parallel regions, their shared vertices could produce undesirable artifacts.
+
+% section on octree procarve
+\section{Probabilistic Octree Surface Reconstruction}
+\label{sec:procarve}
+
+% TODO incorporate siggraph paper here
 
 % results section for 3D carving
 \section{Results}
+
+% TODO results figures of 3d carving from both 3dv2013 and siggraph
+
+%\paragraph*{Memory usage}
+
+Data storage is an important factor in our algorithm.  While the scheme described above only requires a small subset of the point-cloud to be in memory at any given time, it is also important to make sure that the intermediary and output data structures are reasonably sized.  Figure~\ref{fig:bhh_hallway} shows a moderate-size model depicting the corridors in a hotel, represented with a 6.3 GB point-cloud.  The voxel carving, at a resolution of 5 cm, requires 12.7 MB of memory.  If a conventional voxel grid structure were used to represent the entire bounding box, then 94.4 MB of memory would be required at this resolution.
+
 
 %---------------------------------------------------------------------------
 %---------------------------------------------------------------------------
@@ -1635,7 +1911,7 @@ While using an extruded floor plan mesh to generate a texture-mapped model is fa
 		\centerline{(h)}\medskip
 	\end{minipage}
 
-	\caption{Modeling results of hotel lobby: (a) Desk area modeled with method from Chapter~\ref{ch:carving}; (b) texture-mapping applied; (c) area modeled with method from Chapter~\ref{ch:floorplan}; (d) texture-mapping applied; (e) main lobby area modeled with method from Chapter~\ref{ch:carving}; (f) texture-mapping applied; (g) area modeled with method from Chapter~\ref{ch:floorplan}; (h) texture-mapping applied.}
+	\caption[Comparison of modeling results of a hotel lobby.]{Modeling results of hotel lobby: (a) Desk area modeled with method from Chapter~\ref{ch:carving}; (b) texture-mapping applied; (c) area modeled with method from Chapter~\ref{ch:floorplan}; (d) texture-mapping applied; (e) main lobby area modeled with method from Chapter~\ref{ch:carving}; (f) texture-mapping applied; (g) area modeled with method from Chapter~\ref{ch:floorplan}; (h) texture-mapping applied.}
 	\label{fig:comparison_houston}
 
 \end{figure}
@@ -1670,6 +1946,9 @@ While the 2D floor plans, 2.5D extruded models, and the full 3D complex models a
 \label{ch:better_carving}
 
 % TODO chapter on better carving
+
+% TODO copy 'main idea' section from siggraph paper
+% TODO modify the 'overview' subsection's pipeline figure
 
 %---------------------------------------------------------------------------
 %---------------------------------------------------------------------------

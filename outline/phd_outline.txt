@@ -60,7 +60,7 @@ x	Pointcloud generation (5-10 pages)			\label{ch:preprocessing}
 		- color by camera via time window		\label{sec:pointcloud}
 		- partition pointcloud by levels		\label{sec:pointcloud_level_split}
 	
-	Floorplan generation					\label{ch:floorplan}
+x	Floorplan generation					\label{ch:floorplan}
 		- wall sampling techniques			\label{sec:wall_sampling}
 			- histogram binning of pointclouds	\label{ssec:ws_from_pc}
 				(with and without normal analysis)
@@ -78,16 +78,25 @@ x	Pointcloud generation (5-10 pages)			\label{ch:preprocessing}
 		- limitations					\label{sec:fp_limitations}
 		
 	Carving							\label{ch:carving}
-		- 3DV 2013 voxel carving
-		- everything in siggraph paper about 3D stuff 
+		- section on probabilistic models of input scans		\label{sec:fss_stats}
+			- expand A LOT on mathematics of probabiltiy
+				- explain what's going on with noisypath
+		- 3DV 2013 voxel carving					\label{sec:3dv2013}
+			- voxel labeling					\label{ssec:voxel_labeling}
+			- planar region fitting					\label{ssec:voxel_region_fitting}
+			- triangulation						\label{ssec:voxel_triangulation}
+		- octree carving: everything in siggraph paper about 3D stuff   \label{sec:procarve}
+			- everything regarding the carving map EXPAND
+			- everything regarding the wedge model EXPAND
+			- chunking of scans
+			- everything regarding multithreaded procarve processing
 			- (save fp for later)
 			- (save furniture segmentation for later)
-		- expand A LOT on mathematics of probabiltiy
-			- explain what's going on with noisypath
-			- everything regarding the wedge model
-			- chunking of scans
+		- results							\label{sec:carving_results}
+			- all of voxel carve results
+			- compare procarve and voxel_carve (cory520?)
 
-	Comparisons of 2.5D and 3D Models			\label{ch:fp_carving_compare}
+x	Comparisons of 2.5D and 3D Models			\label{ch:fp_carving_compare}
 
 	Improving floorplans with carving  			\label{ch:better_floorplans}
 		- level-splitting with octree, improves on pointcloud level split
@@ -96,7 +105,7 @@ x	Pointcloud generation (5-10 pages)			\label{ch:preprocessing}
 		- include some hia stuff
 
 	Improving carving with floorplans			\label{ch:better_carving}
-		- removing explosions
+		- removing explosions (see journal paper)
 		- merging fp and oct
 		- refining furniture
 		- representing furniture and building separately
