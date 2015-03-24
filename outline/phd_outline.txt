@@ -81,9 +81,9 @@ x	Floorplan generation					\label{ch:floorplan}
 		
 	Carving							\label{ch:carving}
 		- section on probabilistic models of input scans		\label{sec:fss_stats}
-			- expand A LOT on mathematics of probabiltiy
+			- expand A LOT on mathematics of probabiltiy		\label{ssec:point_noise_sources}
 				- explain what's going on with noisypath
-				- everything regarding the carving map EXPAND
+			- everything regarding the carving map EXPAND		\label{ssec:carve_map_generation}
 		- 3DV 2013 voxel carving					\label{sec:3dv2013}
 			- voxel labeling					\label{ssec:voxel_labeling}
 			- dgrid structure					\label{ssec:voxel_carving_data_structure}
@@ -99,8 +99,8 @@ x	Floorplan generation					\label{ch:floorplan}
 			- improvements made to planar region fitting		
 			- (save fp for later)
 			- (save furniture segmentation for later)
-			- compare planar results to 3dv2013			\label{ssec:compare_3dv2013_procarve}
 		- results							\label{sec:carving_results}
+			- compare planar results to 3dv2013			\label{ssec:compare_3dv2013_procarve}
 			- all of voxel carve results				\label{ssec:3dv2013_results}
 			- add results for mulford and other large procarve stuff
 

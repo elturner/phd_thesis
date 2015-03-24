@@ -201,10 +201,10 @@ To Mom.
 \listoffigures{}
 
 % list of tables
-\cleardoublepage
-\phantomsection
-\addcontentsline{toc}{chapter}{\listtablename}
-\listoftables{}
+%\cleardoublepage
+%\phantomsection
+%\addcontentsline{toc}{chapter}{\listtablename}
+%\listoftables{}
 
 % acknowledgement section
 \newpage
@@ -318,7 +318,7 @@ An important note is that traditional surface reconstruction techniques, as desc
 When discussing 3D reconstruction of building environments, it is important to note the subfields of both indoor and outdoor building modeling.  Most of this dissertation is specific to indoor building modeling, however many related techniques are used for outdoor modeling as well.
 
 % how to scan outdoors
-The current method of outdoor building scanning requires an acquisition vehicle to drive down a street while taking Light Detection And Ranging (LiDAR) scans and panoramic photographs of the surround area~\cite{Zakhor07,Chen07}.  In many applications, it is desirable to generate a triangulated geometry for a collected point-cloud.  This geometry needs to be accurate to the original architecture.  
+The current method of outdoor building scanning requires an acquisition vehicle to drive down a street while taking Light Detection And Ranging (LiDAR) scans and panoramic photographs of the surround area~\cite{Zakhor07,Chen07,Karimi00,Li97}.  In many applications, it is desirable to generate a triangulated geometry for a collected point-cloud.  This geometry needs to be accurate to the original architecture.  
 
 % pointcloud of building facade
 \begin{figure}
@@ -347,7 +347,7 @@ For buildings of an appreciable height, the street-level LiDAR scans are taken a
 \end{figure}
 
 % background on outdoor modeling
-Previous attempts to model buildings have assumed that architecture takes a simple polyhedron geometry. This approach ignores minor details of a building fa\c{c}ade, such as windows and ledges when applied on a large scale \cite{Chauve10, Chen07}.  The goal of this paper is to preserve as much detail as possible in the reconstructed model geometry.  Any interpolation must preserve the sharp edges of corners that occur within these holes.  This requirement diverges from the typical assumptions of most surface completion methods, which usually result in smoothed surfaces \cite{Kazhdan06, Kawai11}.  While developing 3D models with sharp features is a well-explored topic, most current approaches require a sufficient density of points near regions of high curvature, which would not be applicable here \cite{Bernardini04, Mhatre06}.  
+Previous attempts to model buildings have assumed that architecture takes a simple polyhedron geometry. This approach ignores minor details of a building fa\c{c}ade, such as windows and ledges when applied on a large scale \cite{Chauve10, Chen07}.  The goal of this paper is to preserve as much detail as possible in the reconstructed model geometry.  Any interpolation must preserve the sharp edges of corners that occur within these holes.  This requirement diverges from the typical assumptions of most surface completion methods, which usually result in smoothed surfaces~\cite{Kazhdan06, Kawai11}.  While developing 3D models with sharp features is a well-explored topic, most current approaches require a sufficient density of points near regions of high curvature, which would not be applicable here \cite{Bernardini04, Mhatre06}.  
 
 % our method
 Our goal is to generate sharp, axis-aligned, planar features in locations where the point-cloud is sparse or not sampled at all.  We propose an approach for rectilinear surface reconstruction of building fa\c{c}ades with incomplete 3D point-clouds~\cite{Turner12outdoor}.  Specifically, our proposed algorithm generates geometry for any holes in the point-cloud while preserving flat planes and sharp corners, which are common in modern architecture.  In order to reconstruct a mesh of a building face, first we determine the dominant plane of this fa\c{c}ade, then by treating the original points as a height map on this plane, we uniformly resample these heights over the entire surface using Moving Least-Squares (MLS) smoothing in order to mitigate noise in areas of high sampling, interpolate the areas corresponding to gaps in the point-cloud, and guarantee uniformity of resulting geometry~\cite{Nealen04}.
@@ -1567,6 +1567,88 @@ This chapter describes two separate algorithms we developed to to perform this t
 %	transformation probability model between system and sensor and point
 %	carve mapping
 
+% overview of this section
+In this section, we discuss how each input scan point is analyzed in order to generate a volumetric occupancy model of the scanned environment.  Our goal is to convert the input set of laser scan points into a labeling of space where each location $x \in \mathbb{R}^3$ is assigned a likelihood of being {\it interior} or {\it exterior}.  We perform this task in two steps.  The first step is to form a probabilistic model of each scan point's position, coupled with the position of the originating sensor.  We discuss sources of noise and our probability model for each scan point in Section~\ref{ssec:point_noise_sources}.  The second step is to use this probability model to estimate the scan point's vote for the {\it interior} likelihood of each location in space intersected by its scan ray.  We refer to this step as ``carve mapping'', and detail its application in Section~\ref{ssec:carve_map_generation}.  
+
+Once we obtain these estimates for each scan point, it is possible to generate an occupancy model of the entire scanned environment, as discussed in Section~\ref{sec:procarve}.  Note that the method used in Section~\ref{sec:3dv2013} simply takes the maximum likelihood position of each scan point, and does not consider the distribution of the points' positions when performing volumetric carving.
+
+% subsection detailing sources of noise for each scan point
+\subsection{Sources of Point Noise}
+\label{ssec:point_noise_sources}
+
+% localization noise toy example
+\begin{figure}[t]
+	\centerline{\includegraphics[width=0.8\linewidth]{procarve/process/carvemap/localization_noise}}
+	
+	% caption
+	\caption[Example of localization noise affecting point accuracy.]{Any error or noise in the localization process greatly affects the accuracy of scan point positions.  A small variance in the orientation of a sensor in space can dramatically change the computed 3D position of the point.}
+	\label{fig:localization_noise}
+\end{figure}
+
+% creating a probabilistic model
+We compute an estimate of the 3D positions for each scan point and the point's originating sensor.  These values are represented as two 3D Gaussian distributions.  For each input scan, the sensor position is represented by Gaussian $N(\vec{\mu}_s,C_s)$ and the scan point position is represented by $N(\vec{\mu}_p,C_p)$.  For tractability, assume scan frame's distribution is independent from the position of other scan frames.
+
+The uncertainty in the position values of each scan point originate from three independent sources of error: the backpack localization estimate, the timestamp synchronization, and intrinsic sensor noise.  Each of these noise sources affects the system's estimate of its position and orientation in different manners, but all must be accounted for in order to generate accurate measurements in world-coordinates for the model.
+
+% origins of uncertainty: localization
+\paragraph*{Localization noise}
+Localization noise arises from errors in the estimate of the system trajectory, as detailed in~\cite{NickJournal}, and is by far the largest source of error with typical standard deviations on the order of $20$~centimeters.  Our localization procedure is broken into two steps: dead-reckoning via odometry estimates and global optimzation of path~\cite{toro05,fastslam03}.  Dead-reckoning is performed by estimating the incremental transformation between successive poses of the system, integrating measurements of the velocity and acceleration in order to determine a rough position estimate.  Since this method represents open-loop integration, such measurements are susceptible to drift based on any system bias~\cite{Backpack,ProbabilisticRobotics}.  There exist real-time systems that perform some optimzations via secondary measurements of movement, such as laser scanners or visual cameras~\cite{Shelley14}, which reduces the error of the dead-reckoning path.  Such improvements to the dead-reckoning path are important, since the step of global optimization will redistribute any error within a pose uniformly across the traversed path~\cite{toro07}.
+
+Variations in uncertainty between poses are due to the optimized constraint-network of loop closures in the estimated path of the system.  Such optimization systems provide a covariance matrix representing the uncertainties of the values for each pose in the trajectory path.  These uncertainties depend on the timestamp, $t$, since the system moves around the path over time.  These values include both position and orientation of the scanning system at a given time.  The covariance of the system's world position $(x,y,z)$ at a given time $t$ is denoted by the $3 \times 3$ covariance matrix $C_{pose_T}(t)$.  Similarly, the covariance of the system's orientation $(\theta,\phi,\psi)$ at time $t$ is denoted by $3 \times 3$ covariance matrix $C_{pose_R}(t)$.  The uncertainty in the orientation of the sensor can cause major positional uncertainty for range measurements, as shown in Figure~\ref{fig:localization_noise}, and is important to take into account.  While there are some cross-correlations between the position and orientation terms, these are negligable and ignored for tractability.  
+
+The next step is to combine these covariances to estimate the uncertainty of the position of a given scan point $p$ taken at time $t$, and the corresponding position of the originating sensor, $s$.  First, the uncertainty in the position of the sensor $s$ due to localization noise is estimated to be:
+
+% how localization noise affects position of sensor
+\begin{equation}
+C^{(s)}_{pose}(t) = C_{pose_T}(t) + \left[ T_{s\rightarrow c}(t) \right]_x \, C_{pose_R}(t) \, \left[ T_{s\rightarrow c}(t) \right]_x^T
+\end{equation}
+
+where $\left[.\right]_x$ denotes the cross-product matrix for a given vector.  This equation uses the small-angle approximation to apply the rotations specified by $C_{pose_R}(t)$.  Since we assume the uncertainty in these orientations is small, this approximation is valid.  The value $T_{s\rightarrow c}(t)$ denotes the translation between system common and the specific sensor $s$, as discussed in Chapter~\ref{sec:localization}.  Since the sensors are rigidly mounted to the system, this distance is independent of time, but the displacement in world coordinates depends on time due to the system changing orientation over the course of the data acquisition.  The final value represents the covariance of the position of sensor $s$, in model coordinates.  Similarly, we can compute the effect of the localization  uncertainty on the position of scan-point $p$:
+
+% how localization noise affects position of scan point
+\begin{equation}
+C^{(p)}_{pose}(t) = C_{pose_T}(t) + \left[ T_{p\rightarrow c}(t) \right]_x \, C_{pose_R}(t) \, \left[ T_{p\rightarrow c}(t) \right]_x^T
+\end{equation}
+
+where $T_{p\rightarrow c}(t)$ denotes the translation between the point $p$ and the system common position at time $t$.  The resulting value specifies the uncertainty in the scan point position, in world coordinates, due to estimated noise from localization.
+
+% timesync errors
+\paragraph*{Timestamp synchronization noise}
+Timestamp synchronization errors are due to our system combining measurements from several sensors, whose timestamps need to be transformed to a common clock.  This synchronization is done using a linear fitting of the individual sensors' clocks with the common system clock and produces an estimate for the standard deviation of each sensor's synchronization, $\sigma_t$.  Note that $\sigma_t$ is constaint for a given sensor across the entire dataset, since it is derived from a linear fit of all sensor frames.  Mis-synchronization of timestamps can result in spatial errors of scan points, especially when the system is moving or rotating rapidly while scanning distant objects.  In these cases, an estimate of the scan point's position changes depending on our estimate of when a scan is taken.  However, since our sensors are synchronized to an accuracy of $\sigma_t \approx 1$ millisecond, synchronization error is usually the lowest source of noise in the scan points, contributing uncertainty to scan point positions of under $1$~centimeter.  We represent the uncertainty in the sensor position estimate and the scan-point position estimate at a given time $t$ caused by the time synchronization process as zero-mean Gaussians with $3 \times 3$ covariance matrices $C^{(s)}_{ts}(t)$ and $C^{(p)}_{ts}(t)$, respectively:
+
+% how time synchronization affects sensor position
+\begin{equation}
+C^{(s)}_{ts} = \left[ T_{s\rightarrow c}(t) \right]_x \, \sigma_{t} \, \vec{\omega}(t) \, \vec{\omega}^T(t) \, \sigma_{t} \, \left[ T_{s\rightarrow c}(t) \right]_x^T
+\end{equation}
+
+% how time synchronization affects scanpoint position
+\begin{equation}
+C^{(p)}_{ts} = \left[ T_{p\rightarrow c}(t) \right]_x \, \sigma_{t} \, \vec{\omega}(t) \, \vec{\omega}^T(t) \, \sigma_{t} \, \left[ T_{p\rightarrow c}(t) \right]_x^T
+\end{equation}
+
+where $\vec{\omega}(t)$ represents the estimated angular velocity of the system at time $t$. Note that this model only considers rotational velocity, and not linear velocity.  This simplification is due to our estimates of linear velocity being more difficult to formulate, since they cannot be directly measured.  Additionally, rotational velocity produces the dominating source of noised caused by timestamp mis-synchronization, since the estimated position of a point scanned far away is more affected by rotation of the sensor than translation of the sensor.
+
+% fss scan statistics
+\paragraph*{Sensor hardware noise}
+The third source of noise depends on the sensor hardware.  Our system uses Hokuyo UTM-30LX sensors, whose intrinsic noise characterization is given in~\cite{Pomerleau12}.  These sensors are popular among robotics groups due to their low noise characteristics given their range~\cite{GTSAM14}.  Typically this noise contributes on the order of 1 to 2 centimeters to the standard deviation of the positional estimate of scan points.  This uncertainty value increases as the range distance of the point increases, with accuracy dropping dramatically after $10$~meters and accurate measurements stopping entirely at a range of $30$~meters.  
+
+We represent the uncertainty a scan-point position caused by intrinsic sensor noise as a zero-mean Gaussian with covariance $C^{(p)}_{noise}(t)$.  The sensor noise only affects our estimate for the position of the scan point, not the position of the sensor itself.  Additionally, the variance magnitude is dependent on the range distance of each point, so the value changes from point-to-point with respect to time $t$.
+
+For a sensor $s$ on our scanning system scanning a point $p$, we can model the total estimate of the uncertainties of the positions of $s$ and $p$ at a given time $t$ by combining the above terms.  The resulting $3 \times 3$ covariance matrices $C_s(t)$ and $C_p(t)$ are given by:
+
+\begin{equation}
+	C_s(t) = C^{(s)}_{pose}(t) + C^{(s)}_{ts}(t)
+\end{equation}
+\begin{equation}
+	C_p(t) = C^{(p)}_{pose}(t) + C^{(p)}_{ts}(t) + C_{noise}
+\end{equation}
+
+We now have estimates of the means and covariances of the positions of both the originating sensor and the scan-point itself for each scan-point collected by our system during a dataset collection.  In the next section, we discuss how these values are used to develop a volumetric model for each individual scan-point, allowing it to be used to label volumes in the scanned environment as either {\it interior} or {\it exterior}.
+
+% subsection on converting from scan points to carve maps
+\subsection{Carve Map Generation}
+\label{ssec:carve_map_generation}
+
 % carve mapping toy example
 \begin{figure}[t]
 	\centering
@@ -1585,50 +1667,36 @@ This chapter describes two separate algorithms we developed to to perform this t
 	\label{fig:carvemap}
 \end{figure}
 
-% overview of this section
-In this section, we discuss how each input scan point is analyzed in order to generate a volumetric occupancy model of the scanned environment.  Our goal is to convert the input set of laser scan points into a labeling of space where each location $x \in \mathbb{R}^3$ is assigned a likelihood of being {\it interior} or {\it exterior}.  We perform this task in two steps.  The first step is to form a probabilistic model of each scan point's position, coupled with the position of the originating sensor.  The second step is to use this probability model to estimate the scan point's vote for the {\it interior} likelihood of each location in space intersected by its scan ray.  Once we obtain these estimates for each scan point, it is possible to generate an occupancy model of the entire scanned environment, as discussed in Section~\ref{sec:procarve}.  Note that the method used in Section~\ref{sec:3dv2013} simply takes the maximum likelihood position of each scan point, and does not consider the distribution of the points' positions when performing volumetric carving.
-
-% creating a probabilistic model
-First, we compute an estimate of the 3D positions for each scan point and the point's originating sensor.  These values are represented as two 3D Gaussian distributions.  For each input scan, the sensor position is represented by Gaussian $N(\mu_s,C_s)$ and the scan point position is represented by $N(\mu_p,C_p)$.  For tractability, assume scan frame's distribution is independent from the position of other scan frames.  An example of this sensor/scan-point configuration is given in Figure~\ref{fig:carvemap}a.
-
-% origins of uncertainty: localization
-The uncertainty in the position values of each scan point originate from three independent sources of error: the backpack localization estimate, the timestamp synchronization, and intrinsic sensor noise.  Localization noise arises from errors in the estimate of the system trajectory, as detailed in~\cite{NickJournal}, and is by far the largest source of error, with typical standard deviations on the order of $20$~centimeters.  Variations in uncertainty between poses are due to the optimized constraint-network of loop closures in the estimated path of the system.  For each scan position, we represent the uncertainty caused by localization with a zero-mean Gaussian distribution with the $3 \times 3$ covariance matrix $C_{pose}$. 
-% TODO elaborate on localization errors
-
-% timesync errors
-Timestamp synchronization errors are due to our system combining measurements from several sensors, whose timestamps need to be transformed to a common clock.  This synchronization is done using a linear fitting of the individual sensors' clocks with the common system clock and produces an estimate for the standard deviation of each sensor's synchronization, $\sigma_t$.  Mis-synchronization of timestamps can result in spatial errors of scan points, especially when the system is moving or rotating rapidly while scanning distant objects.  In these cases, an estimate of the scan point's position changes depending on our estimate of when a scan is taken.  However, since our sensors are synchronized to an accuracy of $\sigma_t \approx 1$ millisecond, synchronization error is usually the lowest source of noise in the scan points, contributing uncertainty to scan point positions of under $1$~centimeter.  We represent the uncertainty in the sensor position estimate and the scan-point position estimate caused by the time synchronization process as zero-mean Gaussians with $3 \times 3$ covariance matrices $C_{ts_s}$ and $C_{ts_p}$, respectively.
-% TODO elaborate on time synchronization errors
-
-% fss scan statistics
-The third source of noise depends on the sensor hardware.  Our system uses Hokuyo UTM-30LX sensors, whose intrinsic noise characterization is given in~\cite{Pomerleau12}.  Typically this noise contributes on the order of 1 to 2 centimeters to the standard deviation of the positional estimate of scan points.  This uncertainty value increases as the range of the point increases, with accurate measurements stopping at a range of $30$~meters.  We represent the uncertainty a scan-point position caused by intrinsic sensor noise as a zero-mean Gaussian with covariance $C_{noise}$.  For a sensor $s$ on our scanning system scanning a point $p$, we can model the total estimate of the uncertainties of the positions of $s$ and $p$ with $3 \times 3$ covariance matrices $C_s$ and $C_p$ given by:
-% TODO elaborate on sensor errors
-
-\begin{equation}
-	C_s = C_{pose} + C_{ts_s}
-\end{equation}
-\begin{equation}
-	C_p = C_s + C_{ts_p} + C_{noise}
-\end{equation}
-
 % carve map generation
-We now have estimates for the positions of both the sensor and each scan-point, with covariances $C_s$ and $C_p$ respectively.  Next, we use this estimate for each scan point to form a ``carve mapping'' $p(x) : \mathbb{R}^3 \mapsto [0,1]$, which describes the likelihood of any location $x \in \mathbb{R}^3$ of being {\it interior} or {\it exterior} based on the position estimates from a scan point.  For example, if $p(x) \leq 0.5$, then $x$ is more likely in an {\it exterior} location and if $p(x) > 0.5$, then $x$ is more likely to be {\it interior}.  We define $p(x)$ as:
+We now have estimates for the positions of both the sensor and each scan-point taken at time $t$, with covariances $C_s(t)$ and $C_p(t)$ respectively.  We model the positions of the sensor and scan-point to be represented by Gaussians $N(\vec{\mu}_s,C_s(t))$ and $N(\vec{\mu}_p,C_p(t))$, respectively. An example of this model is shown in Figure~\ref{fig:carvemap}a.
+
+Next, we use these distribution models for each scan point to form a ``carve mapping'' $p(x) : \mathbb{R}^3 \mapsto [0,1]$, which describes the likelihood of any location $x \in \mathbb{R}^3$ of being {\it interior} or {\it exterior} based on the position estimates from a scan point.  For example, if $p(x) \leq 0.5$, then $x$ is more likely in an {\it exterior} location and if $p(x) > 0.5$, then $x$ is more likely to be {\it interior}.  
+
+Since each individual scan ray is represented by a probablisitc model, we want to first determine how each ray would label each position $x$ in the environment, and then merge the estimates of that position from all available scan rays in order to determine the maximum likelihood estimate of $p(x)$.  In order to determine how best to label $p(x)$ with a single scan ray, note that we can infer environment geometry based on the orientation of each ray.  A time-of-flight scan indicates that there exists a light-of-sight path between the sensor and the scan-point, which indicates volume near this scan ray should be marked {\it interior}.  Additionally, the fact that a scan-point stopped at a particular distance indicates that a solid object exists in the environment that occluded the ray.  Positions past the scan point should be marked {\it exterior}.  However, positions that are far away from the scan ray should be less influenced by the presence of the ray, since they remain unobserved.  
+
+For a single scan ray, we encompass these qualities in our model by defining $p(x)$ as:
 
 \begin{equation}
 	p(x) = F_s(x_{\parallel}) \, f_{\perp}(x_{\perp}) \, (1 - F_p(x_{\parallel})) + 0.5 (1 - f_{\perp}(x_{\perp}))
 	\label{eq:carvemap}
 \end{equation}
-% TODO expand on the description of this
 
-We split a location $x = x_{\parallel} + x_{\perp}$, as shown Figure~\ref{fig:carvemap}b, where $x_{\parallel}$ is the distance along the length of the scan ray, and $x_{\perp}$ is the distance orthogonal to the scan ray.  $F_s(x_{\parallel})$ is the marginal one-dimensional (1D) Cumulative Distribution Function (CDF) of the sensor position along the length of the scan ray, derived from the Gaussian distribution of the sensor position.  Similarly, $F_p(x_{\parallel})$ is the marginal CDF of the scan-point position along the length of the ray.  Lastly, $f_{\perp}(x_{\perp})$ is the marginal 1D Probability Mass Function (PMF) of the lateral position of the scan ray.  The combination of these values in Equation~\ref{eq:carvemap} yields the mapping shown in Figure~\ref{fig:carvemap}b.  Values in blue are less than $0.5$, indicating a likelihood of a location being {\it exterior}.  As shown, these values occur just past the scan position.  Values in red are greater than $0.5$, indicating a likelihood of a location being {\it interior}.  These values occur around the sensor position and along the scan ray.  As the query location $x$ moves away from the scan ray and $x_{\perp}$ increases, then $p(x)$ approaches $0.5$, indicating unknown state.  In other words, locations close to the scanned ray are likely to be {\it interior}, locations past the scan point are likely to be {\it exterior}, and locations far away from the scanned ray are unknown.
+where $F_s(\dot)$, $F_p(\dot)$, and $f_{\perp}(\dot)$ represent one-dimensional marginal distributions derived from the scan ray model, as described below.  We split a location $x = x_{\parallel} + x_{\perp}$, as shown Figure~\ref{fig:carvemap}b, where $x_{\parallel}$ is the distance along the length of the scan ray, and $x_{\perp}$ is the distance orthogonal to the scan ray.  This decomposition allows us to weight the influence of the scan ray on our estimate $p(x)$ so represent a fall-off as $x_{\perp}$ increases.
 
-The above mapping allows us to use each scan ray to ``carve'' the volume of the model by assigning a probability to all scanned areas indicating the likelihood of areas being interior or exterior.  In the next section, we discuss how the estimates from all input scans are used to generate a model of the entire environment.
+$F_s(x_{\parallel})$ is the marginal one-dimensional (1D) Cumulative Distribution Function (CDF) of the sensor position's distribution along the length of the scan ray, derived from the Gaussian distribution of the sensor position.  Note that the marginal distribution of a multivariate Gaussian is also Gaussian.  Similarly, $F_p(x_{\parallel})$ is the marginal CDF of the scan-point position's distribution along the length of the ray. 
+
+Lastly, $f_{\perp}(x_{\perp})$ is the 1D Probability Mass Function (PMF) of the lateral position of the scan ray.  This function is derived as the marginal distribution along the direction $x_{\perp}$ of the Gaussian defined by $N(x_{\parallel}, C^*)$, where $C^*$ is defined as the weighted average between the covariances of the sensor and scan-point positions:  $C^* = ( 1-f ) \,  C_s(t) \; + \; f \, C_p(t)$ and $f = \| \vec{x}_{\parallel} \| \; / \; \| \vec{\mu}_p - \vec{\mu}_s \|$, or the fractional distance of $x_{\parallel}$ along the scan ray.
+
+The combination of these values in Equation~\ref{eq:carvemap} yields the mapping shown in Figure~\ref{fig:carvemap}b.  Values in blue are less than $0.5$, indicating a likelihood of a location being {\it exterior}.  As shown, these values occur just past the scan position.  Values in red are greater than $0.5$, indicating a likelihood of a location being {\it interior}.  These values occur around the sensor position and along the scan ray.  As the query location $x$ moves away from the scan ray and $x_{\perp}$ increases, then $p(x)$ approaches $0.5$, indicating unknown state.  In other words, locations close to the scanned ray are likely to be {\it interior}, locations past the scan point are likely to be {\it exterior}, and locations far away from the scanned ray are unknown.
+
+The above mapping allows us to use each scan ray to ``carve'' the volume of the model by assigning a probability to all scanned areas indicating the likelihood of areas being interior or exterior.  In Section~\ref{sec:procarve_wedge_and_chunk}, we discuss how the estimates from all input scans are used to generate a model of the entire environment.  
 
 % section on voxel carving
 \section{Voxel Carving Surface Reconstruction}
 \label{sec:3dv2013}
 
 % section introduction
-This section describes our voxel carving method for surface reconstruction of building interiors.  First, a point-cloud is generated of a scanned environment, as shown in Figure~\ref{fig:3dv2013_mydesk}a.  The point-cloud is used to determine the locations in the volume that are {\it interior} and {\it exterior} via a voxel carving scheme.  We introduce a novel data structure that allows the carving to be computed in a memory efficient and scalable manner.  Second, once interior and exterior voxels are labeled, the surface defined between these two labelings is segmented into planar regions, as shown in Figure~\ref{fig:3dv2013_mydesk}b.  Each region is meshed with triangles that are proportional to its size, as shown in Figure~\ref{3dv2013_fig:mydesk}c.  The result accurately and efficiently depicts the geometry of the building.
+This section describes our voxel carving method for surface reconstruction of building interiors.  First, a point-cloud is generated of a scanned environment, as shown in Figure~\ref{fig:3dv2013_mydesk}a.  The point-cloud is used to determine the locations in the volume that are {\it interior} and {\it exterior} via a voxel carving scheme.  We introduce a novel data structure that allows the carving to be computed in a memory efficient and scalable manner.  Second, once interior and exterior voxels are labeled, the surface defined between these two labelings is segmented into planar regions, as shown in Figure~\ref{fig:3dv2013_mydesk}b.  Each region is meshed with triangles that are proportional to its size, as shown in Figure~\ref{fig:3dv2013_mydesk}c.  The result accurately and efficiently depicts the geometry of the building.
 
 % example output of this technique
 \begin{figure}[t]
@@ -1810,7 +1878,8 @@ In Section~\ref{sec:fss_stats}, we discuss how a probability model can be comput
 \label{ssec:procarve_wedge_and_chunk}
 
 % wedge generation
-% (don't need to talk about that) TODO YES WE DO
+In Section~\ref{ssec:voxel_labeling}, we discussed how 
+% (don't need to talk about that) TODO LEFT OFF HERE
 
 % chunking
 The scans are originally sorted temporally as the operator moves around the environment.  In order to process the scanned volume in a parallel fashion, we first organize the input scans into spatial chunks.  The environment volume is tessellated into large cubes, and each cube contains a list of all the scans that intersect it.  When we populate the octree, each chunk can be processed independently and concurrently via a thread pool.  The scans are inserted into each chunk, refining the nodes under the chunk node to a fine resolution.  
@@ -1818,6 +1887,8 @@ The scans are originally sorted temporally as the operator moves around the envi
 % subsection discussing details of octree data-structure
 \subsection{Octree Data Structure}
 \label{ssec:procarve_octree}
+
+% TODO some background and citations on probabilistic octrees
 
 % data storage in octree
 Given a carving mapping function for each scan point taken during the data acquisition process, we merge all the scans spatially to obtain a fused probabilistic estimate $p_f(x)$ for any point $x \in \mathbb{R}^3$.  The value $p_f(x)$ is computed as the maximum-likelihood estimate based on all nearby scans, where any scan whose mean scan-line position is more than $3$ standard deviations away from $x$ does not contribute to the estimated value at $p_f(x)$.  The final result for the spatial labeling of $\mathbb{R}^3$ is stored in an octree.  The advantage of the octree is that every point in space can be represented, but certain areas can have finer detail than others.  The following process inserts all the scans into an octree in a chunk-wise fashion, so that it can be performed in a parallel- and memory-efficient manner.
@@ -1875,21 +1946,16 @@ Once the locations of vertices shared by two or more planar regions are computed
 	\label{fig:plane_xtion}
 \end{figure}
 
-% comparison to 3dv2013
-\subsection{Comparison to Previous Method}
-\label{ssec:compare_3dv2013_procarve}
-
-% TODO add figure comparing siggraph and turner13
-
 % results section for 3D carving
 \section{Results}
 \label{sec:carving_results}
 
-% TODO results figures of 3d carving from both 3dv2013 and siggraph
+% overview paragraph of this section
+In this section, we present several comparisons and results of the methods described in this chapter.  In Section~\ref{ssec:compare_3dv2013_procarve}, we compare and contrast our proposed methods with an existing carving approach and with each other.  In Section~\ref{ssec:3dv2013_results}, we show several results of applying our methods on a variety of datasets, as well as discuss the scalability of our methods.  In addition, more results from the method described in Section~\ref{sec:procarve} are also shown in Chapter~\ref{ch:better_carving}.
 
-% results from just 3dv2013
-\subsection{Voxel Carving Results}
-\label{ssec:3dv2013_results}
+% comparison to 3dv2013
+\subsection{Comparison of Methods}
+\label{ssec:compare_3dv2013_procarve}
 
 % figure: comparing with carving method
 \begin{figure}
@@ -1916,6 +1982,61 @@ Once the locations of vertices shared by two or more planar regions are computed
 \end{figure}
 
 The results of our surface reconstruction procedure are analyzed quantitatively and qualitatively.  For quantitative analysis, the resulting mesh is compared to an existing voxel carving scheme, which uses Marching Cubes to generate a final output~\cite{Carving}.  Figure~\ref{fig:mc_compare} shows a qualitative comparison of the two schemes.  Note that the corners where the floor meets the walls or where the walls meet the ceiling are preserved in our proposed method, whereas in traditional marching cubes, they are rounded off.  Further, since our method explicitly fits planar regions to the mesh, the output mesh contains less surface noise.  Additionally, by using adaptive triangulation of these regions, the mesh can be represented with far fewer elements.
+
+% compare figures of 3d carving from both 3dv2013 and siggraph
+Next, we compare the method of voxel carving described in Section~\ref{sec:3dv2013} with the improvements to that method proposed in Section~\ref{sec:procarve}.  Among the modifications are that probabilistic models are used to assess volumetric labeling of the input scans, an adaptive octree data structure is used to store the {\it interior}/{\it exterior} labelings, and a more sophisticated method is used to position the intersecting vertices between planar regions.  The effects of these modifications can be seen in Figure~\ref{fig:gradlounge_procarve_compare}, which shows a small lounge environment that includes a couch, a coffee table, and a pool table.  Figure~\ref{fig:gradlounge_procarve_compare}a shows a reference photograph of this environment and Figure~\ref{fig:gradlounge_procarve_compare}b shows the raw input scan points used to generate the resulting models.  
+
+The original method of voxel carving is shown in Figure~\ref{fig:gradlounge_procarve_compare}c~\cite{Turner13}.  Note how all surfaces in the model are represented as piece-wise planar.  Additionally, the borders of these planar regions are often represented as rough or jagged.  Figure~\ref{fig:gradlounge_procarve_compare}d shows the modified method, using probabilistic octree carving.  Again, all surfaces are represented as piece-wise planar regions, as discussed in Section~\ref{ssec:procarve_boundary}.  In the modified case, however, note that the borders between regions are preserved as sharp and clean.  This characteristic is especially noticeable on the couch, where the separation between the seat and back of the couch is much noisier in Figure~\ref{fig:gradlounge_procarve_compare}c than in Figure~\ref{fig:gradlounge_procarve_compare}d.  Additionally, the top of the coffee table is skewed in Figure~\ref{fig:gradlounge_procarve_compare}c, whereas in Figure~\ref{fig:gradlounge_procarve_compare}d it is level.
+
+We can also see the effect of using the probabilistic carving between these two models.  Since the method described in Section~\ref{sec:3dv2013}, and shown in Figure~\ref{fig:gradlounge_procarve_compare}c, assumes that any voxels intersecting scan points are exterior, the result is a ``bloated'' version of all objects, where their surfaces are offset from the scan points by half a voxel size on average.  Comparing to Figure~\ref{fig:gradlounge_procarve_compare}d, which represents the process described in Section~\ref{sec:procarve}, we see a very different result.  Since the full probability model for each scan point is used to determine the optimum position of the exported surface no bloat occurs, and the modeled output objects are the correct size.
+
+Since, in both Figures~\ref{fig:gradlounge_procarve_compare}c and~\ref{fig:gradlounge_procarve_compare}d, all surfaces are represented with planar regions, a lot of detail gets lost in region fitting.  We can observe the original detail of the probabilistic octree model in Figure~\ref{fig:gradlounge_procarve_compare}e.  This figure shows a dense surface reconstruction of the same environment, which does not use any planar fitting.  An alternate view of this same output geometry is shown in Figure~\ref{fig:gradlounge_procarve_compare}f, which shows the same model with Gouraud shading.  Note that this version of the model preserves more detail, including the individual cushions in the couch and the legs of the pool table.  By not performing planar region fitting, however, we also preserve noise on flat surfaces, such as on the walls and floors.  In Chapter~\ref{ch:better_carving}, we discuss methods to keep the best of both worlds:  high-fidelity dense surface reconstruction on small objects such as furniture and light fixtures and aggressive plane-fitting methods on the large surfaces of the building such as floors, walls, and ceilings.
+
+% figure: comparing 3dv2013 and procarve
+\begin{figure}
+	
+	\centering
+
+	% input
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{procarve/gradlounge/compare_to_3dv2013/photo}}
+	\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{procarve/gradlounge/compare_to_3dv2013/pointcloud}}
+	\centerline{(b)}\medskip
+	\end{minipage}
+
+	% planar meshing
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{procarve/gradlounge/compare_to_3dv2013/3dv2013_planar_tris}}
+	\centerline{(c)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{procarve/gradlounge/compare_to_3dv2013/procarve_planar_tris}}
+	\centerline{(d)}\medskip
+	\end{minipage}
+
+	% dense meshing
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{procarve/gradlounge/compare_to_3dv2013/procarve_dense_tris}}
+	\centerline{(e)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{procarve/gradlounge/compare_to_3dv2013/procarve_dense_smooth}}
+	\centerline{(f)}\medskip
+	\end{minipage}
+
+	\caption[Comparison between region fitting methods.]{Comparisons between the various reconstruction methods discussed in this chapter.  Example shown on small lounge area:  (a) photograph of scanned environment; (b) raw point cloud scans of environment; (c) voxel carving output as described in Section~\ref{sec:3dv2013}; (d) octree carving output with improved planar region fitting, as described in Section~\ref{sec:procarve}; (e) octree carving output with dense meshing; (f) alternate shading on (e).}
+	\label{fig:gradlounge_procarve_compare}
+\end{figure}
+
+% results from just 3dv2013
+\subsection{Voxel Carving Results}
+\label{ssec:3dv2013_results}
 
 % show coolest results
 
@@ -2011,14 +2132,35 @@ The results of our surface reconstruction procedure are analyzed quantitatively 
 	\label{fig:3dv2013_bhh_hallway}
 \end{figure}
 
-The proposed algorithm was run on several datasets, which range in size from a single conference room to full floors of buildings such as hotels and shopping malls.  The results are shown for sections of these models, along with the corresponding views of the original point-clouds.  For these models, large flat areas are represented by fewer, larger triangles.
+The proposed algorithm from Section~\ref{sec:3dv2013} was run on several datasets, which range in size from a single conference room to full floors of buildings such as hotels and shopping malls.  The results are shown for sections of these models, along with the corresponding views of the original point-clouds.  For these models, large flat areas are represented by fewer, larger triangles.
 
 Figure~\ref{fig:3dv2013_newparkmall} shows the reconstruction of a shopping mall's food court.  The input point-cloud contains significant noise due to the amount of glass surfaces in the model, since most storefronts in the mall are glass.  In the food court, the restaurants are well-modeled, as well as the ceiling and skylights.  Figure~\ref{fig:3dv2013_walmart} shows our largest model, with 220 million input scan points.  This model represents the aisles of a retail store, covering an area of $112.2\texttt{m} \times 77.5\texttt{m}$ using 2.7 million triangles.  A smaller dataset is shown in Figure~\ref{fig:3dv2013_cory540}, representing a $10.5\texttt{m} \times 9.5\texttt{m}$ conference room with a hexagonal table in the center.  This table, along with the podium to the left, is well-represented in the output.  The ceiling of the conference room is inset with hanging lights, which can also be seen in the model.  
 
 Figure~\ref{fig:3dv2013_pier15} shows a modeling of a construction site.  The surfaces of the room are represented by large regions, while the detail of objects is preserved.  Run-time analysis was performed on the dataset shown in Figure~\ref{fig:3dv2013_pier15}.  The input to this dataset contains 25 million points.  The code was run on a personal laptop with an Intel i7-2620M processor.  The voxel carving, at 5 centimeter resolution, took 55 minutes of processing time.  The surface reconstruction of these voxels took 1 minute and 2 seconds.  Previous voxel carving schemes processed similar models of 15 million points in 16 hours at the same resolution~\cite{Carving}.  Computation time was recorded for this same dataset with a resolution of 2 cm.  Voxel carving took 12 hours and 10 minutes for this resolution, while surface reconstruction took 9.5 minutes.
 
-Lastly, Figure~\ref{fig:3dv2013_bhh_hallway} shows an example of the full extent of a $96.7\texttt{m} \times 75.7\texttt{m}$ H-shaped hotel hallway.  The input point-cloud has 84 million points while the output model contains 933,000 triangles grouped into 3,096 planar regions.  Data storage is an important factor in our algorithm.  While the scheme described above only requires a small subset of the point-cloud to be in memory at any given time, it is also important to make sure that the intermediary and output data structures are reasonably sized.  Figure~\ref{fig:3dv2013_bhh_hallway} shows a moderate-size model depicting the corridors in a hotel, represented with a 6.3 GB point-cloud.  The voxel carving, at a resolution of 5 cm, requires 12.7 MB of memory.  If a conventional voxel grid structure were used to represent the entire bounding box, then 94.4 MB of memory would be required at this resolution.
+Figure~\ref{fig:3dv2013_bhh_hallway} shows an example of the full extent of a $96.7\texttt{m} \times 75.7\texttt{m}$ H-shaped hotel hallway.  The input point-cloud has 84 million points while the output model contains 933,000 triangles grouped into 3,096 planar regions.  Data storage is an important factor in our algorithm.  While the scheme described above only requires a small subset of the point-cloud to be in memory at any given time, it is also important to make sure that the intermediary and output data structures are reasonably sized.  Figure~\ref{fig:3dv2013_bhh_hallway} shows a moderate-size model depicting the corridors in a hotel, represented with a 6.3 GB point-cloud.  The voxel carving, at a resolution of 5 cm, requires 12.7 MB of memory.  If a conventional voxel grid structure were used to represent the entire bounding box, then 94.4 MB of memory would be required at this resolution.
 
+% texture-mapping
+Lastly, we can apply texture-mapping to these generated models to aid in assessing the quality of the geometry.  A major motivation for producing models that are composed of large, planar regions is to aid in texture-mapping~\cite{Cheng13}.  This method of texture-mapping produces a single image for each region in the model.  Since all major building features -- such as floors, walls and ceilings -- are represented by large planar regions, there is a reduction in the number of seams in the applied texture.  Objects that are significantly non-planar, such as the ladder that is along the side of the hallway, have some projection artifacts from the texture-mapping process, since these objects are represented with piece-wise planar geometry.
+
+% coryf3 texture mapped
+\begin{figure}[t]
+
+	\centering
+	\begin{minipage}[b]{0.95\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/texture/snapshot_coryf3_triangles00}}
+	\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.95\linewidth}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/texture/snapshot_coryf3_texture00}}
+	\centerline{(b)}
+	\end{minipage}
+
+	% caption
+	\caption[Texture-mapping applied to voxel carving result.]{A voxel carved model of the hallway of an academic building: (a) the geometry of the model; (b) with texture-mapping applied~\cite{Cheng13}.}
+	\label{fig:3dv2013_bhh_hallway}
+\end{figure}
 
 %---------------------------------------------------------------------------
 %---------------------------------------------------------------------------
