@@ -2588,9 +2588,97 @@ We can also view a close-up representation of one room in this same area, as sho
 \chapter{Improvements of 3D Complex Models using 2D Floor Plan Models}
 \label{ch:better_carving}
 
-% TODO
-% TODO chapter on better carving
+In this chapter, we expand on the techniques described in Chapter~\ref{ch:carving}.  These techniques are used to generated fully-detailed, complex 3D models of the observed environment.  In this chapter, we add information gained from the floor plan geometry in order to improve the quality and capabilities of these dense models.  By combining both types of modeling techniques, we can improve the accuracy of the 3D complex models and allow for further analysis of the scanned area.
 
+In Section~\ref{sec:explosion_removal}, we detail how floor plan intersection tests can be used to remove unsightly artifacts in the 3D complex models.  Such artifacts are primarily due to scans that go beyond the building environment, such as scans of the outdoors through windows.  In Section~\ref{sec:procarve_main_idea}, we discuss how combining floor plan and octree volumetric models allow for segmentation of objects and furniture in the environment.  Such segmentation allows for more detailed meshing and resolution improvement on the areas of the model that require it, fully watertight models of the interior furniture, and more accurate building models.  Lastly, in Section~\ref{sec:procarve_results}, we show several real-world scans with this technique applied, show-casing how such analysis can improve model output quality.
+
+% removing explosions from carving
+\section{Removing Exterior Scanning Artifacts}
+\label{sec:explosion_removal}
+
+% figure showing trimming for floorplans, pointclouds, carvings
+\begin{figure}[t]
+
+	\centering
+
+	% before
+	\begin{minipage}[t]{0.3\linewidth} % floor plan
+		\centerline{\includegraphics[width=1.0\linewidth]{jstsp2014/joint/office/floorplan_notrim}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.3\linewidth} % point cloud
+		\centerline{\includegraphics[width=1.0\linewidth]{jstsp2014/joint/office/pointcloud_notrim}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.3\linewidth} % carving
+		\centerline{\includegraphics[width=1.0\linewidth]{jstsp2014/joint/office/carving_notrim}}
+		\centerline{(c)}\medskip
+	\end{minipage}
+
+	% after
+	\begin{minipage}[t]{0.3\linewidth} % floor plan
+		\centerline{\includegraphics[width=1.0\linewidth]{jstsp2014/joint/office/floorplan_withtrim}}
+		\centerline{(d)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.3\linewidth} % point cloud
+		\centerline{\includegraphics[width=1.0\linewidth]{jstsp2014/joint/office/pointcloud_withtrim}}
+		\centerline{(e)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.3\linewidth} % carving
+		\centerline{\includegraphics[width=1.0\linewidth]{jstsp2014/joint/office/carving_withtrim}}
+		\centerline{(f)}\medskip
+	\end{minipage}
+	
+	\caption[Using room labels to trim and improve models.]{Using room labels to trim and improve models.  Top-down view of: (a) Floor plan before room trimming; (b) point cloud before trimming, colored by height with ceiling points removed for viewing; (c) top-down view of surface carving before trimming; (d) floor plan after trimming; (e) point cloud after trimming; (f) surface carving after trimming.}
+	\label{fig:explosion_trimming}
+
+\end{figure}
+
+% trimming and improving floorplan by rooms
+Room labeling within a model provides an effective mechanism to prevent misrepresentation of poorly scanned areas.  The mobile scanning system does not necessarily traverse every room and may only take superficial scans of room geometry while passing by a room's open doorway.  When a room is not entered, the model is unlikely to capture sufficient geometry and therefore it is necessary to remove this poorly scanned area from the model.  If none of the triangles for a room within the floor plan are intersected by the scanner's path, we can infer the room is never entered.  The room's triangles are then relabeled from interior to exterior, removing it from the floor plan.  Figures~\ref{fig:explosion_trimming}a and~\ref{fig:explosion_trimming}d show an example floor plan before and after such trimming occurs, respectively.  Note the removal of a sharp extrusion in the bottom-right corner, which was a partial scan through a window.
+
+% removing explosions in 3d carving using floorplans
+Similar refinement can be used to improve the 3D carving method described in Chapter~\ref{ch:carving}.  Due to the nature of voxel carving, laser scans that pass through a building window or open doorway can capture geometry outside of the desired scanned area.  Since the outside volume is only observed from a few angles, the resulting carving produces undesirable artifacts.  Using the 2.5D extruded floor plan, we can automatically remove scans from the input point cloud that fall outside our desired area.  Figures~\ref{fig:trimming}b and~\ref{fig:trimming}e show the corresponding point clouds before and after the result of this trimming, colored by height with the ceiling points removed.  Any scans that pass through windows or doorways are removed.  As a result, the surface carving of these point clouds discussed in Chapter~\ref{sec:3dv2013}, as shown in Figures~\ref{fig:trimming}c and~\ref{fig:trimming}f respectively, can be improved by reducing these undesirable artifacts.  Similarly, the improved surface reconstruction scheme using an octree structure, as discussed in Chapter~\ref{sec:procarve} can also be improved by preventing any nodes labeled {\it interior} by the carving but are well outside the floor plan geometry from being considered when exporting the mesh.
+
+% how to bloat floor plan to accomplish this
+We do not simply remove any points that are outside of the floor plan area, since there may be geometry for interior walls or other features that are not labeled as {\it interior} in the floor plan that we still want to keep.  Instead, we make the assumption that any points that are at least some distance $d$ meters from any {\it interior} area of the floor plan are likely to be outside the scan environment.  Figure~\ref{fig:bloated_fp} shows an example of this process.  In Figure~\ref{fig:bloated_fp}a, a top-down view of the 3D complex mesh is shown for a model of a residential apartment.  The corresponding floor plan of the same area is shown in Figure~\ref{fig:bloated_fp}b, in purple.  We also show the extend of the ``expanded'' floor plan area, in red, which will be intersected with the octree volume in order to determine which nodes should be ignored.  Any octree nodes that are outside of the red area of the expanded floor plan are not considered for meshing.  The result of this modification is shown in Figure~\ref{fig:bloated_fp}c, where the artifacts in the model caused by scanning exterior area through doors and windows are removed, leaving only the building geometry.
+
+% figure showing bloated fp
+\begin{figure}[t]
+
+	\centering
+
+	% before
+	\begin{minipage}[t]{0.3\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/trimming/erics_apt_before}}
+		\centerline{(a)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.3\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/trimming/erics_apt_bloated_fp}}
+		\centerline{(b)}\medskip
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.3\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/trimming/erics_apt_after}}
+		\centerline{(c)}\medskip
+	\end{minipage}
+	
+	\caption[Removing artifacts from octree carving with floor plans.]{Example of using floor plan geometry to remove scan artifacts from 3D octree carving:  (a) a top-down view of the original octree carving; (b) the corresponding floor plan geometry (in purple) with a $1$~meter buffer of nearby area (in red); (c) the resulting octree carving after only considering interior area within the nearby area of the floor plan geometry.}
+	\label{fig:bloated_fp}
+
+\end{figure}
+
+% segmenting furniture and buildings
+\FloatBarrier
+\section{Segmenting Furniture and Room Geometry}
+\label{sec:procarve_main_idea}
+
+% TODO
 % TODO copy 'main idea' section from siggraph paper
 % TODO modify the 'overview' subsection's pipeline figure
 
@@ -2602,10 +2690,158 @@ By generating these wall samples using the octree as input, we can ensure that t
 We perform planar meshing on the octree elements in order to represent building features rather than simply using the 2.5D extruded mesh generated from the floorplan because the latter does not capture sufficient detail of the environment.  Features that do not follow the 2.5D assumption, such as windows or door-frames, are unable to be captured by the extruded floorplan mesh.  As shown in Figures~\ref{fig:banner}d and~\ref{fig:kitchen}c, the planar mesh of the building surface still provide geometry for features such as window recesses.
 
 % results section for better carving
+\FloatBarrier
 \section{Results}
 \label{sec:procarve_results}
 
-% TODO results
+% grad lounge
+\begin{figure}[t]
+	% show the area
+	\begin{minipage}[c]{0.49\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/gradlounge/gradlounge_pic}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[c]{0.49\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/gradlounge/gradlounge_nodestris}}
+		\centerline{(b)}
+	\end{minipage}
+	
+	% output
+	\begin{minipage}[c]{0.49\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/gradlounge/gradlounge_mesh_all}}
+		\centerline{(c)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[c]{0.49\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/gradlounge/gradlounge_mesh_room}}
+		\centerline{(d)}
+	\end{minipage}
+
+	% make a caption
+	\caption[Surface Reconstruction of small room.]{An area modeled by our technique: (a) a photo of the room; (b) the volumetric boundary of room; (c) final mesh with room and objects modeled; (d) final mesh of room only, colored by planar region.}
+	\label{fig:procarve_gradlounge}
+\end{figure}
+
+% TODO text that references fig:procarve_gradlounge
+
+% Hybrid Operating Room table
+\begin{figure}
+
+	% camera photo	
+	\centering
+	\begin{minipage}[t]{0.49\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/HybridORs/camera_photo}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.49\linewidth}% full model
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/HybridORs/full}}
+		\centerline{(b)}
+	\end{minipage}
+
+	% foreground object
+	\begin{minipage}[t]{0.6\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/HybridORs/object_foreground}}
+		\centerline{(c)}
+	\end{minipage}
+
+	% caption
+	\caption[Example scan of equipment in hospital operating room.]{Example scan of equipment in hospital's hybrid operating room: (a) picture of scanned area; (b) model of area; (c) object model triangulation of operating table and equipment.}
+	\label{fig:procarve_hybrid}
+
+\end{figure}
+
+% overview
+The goal of our technique is to generate models of large scanned environments and still preserve fine detail of objects in those environments.  In this section, we discuss the advantages of our method both with qualitative examples and quantitative results.  All models shown were generated on an Intel Xeon 3.10 GHz processor.
+
+% discuss hybrid OR
+In Figure~\ref{fig:procarve_hybrid}, we show results for a scan we generated of several rooms in a hospital operating area.  This model contains four rooms, covering a total of 1,937 square feet, and was scanned using our hardware system in 2 minutes 47 seconds.  Processing this model took a total of 6 hours and 8 minutes.  The room shown in Figure~\ref{fig:procarve_hybrid}a is a hybrid operating room, which contains several medical scanners affixed to the ceiling.  As shown in Figure~\ref{fig:procarve_hybrid}b, our approach segments the geometry of the scanners from the rest of the building and generates a mesh for the entire environment.  Figure~\ref{fig:procarve_hybrid}c shows the geometry of the operating table and medical equipment only.  Note that this object would be difficult to model with techniques that semantically classify geometry to form a mesh, since it is unlikely that shape libraries would have many examples of such an usual device.  Since our technique does not need to classify the shape, we can still generate an accurate representation of its geometry.
+
+% mega-figure of 6thfloor mission bay UCSF
+\begin{figure}[p]
+
+	% Close-up of reception desk
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/6thfloor/reception_desk_north/camera_image}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/6thfloor/reception_desk_north/mesh_all_color}}
+		\centerline{(b)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/6thfloor/reception_desk_north/mesh_room_tris}}
+		\centerline{(c)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/6thfloor/reception_desk_north/mesh_objects_tris}}
+		\centerline{(d)}
+	\end{minipage}
+
+	% floorplan
+	\begin{minipage}[t]{1.0\linewidth}
+		\centerline{\includegraphics[width=0.7\linewidth]{procarve/6thfloor/floorplan/6thfloor_all}}
+		\centerline{(e)}
+	\end{minipage}
+
+	% close up of room
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/6thfloor/room_next_to_skipped/camera_image}}
+		\centerline{(f)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/6thfloor/room_next_to_skipped/mesh_all_color}}
+		\centerline{(g)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/6thfloor/room_next_to_skipped/mesh_room_tri}}
+		\centerline{(h)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.24\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/6thfloor/room_next_to_skipped/mesh_object_tri}}
+		\centerline{(i)}
+	\end{minipage}	
+
+	% caption
+	\caption[Example model of large office environment.]{Example model of large office environment:  (a) Photo of area ``1'' in model; (b) full mesh of area ``1''; (c) triangulation of room geometry in area ``1''; (d) triangulation of object geometry in area ``1''; (e) generated floorplan of scanned environment, colored by room; (f) photo of area ``2'' in model; (g) full mesh of area ``2''; (h) triangulation of room geometry in area ``2''; (i) triangulation of object geometry in area ``2''.}
+	\label{fig:procarve_6thfloor}
+
+\end{figure}
+
+% 6th floor
+In order to show the scalability of our approach, we scanned a large office environment, shown in Figure~\ref{fig:procarve_6thfloor}.  This model contains a complete scan of 41~rooms as well as the surrounding hallways, totalling 13,048 square feet.  The data acquisition was completed in 17~minutes and processed in 48~processor-hours.  The building geometry is represented by 4~million triangles and the objects are meshed with a total of 13~million triangles.  Even though the building surfaces compose most of the environment, they represent the minority of triangles since those surfaces can be meshed efficiently as planar regions.  By comparison, if the entire model had been meshed using dual contouring, then it would have been composed of 21.5~million triangles.
+
+We show examples of the output model from multiple locations.  Figures~\ref{fig:procarve_6thfloor}a-\ref{fig:procarve_6thfloor}d show the reception desk located at point ``1'' in the floorplan shown in Figure~\ref{fig:procarve_6thfloor}e.  The desk, computers, and sink in this area are correctly segmented as objects and the primary building surfaces are meshed in a planar fashion.  The building surfaces can be seen in Figure~\ref{fig:procarve_6thfloor}c and the objects in Figure~\ref{fig:procarve_6thfloor}d.  We also show an example resulting mesh from inside one of the rooms, in Figures~\ref{fig:procarve_6thfloor}f-\ref{fig:procarve_6thfloor}i.  These figures represent location ``2'', as marked on Figure~\ref{fig:procarve_6thfloor}e.  Note that the door frame, desks, and other objects in this room are correctly segmented from the model.  Most of the wall fixtures have shapes that are non-planar, so they are more accurately modeled using a dense meshing scheme as discussed in Chapter~\ref{ssec:procarve_boundary} rather than the corresponding planar meshing scheme.  The primary building surfaces are still meshed in a planar fashion, resulting in a model that preserves the sharp edges and flat surfaces of the floors, walls, and ceilings.
+
+% limitations
+Our approach does have some limitations.  Since the object segmentation procedure described in Section~\ref{sec:procarve_main_idea} uses volumetric intersections with an extruded 2.5D model based on a floorplan, it relies on assumptions this 2.5D model makes about the scanned environment.  In this approach, each room has fixed floor and ceiling heights.  If a room's ceiling is not horizontal, then it is approximated with a horizontal surface.  Figure~\ref{fig:procarve_bookcase} shows a few additional limitations.  This figure shows a set of boxes on top of a raised platform next to a bookcase.  The raised platform is identified as a separate object, even though it is part of the building structure, since it is at a different elevation than the rest of the floor in this room.  Additionally, this figure shows a floor-to-ceiling bookcase.  Since the position of fitted walls is found by looking for vertical surfaces, it is difficult to accurately gauge the depth of the shelves, especially when they are filled.  As a result, the wall is not positioned correctly, and only part of the bookcase is segmented as an object.  It is important to note, however, that all these limitations are highly localized.  Other parts of the model, such as the set of boxes or the coat-rack, are still meshed correctly in the presence of these issues.
+
+% figure of Eric's apt bookcase and ledge, showing limitations
+\begin{figure}
+
+	\begin{minipage}[t]{0.45\linewidth} % camera photo	
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/erics_apt/bookshelf/camera_image}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.45\linewidth} % mesh
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/erics_apt/bookshelf/mesh}}
+		\centerline{(a)}
+	\end{minipage}
+	
+	% caption
+	\caption[Example mesh of bookcase and boxes.]{Example mesh of bookcase and boxes: (a) photograph of scanned area; (b) generated mesh, showing both building and object geometry.}
+	\label{fig:procarve_bookcase}
+\end{figure}
+
+% TODO add examples of mulford
 
 %---------------------------------------------------------------------------
 %---------------------------------------------------------------------------

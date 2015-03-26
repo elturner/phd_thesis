@@ -104,7 +104,7 @@ x	Floorplan generation					\label{ch:floorplan}
 
 x	Comparisons of 2.5D and 3D Models			\label{ch:fp_carving_compare}
 
-	Improving floorplans with carving  			\label{ch:better_floorplans}
+x	Improving floorplans with carving  			\label{ch:better_floorplans}
 		- level-splitting with octree, improves on pointcloud level split
 		- wall sample generation via procarve		\label{sec:oct2fp}
 			- generating 2D wall samples		\label{ssec:oct2dq}
@@ -114,12 +114,12 @@ x	Comparisons of 2.5D and 3D Models			\label{ch:fp_carving_compare}
 		- include some hia stuff				\label{sec:hia}
 
 	Improving carving with floorplans			\label{ch:better_carving}
-		- removing explosions (see journal paper)
-		- siggraph 'main idea' section
-		- merging fp and oct
-			- include optimization of fp alignment
-		- refining furniture
-		- representing furniture and building separately
+		- removing explosions (see journal paper)	\label{sec:explosion_removal}
+		- siggraph 'main idea' section			\label{sec:procarve_main_idea}
+			- merging fp and oct
+				- include optimization of fp alignment
+			- refining furniture
+			- representing furniture and building separately
 		- all results					\label{sec:procarve_results}
 
 	Applications and Analysis				\label{ch:applications}
