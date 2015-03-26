@@ -97,8 +97,6 @@ x	Floorplan generation					\label{ch:floorplan}
 			- everything regarding multithreaded procarve processing
 			- isosurface computation				\label{ssec:procarve_boundary}
 			- improvements made to planar region fitting		
-			- (save fp for later)
-			- (save furniture segmentation for later)
 		- results							\label{sec:carving_results}
 			- compare planar results to 3dv2013			\label{ssec:compare_3dv2013_procarve}
 			- all of voxel carve results				\label{ssec:3dv2013_results}
@@ -108,16 +106,21 @@ x	Comparisons of 2.5D and 3D Models			\label{ch:fp_carving_compare}
 
 	Improving floorplans with carving  			\label{ch:better_floorplans}
 		- level-splitting with octree, improves on pointcloud level split
-		- wall sample generation via procarve
-		- include optimization of fp alignment
-		- include some hia stuff
+		- wall sample generation via procarve		\label{sec:oct2fp}
+			- generating 2D wall samples		\label{ssec:oct2dq}
+			- discuss how planarity is observed
+			- how it improves the floor plans
+			- including heights via horizontal surfaces	\label{ssec:octree_fp_extrusion}
+		- include some hia stuff				\label{sec:hia}
 
 	Improving carving with floorplans			\label{ch:better_carving}
 		- removing explosions (see journal paper)
 		- siggraph 'main idea' section
 		- merging fp and oct
+			- include optimization of fp alignment
 		- refining furniture
 		- representing furniture and building separately
+		- all results					\label{sec:procarve_results}
 
 	Applications and Analysis				\label{ch:applications}
 		- error analysis of meshes to pointclouds?

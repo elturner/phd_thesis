@@ -1594,7 +1594,7 @@ The uncertainty in the position values of each scan point originate from three i
 \paragraph*{Localization noise}
 Localization noise arises from errors in the estimate of the system trajectory, as detailed in~\cite{NickJournal}, and is by far the largest source of error with typical standard deviations on the order of $20$~centimeters.  Our localization procedure is broken into two steps: dead-reckoning via odometry estimates and global optimzation of path~\cite{toro05,fastslam03}.  Dead-reckoning is performed by estimating the incremental transformation between successive poses of the system, integrating measurements of the velocity and acceleration in order to determine a rough position estimate.  Since this method represents open-loop integration, such measurements are susceptible to drift based on any system bias~\cite{Backpack,ProbabilisticRobotics}.  There exist real-time systems that perform some optimzations via secondary measurements of movement, such as laser scanners or visual cameras~\cite{Shelley14}, which reduces the error of the dead-reckoning path.  Such improvements to the dead-reckoning path are important, since the step of global optimization will redistribute any error within a pose uniformly across the traversed path~\cite{toro07}.
 
-Variations in uncertainty between poses are due to the optimized constraint-network of loop closures in the estimated path of the system.  Such optimization systems provide a covariance matrix representing the uncertainties of the values for each pose in the trajectory path.  These uncertainties depend on the timestamp, $t$, since the system moves around the path over time.  These values include both position and orientation of the scanning system at a given time.  The covariance of the system's world position $(x,y,z)$ at a given time $t$ is denoted by the $3 \times 3$ covariance matrix $C_{pose_T}(t)$.  Similarly, the covariance of the system's orientation $(\theta,\phi,\psi)$ at time $t$ is denoted by $3 \times 3$ covariance matrix $C_{pose_R}(t)$.  The uncertainty in the orientation of the sensor can cause major positional uncertainty for range measurements, as shown in Figure~\ref{fig:localization_noise}, and is important to take into account.  While there are some cross-correlations between the position and orientation terms, these are negligable and ignored for tractability.  
+Variations in uncertainty between poses are due to the optimized constraint-network of loop closures in the estimated path of the system.  Such optimization systems provide a covariance matrix representing the uncertainties of the values for each pose in the trajectory path.  These uncertainties depend on the timestamp, $t$, since the system moves around the path over time.  These values include both position and orientation of the scanning system at a given time.  The covariance of the system's world position $(x,y,z)$ at a given time $t$ is denoted by the $3 \times 3$ covariance matrix $C_{pose_T}(t)$.  Similarly, the covariance of the system's orientation $(\theta,\phi,\psi)$ at time $t$ is denoted by $3 \times 3$ covariance matrix $C_{pose_R}(t)$.  The uncertainty in the orientation of the sensor can cause major positional uncertainty for range measurements, as shown in Figure~\ref{fig:localization_noise}, and is important to take into account.  While there are some cross-correlations between the position and orientation terms, these are ignored for tractability.  
 
 The next step is to combine these covariances to estimate the uncertainty of the position of a given scan point $p$ taken at time $t$, and the corresponding position of the originating sensor, $s$.  First, the uncertainty in the position of the sensor $s$ due to localization noise is estimated to be:
 
@@ -1688,6 +1688,8 @@ $F_s(x_{\parallel})$ is the marginal one-dimensional (1D) Cumulative Distributio
 Lastly, $f_{\perp}(x_{\perp})$ is the 1D Probability Mass Function (PMF) of the lateral position of the scan ray.  This function is derived as the marginal distribution along the direction $x_{\perp}$ of the Gaussian defined by $N(x_{\parallel}, C^*)$, where $C^*$ is defined as the weighted average between the covariances of the sensor and scan-point positions:  $C^* = ( 1-f ) \,  C_s(t) \; + \; f \, C_p(t)$ and $f = \| \vec{x}_{\parallel} \| \; / \; \| \vec{\mu}_p - \vec{\mu}_s \|$, or the fractional distance of $x_{\parallel}$ along the scan ray.
 
 The combination of these values in Equation~\ref{eq:carvemap} yields the mapping shown in Figure~\ref{fig:carvemap}b.  Values in blue are less than $0.5$, indicating a likelihood of a location being {\it exterior}.  As shown, these values occur just past the scan position.  Values in red are greater than $0.5$, indicating a likelihood of a location being {\it interior}.  These values occur around the sensor position and along the scan ray.  As the query location $x$ moves away from the scan ray and $x_{\perp}$ increases, then $p(x)$ approaches $0.5$, indicating unknown state.  In other words, locations close to the scanned ray are likely to be {\it interior}, locations past the scan point are likely to be {\it exterior}, and locations far away from the scanned ray are unknown.
+
+% TODO include text about additional weighting parameter used when combining observations in MAP fashion.
 
 The above mapping allows us to use each scan ray to ``carve'' the volume of the model by assigning a probability to all scanned areas indicating the likelihood of areas being interior or exterior.  In Section~\ref{sec:procarve_wedge_and_chunk}, we discuss how the estimates from all input scans are used to generate a model of the entire environment.  
 
@@ -1878,7 +1880,7 @@ In Section~\ref{sec:fss_stats}, we discuss how a probability model can be comput
 \label{ssec:procarve_wedge_and_chunk}
 
 % wedge generation
-In Section~\ref{ssec:voxel_labeling}, we discussed how 
+In Section~\ref{ssec:voxel_labeling}, we discussed how successive scan rays are interpolated in a bilinear fashion:  both between adjacent scan points within a single frame and between the same point index in adjacent frames.  These interpolations 
 % (don't need to talk about that) TODO LEFT OFF HERE
 
 % chunking
@@ -1941,7 +1943,7 @@ Once the locations of vertices shared by two or more planar regions are computed
 
 % plane intersection diagram
 \begin{figure}
-	\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/plane_intersection/plane_xtion_diagram}}
+	\centerline{\includegraphics[width=0.8\linewidth]{procarve/process/plane_intersection/plane_xtion_diagram}}
 	\caption[Computing intersection point for planar regions.]{An example of plane intersection in 2D.  Two adjoining regions are shown, with normals $n_1$ and $n_2$.  The naive intersection of the two regions is shown as a black star.  Rather, we join the two regions with a vertex shown at the green star, which prevents sharp discontinuities in the output.}
 	\label{fig:plane_xtion}
 \end{figure}
@@ -2349,9 +2351,233 @@ While the 2D floor plans, 2.5D extruded models, and the full 3D complex models a
 \chapter{Improvements of 2D Floor Plan Models using Complex 3D Models}
 \label{ch:better_floorplans}
 
-% TODO chapter on better floorplans
+In Chapter~\ref{ch:floorplan}, we discussed method to generate 2D floor plans and 2.5D extruded models from floor plans.  These models were generated by analyzing the raw point-cloud data.  In Chapter~\ref{sec:procarve}, we discussed how we can generate a probabilistic octree representation of the scanned environment.  This octree can be used to generate complex 3D models of the scanned area.
 
+In this chapter, we show how the processing steps used to generate the octree data structure, which represents a complex 3D model, can be used to improve the quality of the 2D floor plan models.  We discuss how using the octree data as input instead of raw point cloud values can improve the accuracy and aesthetics of the output floor plans.
 
+In Section~\ref{sec:octree_level_split}, we describe how the octree strucutre can be utilized to improve howe we split a multi-story model into individual levels.  In Section~\ref{sec:oct2fp}, we discuss how the existing floor plan technique can be improved by using octree input.  In Section~\ref{sec:hia}, we show how these octrees can also be used for unique 2D visualizations of the scanned environment.
+
+\section{Level-Splitting using Octree Structure}
+\label{sec:octree_level_split}
+
+% talk about level-splitting with octree
+First, we split a given octree model into separate building levels.  Such a split can be performed on the original point cloud scans, as described in Chapter~\ref{sec:pointcloud_level_split}.  This method of level splitting finds horizontal surfaces in the point cloud data by performing a histogram of the point elevations and searching for peaks.  An alternate method to perform level splitting on a building model is to find horizontal regions in the boundary of the octree data structure generated in Chapter~\ref{ssec:procarve_octree}.  
+
+% example level splitting
+\begin{figure}
+	\centerline{\includegraphics[width=0.8\linewidth]{procarve/level_splitting/octree_level_split}}
+
+	\caption[Using octree to find levels of two-story dataset.]{An example of using the octree data structure to perform level-splitting in a two-story office building.  This graph shows a histogram of surface area of horizontal surfaces with respect to elevation.  By finding peaks in floor and ceiling surfaces, we can estimate where one level ends and another begins.}
+	\label{fig:octree_level_split}
+\end{figure}
+
+We first produce an octree data structure of the scanned environment.  Next, we perform planar region fitting on the boundary faces of this octree, as described in Chapter~\ref{ssec:procarve_boundary}.  Next, we select all horizontally-aligned regions within the model, discarding any regions whose normals are more than $5$~degrees away from vertical.  We then discard any regions that do not meet a certain surface area threshold.  This steps allows for us to only consider the dominant horizontal surfaces when finding the elevations of floors and ceilings, which provides a much cleaner histogram representation than if every point in the point cloud were used.  We can also more accurately separate floors (whose normal is upward facing) from ceilings (whose normal is downward facing) than if performing histogramming with a point cloud, whose components have no normal information.  Additionally, a histogram of points assumes a relative uniform sampling of each surface.  If the operator traversed one level significantly slower than another level, then the first level will have more points, skewing the histogram.  By performing the histogram on surface area, we can assure that the geometry will be analyzed independently of how it was traversed.
+
+Figure~\ref{fig:octree_level_split} shows an example of this analysis on a two-story dataset.  We plot the total surface area of horizontal planar regions found at each elevation.  Elevations that have a peak amount of floor surfaces are likely to denote the beginning of a level and elevations that have a peak amount of ceiling surfaces are likely to denote the end of a level.  We then deduce the total number of levels by finding the pair of floor and ceiling heights for each level.  The model can be split by level at the elevation halfway between the ceiling of the lower level and the floor of the upper level.  The visualization of the two levels of this building model are shown later in this chapter, in Section~\ref{sec:hia}.
+
+% section on improving wall samples using octrees
+\section{Generating Floor Plans from Octree Structure}
+\label{sec:oct2fp}
+
+Several methods of surface reconstruction of building environments ignore low-level detail and aim to only model the primary floors, walls, and ceilings within the environment.  In this section, we describe how we use the populated octree from Chapter~\ref{sec:procarve} to generate this simplified model.  We use the same technique discussed in Chapter~\ref{sec:visigrapp} to produce 2D floorplans of the environment and extrude 2.5D models using the height information from each room~\cite{Turner14}.  Rather than applying this technique directly on wall samples generated from raw point-cloud scans of the environment, we instead produce the input data for this method from our populated octree.  We show that this approach yields a more accurate model that is both well-aligned with our octree and more aesthetically consistent with real-world geometry.  The remainder of this section describes how we produce 2D wall samples from the octree, use these samples to generate a 2D floorplan of the environment, and create a 2.5D simplified model from the floorplan.
+
+\subsection{Wall Sampling}
+\label{ssec:oct2dq}
+
+In order to generate a floorplan that can be extruded into a simplified 2.5D model, we first need to generate a set of wall samples in the environment.  Wall samples are a set of points in 2D space that are locations with high likelihood of being wall positions.  This set of points is used by the 2D floorplan generation procedure as input data~\cite{Turner14}.  In Chapter~\ref{sec:wall_sampling}, these wall samples are generated either from the output gridmap of a particle filter or by analyzing a 3D point cloud of the environment.
+
+However, this approach is not robust to misclassification of some surfaces as walls.  Any long vertical structure contributes to the wall samples, causing environment features such as bookshelves, doors, or other objects to be detected as walls.  By finding wall position estimates from the octree, rather than directly from the point-cloud, we use topology information to ensure that detected surfaces are large and planar.  We show that this approach not only produces a floorplan better aligned with the complex geometry of the octree, but also one that is less affected by clutter, such as furniture, than when using the point cloud directly to generate the floorplan.
+
+% figure about finding regions and identifying which are walls
+\begin{figure}
+	% region growing
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/wall_sampling/original_regions}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/wall_sampling/merged_regions}}
+		\centerline{(b)}
+	\end{minipage}
+	
+
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/wall_sampling/wall_regions}}
+		\centerline{(c)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/wall_sampling/wall_points_darker}}
+		\centerline{(d)}
+	\end{minipage}
+
+	% caption
+	\caption[Generating wall samples from an octree.]{Generating wall samples from an octree: (a) initialize regions on the octnodes' boundary faces; (b) perform region growing to form large planar regions; (c) filter out wall regions; (d) generate points along planar regions to make wall samples.}
+	\label{fig:oct2dq}
+\end{figure}
+
+The first step of generating wall samples from the octree is to identify large planar surfaces.  We cluster the boundary faces of the octree into planar regions as discussed in Chapter~\ref{ssec:procarve_boundary}.  Figure~\ref{fig:oct2dq}a shows the initial boundary regions of a model, with each initial region depicted as a separate color.  These regions are iteratively merged in the process described in Chapter~\ref{ssec:voxel_region_fitting}.  The result is a single planar region for each dominant surface of the model, as shown in Figure~\ref{fig:oct2dq}b.  
+
+% TODO add more discussion about which regions are selected, include planarity
+We then filter the regions based on the normal direction of the fitting plane, keeping only the surfaces that are vertically-aligned, as shown in Figure~\ref{fig:oct2dq}c.  Any surface whose normal vector is more than $5$~degrees off of horizontal is rejected.  This approach makes the reasonable assumption that walls are vertical, which fits almost all building types.  The output regions have gaps corresponding to the portion of the walls hidden behind any furniture in the model.  In order to counteract these occlusions, we expand the represented geometry of each wall to include any {\it exterior} points that are within the 2D convex hull of each wall planar region.  The check for whether points are {\it exterior} is performed using the populated octree.  Figure~\ref{fig:oct2dq}d shows a set of these points, sampled uniformly, across the wall plane.  
+
+Once we obtain these 3D wall positions, we can convert them to the 2D wall sample representation described in Chapter~\ref{sec:wall_sampling}.  Each column of sampled points along the 3D surface becomes a 2D wall sample in the XY-plane.  The vertical extent of this column is used to estimate the height of the wall at that position.  These wall samples are a cleaner representation than thoes extracted from point-clouds directly, since any surface variations have been flattened beforehand.  Additionally, since the entire surface has been interpolated behind objects in the environment, the wall representations are more robust to clutter in the environment, which leads to fewer false positives in the presence of large obstacles such as bookshelves or doors.  These attributes can be seen by comparing wall samples develope with this new method as opposed to wall samples taken directly from point clouds, as shown in Figure~\ref{fig:octree_fp_compare}.
+
+% subsection on making floor plans from these new wall samples
+\subsection{Floor Plan Generation}
+\label{ssec:octree_floorplan}
+
+% show figure comparing wall samples and floorplans
+\begin{figure}
+
+	% using pointcloud
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/floorplan/original_dq_zoom}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/floorplan/original_fp_zoom}}
+		\centerline{(b)}
+	\end{minipage}
+	
+	% using octree
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/floorplan/octree_dq_zoom}}
+		\centerline{(c)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/floorplan/octree_fp_zoom}}
+		\centerline{(d)}
+	\end{minipage}
+
+	% caption
+	\caption[Comparison of wall samples and floor plans.]{Comparison of wall samples and floorplans: (a) wall sampling generated from original point cloud; (b) corresponding floorplan; (c) wall sampling generated from octree; (d) corresponding floorplan.  All units are in meters.}
+	\label{fig:octree_fp_compare}
+\end{figure}
+
+Once we use the octree to generate the wall samples for a model, we can feed those samples into the 2D floorplan generation method discussed in Chapter~\ref{sec:visigrapp}.  This method produces a watertight 2D model that defines the scanned area.  Figure~\ref{fig:octree_fp_compare} shows a comparison of floorplans generated with the octree versus floorplans generated with the raw scan points.  Figures~\ref{fig:octree_fp_compare}a and~\ref{fig:octree_fp_compare}b show the wall samples and the floorplan generated from the raw scan points, respectively.  Obstacles in the environment such as furniture are not properly removed, causing the output walls to be noisy.  Figures~\ref{fig:octree_fp_compare}c and~\ref{fig:octree_fp_compare}d show the wall samples and floorplan generated from the octree.  Since the region merging allows more sophisticated separation of large planar surfaces, the furniture in the environment is properly removed and the output model is cleaner.  As an example, the upper-right corner of this model contains a large bookcase, which appears in the wall sampling in Figure~\ref{fig:octree_fp_compare}a and is propagated to the floorplan in Figure~\ref{fig:octree_fp_compare}b.  This bookcase is correctly removed from the wall samples generated from the octree in Figure~\ref{fig:octree_fp_compare}c, which means the wall is more appropriately represented in the floorplan shown in Figure~\ref{fig:octree_fp_compare}d.
+
+% fp comparison figure
+\begin{figure}[t]
+
+	\centering
+	% floorplan from pointcloud
+	\begin{minipage}[t]{1.0\linewidth}
+		%\centerline{\includegraphics[width=1.0\linewidth]{oceanview-office/oceanview_fp_pc}}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/mulford/mulford_fp_pc}}
+		\centerline{(a)}
+	\end{minipage}
+
+	% floorplan from octree
+	\begin{minipage}[t]{1.0\linewidth}
+		%\centerline{\includegraphics[width=1.0\linewidth]{oceanview-office/oceanview_fp_oct}}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/mulford/mulford_fp_oct}}
+		\centerline{(b)}
+	\end{minipage}
+
+	% caption
+	\caption[Comparison of floor plans of large office environment.]{Comparison of floorplans of large office environment: (a) floorplan generated from raw point cloud scans; (b) floorplan generated from octree proposed here.  The octree floorplan has much fewer artifacts due to clutter or furniture, as shown in areas ``1'' through ``4''.}
+	\label{fig:compare_fp_mulford}
+
+\end{figure}
+
+% better floorplans
+The approach discussed in this section uses the generated octree to produce improved wall samples, which in turn can be used to .  When compared to floorplans generated from raw point cloud scans, our proposed approach results in not only better alignment to the complex geometry, but also a cleaner floorplan~\cite{Turner14}.  We demonstrate this contrast with Figure~\ref{fig:compare_fp_mulford}, which represents a scan of a 14,079 square foot office area with over $50$ rooms.  This data acquisition took 25 minutes and processing the octree took 84~processor~hours.  An example floorplan from the previous method is shown in Figure~\ref{fig:compare_fp_mulford}a.  This floorplan has several artifacts caused by clutter and furniture in the environment.  Locations ``1'' and ``3'' show rooms filled with large amounts of objects, causing holes in the floorplan.  Locations ``2'' and ``4'' show rooms with a single large object that occluded part of a wall, causing a incorrect notch in the floorplan.  The floorplan of the same environment generated by our proposed technique is shown in Figure~\ref{fig:compare_fp_mulford}b.  This floorplan correctly separates the rooms of the environment and does not have the same artifacts as in the previous method.  Additionally, long hallways in the building are correctly represented as one room, rather than being split into several small segments.
+
+In addition to the examples shown here, several more examples of improved floor plans are shown along-side 3D models in Chapter~\ref{ch:better_carving}.
+
+% improving height estimates with octree
+\subsection{2.5D Extrusion}
+\label{ssec:octree_fp_extrusion}
+
+% show figure comparing wall sample heights
+\begin{figure}
+
+	\centering
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/wall_sample_heights/photo}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/wall_sample_heights/original_wall_heights}}
+		\centerline{(b)}
+	\end{minipage}
+	
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/wall_sample_heights/new_wall_heights}}
+		\centerline{(c)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.45\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/wall_sample_heights/overlay_wall_heights}}
+		\centerline{(d)}
+	\end{minipage}
+
+	% caption
+	\caption[Comparison of wall extrusion methods.]{Example showing improvement in estimating wall heights for extruded floor plans: (a) reference photo of environment; (b) the original wall surfaces, whose heights are determined by the surfaces' vertical extents; (c) the modified wall surfaces, whose heights are determined by the elevation of floor and ceiling planar regions in the room; (d) overlay of the original and new wall surfaces.}
+	\label{fig:octree_wall_sample_heights}
+\end{figure}
+
+Height information is stored in this floorplan, so a 2.5D model is extruded, resulting in a simplified representation of the floors, walls, and ceilings in the environment.  As originally discussed in Chapter~\ref{ssec:fp_extrusion}, the floor plans are extruded into 2.5D models by assigning a single pair of floor and ceiling heights to each room in the environment.  The values for these heights are taken by finding the median floor and ceiling heights across all wall samples in each room.  As shown in Chapter~\ref{ssec:fp_extrusion}, if the wall samples are generated directly from the point cloud, their estimates of heights are very noisy.  This effect is due to the heights being based on the local surface directly intersected by the wall sample.  If part of a wall is occluded by furniture, then those wall samples will have inaccurate heights.
+
+By generating wall samples from the boundary surfaces of the octree, we are able to perform more robust analysis for the extruded heights of the floor plans.  Rather than looking directly at the vertical extent of a wall surface, we instead observe the elevations of large horizontal surfaces in the environment.  These surfaces are likely to be floors and ceilings for each room.  We use the topology of the octree to find the closest large, horizontal surface to each candidate vertical wall surface.  When extracting wall samples, we save the elevations of the nearby floors and ceilings, instead of relying on the vertical extent of the wall itself.
+
+This process allows for higher accuracy in the heights of each room, since it is robust against clutter in the environment.  An example is shown in Figure~\ref{fig:octree_wall_sample_heights}.  This figure shows a kitchen environment, as seen in the reference photograph in Figure~\ref{fig:octree_wall_sample_heights}a, with example wall surfaces detected using both methods.  Figure~\ref{fig:octree_wall_sample_heights}b shows the original wall surfaces, whose vertical extents are estimated by the vertical extent of the original planar region found in the octree boundary.  Figure~\ref{fig:octree_wall_sample_heights}c shows the new method of computing wall surfaces, whose vertical extends are estimated by first classifying large horizontal surfaces as floors and ceilings, then adjusting the wall heights by the elevations of these surfaces.  Lastly, Figure~\ref{fig:octree_wall_sample_heights}d shows both sets of surfaces overlayed.  Note that the original surfaces are not consistent with the actual height of the room, whereas by aligning the heights of walls with the elevations of floors and ceilings, we can produce a more consistent floor plan extrusion that is more accurate to the original model.
+
+% hia stuff
+\FloatBarrier
+\section{Visualizing Top-Down Histograms of Octree Carvings}
+\label{sec:hia}
+
+The octree data structure described in Chapter~\ref{ssec:procarve_octree} represents the full 3D volumetric information about a scanned environment.  These values can span across several scanned floors of the environment and are used to generate the fully-detailed 3D models shown in Chapter~\ref{ch:carving}.  We can also compile these data to present a 2D visualization of the modeling environment, as discussed in this section.
+
+We generate a top-down, 2D histogram of the values stored in the octree.  In each node, a value for the probability of interior is stored.  By generating a sum for each $xy$-position of these values, which intersects all nodes along a vertical column, we can determine the expected ``open height'', in meters.  This value indicates how much of the model is labeled {\it interior} at each $xy$-position, yielding a map of the 2D representation of each level.
+
+% show figure of example hia
+\begin{figure}
+
+	\centering
+	\begin{minipage}[t]{0.49\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{hia/coryf23/coryf23_level_0_hia}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.49\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{hia/coryf23/coryf23_level_1_hia}}
+		\centerline{(b)}
+	\end{minipage}
+
+	% caption
+	\caption[Top-down histogram of two-story octree model.]{An example top-down histogram of a two-story model, generated from a volumetric octree structure: (a) the first level; (b) the second level.  These plots are colored by the amount of open height at each location, so that red indicates a large open space and blue indicates a very shallow volume.}
+	\label{fig:hia_coryf23}
+\end{figure}
+
+Figure~\ref{fig:hia_coryf23} shows an example of this top-down histogram.  This figure uses the same model that was represented in Figure~\ref{fig:octree_level_split}, which represents a two-story academic office building.  Since these models show a representation of all volume that was scanned within the octree, the output includes partial scans of the exterior area of the building, which were observed through windows and doors to the outside.  As we discuss later in Chapter~\ref{ch:better_carving}, these artifacts can be removed by performing an intersection test with the generated floor plan of the environment.
+
+% show figure of example hia in gradlounge (high-res)
+\begin{figure}
+
+	\centering
+	\begin{minipage}[t]{0.55\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{hia/gradlounge/photo}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.35\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{hia/gradlounge/gradlounge_highres}}
+		\centerline{(b)}
+	\end{minipage}
+
+	% caption
+	\caption[Top-down histogram of single room.]{A high-resolution top-down histogram of the octree model of a single room:  (a) reference photograph of room; (b) histogram visualization of model, with features labeled.}
+	\label{fig:hia_gradlounge}
+\end{figure}
+
+We can also view a close-up representation of one room in this same area, as shown in Figure~\ref{fig:hia_gradlounge}.  This room is also present in the upper-left corner of Figure~\ref{fig:hia_coryf23}b.  This visualization represents all the features in the room environment, including detail of the furniture within the room.  This level of detail includes the curvature of the cushions and armrests on the couch, and the shape of the legs of the pool table.  Note that the histogram picks up the detail of the light fixtures on the ceiling as well, which show up as three bars across the length of the room.  The bookshelf on the right-side of the room shows up with less clarity than other objects in the environment.  This is due to most of the bookshelf being {\it interior} area: open shelves facing forward.  This visualization shows how analysis of the octree structure gives more accurate wall positions than wall samples taken from the point-cloud scans directly.
 
 %---------------------------------------------------------------------------
 %---------------------------------------------------------------------------
@@ -2362,6 +2588,7 @@ While the 2D floor plans, 2.5D extruded models, and the full 3D complex models a
 \chapter{Improvements of 3D Complex Models using 2D Floor Plan Models}
 \label{ch:better_carving}
 
+% TODO
 % TODO chapter on better carving
 
 % TODO copy 'main idea' section from siggraph paper
@@ -2369,9 +2596,16 @@ While the 2D floor plans, 2.5D extruded models, and the full 3D complex models a
 
 
 % TODO discuss aligning the floorplan to the octree
+By generating these wall samples using the octree as input, we can ensure that the final floorplan is well-aligned with the octree geometry.  This alignment is important for the steps described in Section~\ref{ssec:merge}, where we combine the simplified model back into the octree geometry.  The effect of misalignment can be seen by comparing Figures~\ref{fig:fp_align}b and~\ref{fig:fp_align}c.  In Figure~\ref{fig:fp_align}b, the octree was segmented using a floorplan generated directly from the point cloud and not the octree.  As such, parts of the back wall and window are mislabeled as objects and kept in the output.  However, in Figure~\ref{fig:fp_align}c, the octree was segmented using a floorplan generated via the technique described in this section.  The back wall is no longer mislabeled and only the actual furniture in the environment are segmented as objects.
 
+% TODO discuss why using planar regions is important
 We perform planar meshing on the octree elements in order to represent building features rather than simply using the 2.5D extruded mesh generated from the floorplan because the latter does not capture sufficient detail of the environment.  Features that do not follow the 2.5D assumption, such as windows or door-frames, are unable to be captured by the extruded floorplan mesh.  As shown in Figures~\ref{fig:banner}d and~\ref{fig:kitchen}c, the planar mesh of the building surface still provide geometry for features such as window recesses.
 
+% results section for better carving
+\section{Results}
+\label{sec:procarve_results}
+
+% TODO results
 
 %---------------------------------------------------------------------------
 %---------------------------------------------------------------------------
@@ -2382,6 +2616,7 @@ We perform planar meshing on the octree elements in order to represent building 
 \chapter{Applications of Building Models}
 \label{ch:applications}
 
+% TODO
 % TODO chapter on applications
 
 %---------------------------------------------------------------------------
@@ -2393,6 +2628,7 @@ We perform planar meshing on the octree elements in order to represent building 
 \chapter{Conclusions}
 \label{ch:conclusion}
 
+% TODO
 % TODO chapter on conclusion
 
 
