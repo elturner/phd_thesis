@@ -2048,12 +2048,12 @@ Since, in both Figures~\ref{fig:gradlounge_procarve_compare}c and~\ref{fig:gradl
 % new park mall
 \begin{figure}
 	\begin{minipage}[t]{0.4\linewidth}
-	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/results/snapshot_newparkmall00_cropped.jpg}}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/results/snapshot_newparkmall00_cropped}}
 	\centerline{(a)}
 	\end{minipage}
 	\hfill
 	\begin{minipage}[t]{0.55\linewidth}
-	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/results/newparkmall.png}}
+	\centerline{\includegraphics[width=1.0\linewidth]{3dv2013/results/newparkmall}}
 	\centerline{(b)}
 	\end{minipage}
 	\caption[Voxel carving result for a large shopping mall.]{Voxel carving result for a large shopping mall:  (a) Surface reconstruction of a shopping mall; (b) input point-cloud.  Resolution is 10 cm.}
@@ -2703,7 +2703,7 @@ We then perform a set difference between these two volumetric models, keeping th
 % display the flow chart for this approach
 \begin{figure*}[t]
 	\centerline{\includegraphics[height=2.0cm]{procarve/process/flowchart/system_flowchart}}
-	\caption{System flowchart of our approach.  Scan Preprocessing is described in Chapter~\ref{sec:fss_stats}, Carving is detailed in Chapter~\ref{sec:procarve}, Wall Sampling and Floor Plan Generation are discussed in Chapter~\ref{sec:oct2fp}, Merge Models is delineated in Chapter~\ref{ssec:procarve_fp_alignment}, and Planar and Detailed Meshing are documented in Chapter~\ref{ssec:procarve_boundary}.}
+	\caption[System flowchart of our approach.]{System flowchart of our approach.  Scan Preprocessing is described in Chapter~\ref{sec:fss_stats}, Carving is detailed in Chapter~\ref{sec:procarve}, Wall Sampling and Floor Plan Generation are discussed in Chapter~\ref{sec:oct2fp}, Merge Models is delineated in Chapter~\ref{ssec:procarve_fp_alignment}, and Planar and Detailed Meshing are documented in Chapter~\ref{ssec:procarve_boundary}.}
 	\label{fig:procarve_flowchart}
 \end{figure*}
 
@@ -2956,7 +2956,7 @@ Our approach does have some limitations.  Since the object segmentation procedur
 	\hfill
 	\begin{minipage}[t]{0.45\linewidth} % mesh
 		\centerline{\includegraphics[width=1.0\linewidth]{procarve/erics_apt/bookshelf/mesh}}
-		\centerline{(a)}
+		\centerline{(b)}
 	\end{minipage}
 	
 	% caption
@@ -2975,8 +2975,74 @@ Our approach does have some limitations.  Since the object segmentation procedur
 \chapter{Applications of Building Models}
 \label{ch:applications}
 
-% TODO
-% TODO chapter on applications
+% motivation for this chapter
+Now that we have discussed various techniques for producing models of scanned building environments, we review a variety of applications for these models.  In this dissertation we have proposed three main categories of models:  2D floor plans, 2.5D extruded models that produce highly simplified geometry, and fully complex 3D models.  In this chapter, we discuss applications for each of these techniques that go beyond visualization of the building geometry.  Each of the discussed methods uses the generated mesh of the building environment to perform some analysis or computation.  As such, the complexity of the mesh plays an important role in how effective these computations can be, and it is often important to have all categories of models for each analyzed environment.
+
+% overview of section
+In Section~\ref{sec:application_energyplus}, we discuss how these models can be used to aid building energy simulations, which help for energy audits for indoor environments.  Understanding the geometry of the building environment at many resolutions facilitates detection of important features in the building environment.  In Section~\ref{sec:application_indoornav}, we discuss how building models can be used to facilitate indoor navigation.  By producing a fully scan of a building environment, we can generate a database of fingerprints, uniquely identifying each location in the environment.  Then, at a later time, a user can identify their location in the environment by performing a look-up in this database.
+
+% section on energy simulation
+\section{Building Energy Simulation}
+\label{sec:application_energyplus}
+
+% interest in BIMS in general
+Building Information Models (BIMs) have seen considerable use in the Construction, Engineering, and Architecture communities~\cite{AutodeskBIM}.  It is often important to not just have the architectural blue-prints for a building, but to also be able to compare those plans to the as-built layout of the building.  Such comparisons allow for architects to ensure the structure is being built to specification, or to account for any deviations that may take place.  Additionally, renovations to a building environment can make the original architectural plans out-of-date for such concerns.
+
+% recent interest in energy
+Similarly, recent trends have been to perform as-built surveys of building environments when performing energy audits.  The large-scale of design for a building can often play important roles in its energy efficiency, but such analysis also includes many building features that would not be on the original architectural plans, such as the types of bulbs used for lighting or the window material used.  As-built analysis is required in order to produce the most accurate energy audit for a building environment~\cite{EBConsulting}.
+
+% energyplus and the need for simple geometry
+Recently, tools have been developed to perform an automated simulation of the thermal flow of a building environment using imported building geometry~\cite{EnergyPlus}.  While these tools were intended to require human users to manually generate the geometry, our modeling system can be employed to produce models of the quality required to perform thermal simulations.  Since these simulations are performed across the entire building environment, highly simplified geometry is required.  Models of buildings as discussed in Chapter~\ref{ch:carving} contain millions of triangles, and are intractably large for such simulation engines.  This need for simplified 3D geometry of the building environment is part of the motivation for our work on extruded floor plans discussed in Chapter~\ref{sec:visigrapp}.
+
+% model with windows
+\begin{figure}[t]
+
+	\centerline{\includegraphics[width=0.8\linewidth]{applications/energyplus_window_detection}}
+	
+	% caption
+	\caption[Example building energy model with automatically-detected windows.]{Exmaple building model used for energy audit simulation.  This model features automatically-detected windows based on the input scans from our backpack system.}
+	\label{fig:windows}
+\end{figure}
+
+% discuss windows, plugloads, lights
+Part of the analysis required to produce energy simulations with out automatically generated models is to detect building features relevant to energy usage.  Such features include windows, light fixtures, equipment plug-loads, and occupancy.  Even though the simplified 2.5D extruded floor plan model is used to form the geometry for these simulations, all scan components are necessary to perform the processing and analysis to detect these features.  Figure~\ref{fig:windows} shows an example model used for energy simulation, generated by our backpack scanning system.  The windows shown in this model are automatically generated using the floor plan model from Chapter~\ref{sec:visigrapp} and the colored point clouds from Chapter~\ref{sec:pointcloud}~\cite{Zhang14}.  Plugload detection is performed by classifying objects via depth-maps produced using the 3D complex models discussed Chapter~\ref{sec:3dv2013}.  Detected computers are used to estimate the occupancy counts, which are split into zones based on the partitioned rooms in the environment as shown in floor plan generation in Chapter~\ref{sec:visigrapp}.
+
+% wrap up
+The result is a full building simulation based on automatically generated models of the building environment, using scans from our backpack-mounted system.  Such simulations can be expanded even further using the additional sensors on the scanning system.  Thermal cameras can be used to detect faulty HVAC equipment or leaks in the insulation~\cite{Oreifej14}, barometers can be used to map pressure variance from room-to-room within the building, and dataset timestamps can be used to determine local weather conditions during the model acquisition.
+
+% section on indoor navigation
+\section{Indoor Navigation}
+\label{sec:application_indoornav}
+
+% motivation
+Another application for building models is for the field of indoor navigation.  Since indoor environments are often GPS-denied, it is difficult for a user to identify their position and orientation while indoors.  A popular technique is to perform a building scan using a modeling system, such as our backpack system.  Once the building model is processed, then a user can traverse the building environment at a later date, using much simpler equipment such as a cell-phone.  This technology gives navigation ability to users in populated indoor environments without the need for modifications to the building environment or requiring carrying bulky scanning equipment. 
+
+% section on indoor navigation
+Several technologies have been utilized in order to produce a unique fingerprint for each location in the building environment.  A popular technique is to produce fingerprints from camera imagery~\cite{Liang13}.  This method records images features taken at each location during the data acquisition.  Later, a user can return the that location in the environment and take a new picture.  By comparing image features, a match can be found and a location and orientation returned to the user.  In order to process these images, a detailed 3D model of the environment, as discussed in Chapter~\ref{sec:3dv2013}, must be produced in order to generate normal-maps and depth-maps for each camera image taken in the original dataset.  These geometry attributes are used to compute the difference between the pose of the original database image and the new query image, allowing for accurate positioning in the environment.
+
+% indoor navigation with wifi
+A more advanced technique combines imagery localization with readings from Wi-Fi antennas~\cite{Levchev14}.  This method tracks a users continuous movement by first performing a rough localization using fingerprinting of observed Wi-Fi signals, then tracks their local movements using imagery.  In order to perform such tracking, this method requires an accurate floor plan of the environment, as generated by Chapter~\ref{sec:visigrapp}, in order to ensure that estimates of the user position does not vary outside of the valid interior area of the building.
+
+% figure of stoneridge wifi
+\begin{figure}[t]
+
+	\begin{minipage}[t]{0.49\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{applications/stoneridge/stoneridge_map}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.49\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{applications/stoneridge/stoneridge_wifi}}
+		\centerline{(b)}
+	\end{minipage}
+	
+	% caption
+	\caption[Analysis of Wi-Fi signals in scans.]{Example of how Wi-Fi signals can be analyzed by our scanning system: (a) the listed directory of a shopping mall~\cite{Stoneridge}; (b) observed Wi-Fi signal strength.  Observed Wi-Fi hotspots match those listed in the mall directory.}
+	\label{fig:stoneridge_wifi}
+\end{figure}
+
+% discuss wifi mapping
+Individual rooms in a building are likley to have a unique set of signal strengths for all observed Wi-Fi SSIDs, which enables fingerprinting of the environment.  However, these Wi-Fi signals also allow for rich analysis of building structures.  By observing and mapping Wi-Fi signal strength, we can determine the likely location of wireless access points.  Figure~\ref{fig:stoneridge_wifi} shows an example of this process.  Figure~\ref{fig:stoneridge_wifi}a shows the directory listing of the Stoneridge Mall~\cite{Stoneridge}, which includes the rough locations of their Wi-Fi hotspots.  By performing a scan of the public areas of the environment, we can visualize a floor plan of this area, as shown in Figure~\ref{fig:stoneridge_wifi}b.  For each position traversed during scanning, we can collect the signal strength of the mall's public wireless network.  As observed in this figure, the maximum strength comes from areas in the mall that match the hotspot locations listed, showing that we can track wireless access points.  These signals are broadcast at frequencies that do not easily transmit through thick building material, such as brick or concrete, allowing some analysis of structure materials based on areas with low signal strength.
 
 %---------------------------------------------------------------------------
 %---------------------------------------------------------------------------
@@ -2990,7 +3056,19 @@ Our approach does have some limitations.  Since the object segmentation procedur
 % TODO
 % TODO chapter on conclusion
 
+% TODO summerize scanning system
+We present a variety of robust methods of surface reconstruction designed for indoor building environments.  Our methods can take input scans with high noise typically observed in mobile ambulatory acquisition systems.  
 
+% TODO summerize different methods of modeling
+
+% TODO summerize how these methods can be combined
+These scans are used to form detailed models of the objects in the scanned area, as well as models of the building structure itself.  The models are generated to take advantage of the level of detail for each type of geometry.  We also show that our method can handle diverse building environments, including residential apartments, office areas, and hospital operating rooms.
+
+Our approach allows partitioning of building geometry into levels, rooms, and individual objects.  This degree of segmentation is an important step to automatically generating richly defined Building Information Models that represent all aspects of the environment. 
+
+% TODO summerize applications
+
+% TODO future work
 
 % http://www.ctan.org/tex-archive/biblio/bibtex/contrib/doc/
 % The IEEEtran BibTeX style support page is at:

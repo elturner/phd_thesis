@@ -8,22 +8,17 @@ Original Papers:
 Secondary papers:
 
 	qual exam
-
 	jstsp 2014     :    combining carving and floorplans
 
 other applications:
 
 	hardware development
-
 	indoor navigation
-
 	arpa-e grant
 		- floorplans used as input for window detection, plugload, lights
 		- simplicity requirements of EnergyPlus
 
-
 Thesis outline :
-
 
 x	abstract (~1 page)
 
@@ -121,19 +116,19 @@ x	Improving floorplans with carving  					\label{ch:better_floorplans}
 				- include optimization of fp alignment
 				- refining furniture
 			- representing furniture and building separately	\label{ssec:procarve_meshing}
-		- all results					\label{sec:procarve_results}
+		- all results							\label{sec:procarve_results}
 
-	Applications and Analysis				\label{ch:applications}
+	Applications and Analysis						\label{ch:applications}
 		- error analysis of meshes to pointclouds?
 			- see 3dv2013
-		- Energy related
+		- Energy related						\label{sec:application_energyplus}
 			- discuss failed attempt to simplify voxel carving
 			- floorplan input for window detection, plugload, lights
 			- simplicity requirements of EnergyPlus
-		- indoor navigation (see jliang stuff)
+		- indoor navigation (see jliang stuff)				\label{sec:application_indoornav}
 		- wifi maps
 		- pressure maps? temperature maps?
 
-	Conclusion (1-2 pages)					\label{ch:conclusion}
+	Conclusion (1-2 pages)							\label{ch:conclusion}
 
 	Bibliography (~100 sources)
