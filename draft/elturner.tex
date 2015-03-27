@@ -3053,22 +3053,21 @@ Individual rooms in a building are likley to have a unique set of signal strengt
 \chapter{Conclusions}
 \label{ch:conclusion}
 
-% TODO
-% TODO chapter on conclusion
+% summarize scanning system
+In this dissertation, We present a variety of robust methods of surface reconstruction designed for indoor building environments.  Our methods can take input scans with high noise typically observed in mobile ambulatory acquisition systems.  We showed how our backpack-mounted hardware system provides a rapid and efficient mechanism for generating models of large building environments with minimal acquisition time.
 
-% TODO summerize scanning system
-We present a variety of robust methods of surface reconstruction designed for indoor building environments.  Our methods can take input scans with high noise typically observed in mobile ambulatory acquisition systems.  
+% summarize different methods of modeling
+Since indoor environments are often GPS-denied, our system computes localization of the path the human operator traversed.  This localization approach allows for scalable acquisitions of tens of thousands of square feet with only 5-10 inches of positional error globally.  The modeling techniques we describe in this dissertation are formulated to be robust to this level of noise in the input localization, and can provide accurate geometry of the building environment using our backpack system.
 
-% TODO summerize different methods of modeling
+We discuss three modes of indoor building modeling:  2D floor plans, simplified 3D models, and fully-detailed complex 3D models.  Each of these modeling approaches produces a watertight representation of the scanned interior environment and is useful for may varied applications in construction, architecture, engineering analysis, virtual/augmented reality, and indoor navigation.  We show how we have advanced our techniques for each of these model types to allow scalable acquisition of large building environments.  We also show the application of each of these techniques on a wide array of real-world datasets, encompassing building types such as academic buildings, office environments, hospitals, residential areas, shopping malls, construction sites, and hotels.
 
-% TODO summerize how these methods can be combined
-These scans are used to form detailed models of the objects in the scanned area, as well as models of the building structure itself.  The models are generated to take advantage of the level of detail for each type of geometry.  We also show that our method can handle diverse building environments, including residential apartments, office areas, and hospital operating rooms.
+% summarize how these methods can be combined
+Additionally, we show that these techniques are not only useful independently, but can be combined to further improve accuracy and functionality.  Full 3D analysis can be utilized to improve the accuracy of the geometry generated for 2D floor plans or to allow for new methods of 2D visualization.  Floor plans can be employed in order to improve the aesthetics and accuracy of fully 3D models, as well as allow for segmentation of the watertight geometry for furniture and other objects in the building environment.  Such segmentation can utilized to improve the level of detail for how these objects are represented in the exported model.  This segmentation could also be used in the future for more accurate classification of these objects.  
 
-Our approach allows partitioning of building geometry into levels, rooms, and individual objects.  This degree of segmentation is an important step to automatically generating richly defined Building Information Models that represent all aspects of the environment. 
+Once objects are separated from the building geometry, the building itself can be modeled more accurately, producing estimates for positions of surfaces that would otherwise be occluded by clutter in the environment.  Our approach allows partitioning of building geometry into levels, rooms, and individual objects.  This degree of segmentation is an important step to automatically generating richly defined Building Information Models that represent all aspects of the environment. 
 
-% TODO summerize applications
-
-% TODO future work
+% summarize applications
+We show how these techniques are applicable to a variety of existing research topics, including automated energy auditing and indoor navigation.  By producing richer models of building environments that go beyond simplified representations of observed geometry, we can provide avenues for simulation and analysis that will improve how we use these spaces and how they are constructed in the future.
 
 % http://www.ctan.org/tex-archive/biblio/bibtex/contrib/doc/
 % The IEEEtran BibTeX style support page is at:

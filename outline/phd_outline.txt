@@ -118,7 +118,7 @@ x	Improving floorplans with carving  					\label{ch:better_floorplans}
 			- representing furniture and building separately	\label{ssec:procarve_meshing}
 		- all results							\label{sec:procarve_results}
 
-	Applications and Analysis						\label{ch:applications}
+x	Applications and Analysis						\label{ch:applications}
 		- error analysis of meshes to pointclouds?
 			- see 3dv2013
 		- Energy related						\label{sec:application_energyplus}
@@ -129,6 +129,6 @@ x	Improving floorplans with carving  					\label{ch:better_floorplans}
 		- wifi maps
 		- pressure maps? temperature maps?
 
-	Conclusion (1-2 pages)							\label{ch:conclusion}
+x	Conclusion (1-2 pages)							\label{ch:conclusion}
 
-	Bibliography (~100 sources)
+x	Bibliography (~100 sources)
