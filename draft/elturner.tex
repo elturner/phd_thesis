@@ -555,7 +555,7 @@ Our geometry reconstruction algorithms use the retrieved laser range data as inp
 The primary advantage of a backpack system is speed of acquisition.  We use 2D Time-Of-Flight (TOF) laser scanners, which means we have sparser scan information per frame and traverse each area of the environment much faster than when scanning the equivalent area with a Kinect or Google Tango.  Since our system produces much sparser point clouds than Kinect-based scanning, it is not feasible to employ the same averaging techniques that allow for high-quality Kinect scans.  The advantage of these 2D TOF sensors is that they are less noisy, have a longer range, and a wider field of view.  The result is that much larger environments can be covered in significantly less time when using these sensors in a sweeping motion~\cite{Sweep}.  For instance, a backpack-mounted system allows an unskilled operator to rapidly walk through an environment to acquire data.
 
 % the noise characteristics
-Our system uses Hokuyo UTM-30LX sensors, whose intrinsic noise characterization is given in~\cite{Pomerleau12}.  Typically this noise contributes on the order of 1 to 2 centimeters to the standard deviation of the positional estimate of scan points.  This uncertainty value increases as the range of the point increases, with accurate measurements stopping at a range of $30$~meters.  We also must consider input noise from our cameras.  We use three 12-megapixel cameras with fisheye lenses, in order to collect as much of the surrounding scenery as possible.  Due to this set-up, a major factor in sensor calibration is how long of an exposure to use for each image.  Since we may be scanning in dark or narrow areas of building environments, ensuring that enough light hits the sensor is challenging, especially with fisheye lenses.  However, if we set the exposure too long, then the imagery is susceptible to motion blur, since the operator often walks or turns quickly.
+Our system uses Hokuyo UTM-30LX sensors, whose intrinsic noise characterization is given in~\cite{Pomerleau12,Wong11}.  Typically this noise contributes on the order of 1 to 2 centimeters to the standard deviation of the positional estimate of scan points.  This uncertainty value increases as the range of the point increases, with accurate measurements stopping at a range of $30$~meters.  We also must consider input noise from our cameras.  We use three 12-megapixel cameras with fisheye lenses, in order to collect as much of the surrounding scenery as possible.  Due to this set-up, a major factor in sensor calibration is how long of an exposure to use for each image.  Since we may be scanning in dark or narrow areas of building environments, ensuring that enough light hits the sensor is challenging, especially with fisheye lenses.  However, if we set the exposure too long, then the imagery is susceptible to motion blur, since the operator often walks or turns quickly.
 
 % data rate from cameras, scalability of systems.
 Since we collect 12~MP imagery from three cameras at 2 Hz each, the camera images represent the major of data flow during the data acquisition process, at 72~megabytes per second.  To ensure no data loss, we necessitate a fast internal drive on the backpack system.  We have also configured the system with a USB-3 external drive, with twin SSD drives in a RAID-0 configuration.  This set-up allows us to write data directly to the external drive, which can be hot-swapped for fast processing.  On the second generation system, this storage drive is 500~GB, which allows for just under two hours of consecutive scanning.  The third generation system contains a 1~TB drive, which allows for up to four hours of scanning.  At that rate, we can perform data acquisition of over 100,000 square feet of building space on a single drive.
@@ -1891,6 +1891,8 @@ The scans are originally sorted temporally as the operator moves around the envi
 \label{ssec:procarve_octree}
 
 % TODO some background and citations on probabilistic octrees
+~\cite{Hernandez07,Octomap}.
+
 
 % data storage in octree
 Given a carving mapping function for each scan point taken during the data acquisition process, we merge all the scans spatially to obtain a fused probabilistic estimate $p_f(x)$ for any point $x \in \mathbb{R}^3$.  The value $p_f(x)$ is computed as the maximum-likelihood estimate based on all nearby scans, where any scan whose mean scan-line position is more than $3$ standard deviations away from $x$ does not contribute to the estimated value at $p_f(x)$.  The final result for the spatial labeling of $\mathbb{R}^3$ is stored in an octree.  The advantage of the octree is that every point in space can be represented, but certain areas can have finer detail than others.  The following process inserts all the scans into an octree in a chunk-wise fashion, so that it can be performed in a parallel- and memory-efficient manner.
@@ -1920,6 +1922,7 @@ Once we have a fully populated octree containing interior/exterior values, there
 
 % planar meshing
 To mesh building geometry, we first partition the boundary faces of the octree into planar regions, in a similar fashion to the method described in Section~\ref{ssec:voxel_region_fitting}.  
+
 % TODO EXPAND ON THIS
 
 % intersections between planar regions
@@ -2642,7 +2645,7 @@ In Section~\ref{sec:explosion_removal}, we detail how floor plan intersection te
 Room labeling within a model provides an effective mechanism to prevent misrepresentation of poorly scanned areas.  The mobile scanning system does not necessarily traverse every room and may only take superficial scans of room geometry while passing by a room's open doorway.  When a room is not entered, the model is unlikely to capture sufficient geometry and therefore it is necessary to remove this poorly scanned area from the model.  If none of the triangles for a room within the floor plan are intersected by the scanner's path, we can infer the room is never entered.  The room's triangles are then relabeled from interior to exterior, removing it from the floor plan.  Figures~\ref{fig:explosion_trimming}a and~\ref{fig:explosion_trimming}d show an example floor plan before and after such trimming occurs, respectively.  Note the removal of a sharp extrusion in the bottom-right corner, which was a partial scan through a window.
 
 % removing explosions in 3d carving using floorplans
-Similar refinement can be used to improve the 3D carving method described in Chapter~\ref{ch:carving}.  Due to the nature of voxel carving, laser scans that pass through a building window or open doorway can capture geometry outside of the desired scanned area.  Since the outside volume is only observed from a few angles, the resulting carving produces undesirable artifacts.  Using the 2.5D extruded floor plan, we can automatically remove scans from the input point cloud that fall outside our desired area.  Figures~\ref{fig:trimming}b and~\ref{fig:trimming}e show the corresponding point clouds before and after the result of this trimming, colored by height with the ceiling points removed.  Any scans that pass through windows or doorways are removed.  As a result, the surface carving of these point clouds discussed in Chapter~\ref{sec:3dv2013}, as shown in Figures~\ref{fig:trimming}c and~\ref{fig:trimming}f respectively, can be improved by reducing these undesirable artifacts.  Similarly, the improved surface reconstruction scheme using an octree structure, as discussed in Chapter~\ref{sec:procarve} can also be improved by preventing any nodes labeled {\it interior} by the carving but are well outside the floor plan geometry from being considered when exporting the mesh.
+Similar refinement can be used to improve the 3D carving method described in Chapter~\ref{ch:carving}.  Due to the nature of voxel carving, laser scans that pass through a building window or open doorway can capture geometry outside of the desired scanned area.  Since the outside volume is only observed from a few angles, the resulting carving produces undesirable artifacts.  Using the 2.5D extruded floor plan, we can automatically remove scans from the input point cloud that fall outside our desired area.  Figures~\ref{fig:explosion_trimming}b and~\ref{fig:explosion_trimming}e show the corresponding point clouds before and after the result of this trimming, colored by height with the ceiling points removed.  Any scans that pass through windows or doorways are removed.  As a result, the surface carving of these point clouds discussed in Chapter~\ref{sec:3dv2013}, as shown in Figures~\ref{fig:explosion_trimming}c and~\ref{fig:explosion_trimming}f respectively, can be improved by reducing these undesirable artifacts.  Similarly, the improved surface reconstruction scheme using an octree structure, as discussed in Chapter~\ref{sec:procarve} can also be improved by preventing any nodes labeled {\it interior} by the carving but are well outside the floor plan geometry from being considered when exporting the mesh.
 
 % how to bloat floor plan to accomplish this
 We do not simply remove any points that are outside of the floor plan area, since there may be geometry for interior walls or other features that are not labeled as {\it interior} in the floor plan that we still want to keep.  Instead, we make the assumption that any points that are at least some distance $d$ meters from any {\it interior} area of the floor plan are likely to be outside the scan environment.  Figure~\ref{fig:bloated_fp} shows an example of this process.  In Figure~\ref{fig:bloated_fp}a, a top-down view of the 3D complex mesh is shown for a model of a residential apartment.  The corresponding floor plan of the same area is shown in Figure~\ref{fig:bloated_fp}b, in purple.  We also show the extend of the ``expanded'' floor plan area, in red, which will be intersected with the octree volume in order to determine which nodes should be ignored.  Any octree nodes that are outside of the red area of the expanded floor plan are not considered for meshing.  The result of this modification is shown in Figure~\ref{fig:bloated_fp}c, where the artifacts in the model caused by scanning exterior area through doors and windows are removed, leaving only the building geometry.
@@ -2678,16 +2681,135 @@ We do not simply remove any points that are outside of the floor plan area, sinc
 \section{Segmenting Furniture and Room Geometry}
 \label{sec:procarve_main_idea}
 
+% display cartoon of set difference method
+\begin{figure}[t]
+	\centerline{\includegraphics[width=1.0\linewidth]{procarve/mainidea/cartoon_flowchart}}
+	\caption[Diagram showing how models are used to segment objects in scene.]{The scanned volume is meshed using two approaches that are combined to separate room geometry and object geometry.  The complex geometry from the octree (upper left, in red) and the simple geometry from the 2.5D model (lower left, in blue) are both volumetric techniques.  They are combined to extract the object volume (upper center, in green) and the building volume (lower center, in grey).  These volumes are meshed separately and exported (right, in black).}
+	\label{fig:procarve_mainidea}
+\end{figure}
+
+Our proposed method takes the octree-based 3D carving method described in Chapter~\ref{sec:procarve} and the 2.5D extruded floor plan method described in Chapter~\ref{sec:visigrapp} in order to perform object segmentation within the scanned environment.  In both modeling formats, each point in space has some probability of being {\it interior} or {\it exterior}.  We define {\it interior} space to be empty or open area that range scans can pass through.  We define {\it exterior} space to be solid material in the environment, including furniture and building structure.
+
+% high level overview of floorplan generation
+The primary goal of our approach is to use this volumetric information to form two watertight meshes of the environment.  The first mesh only represents the building geometry, including floors, walls, ceilings, windows, and doors.  The second mesh represents the objects in the environment such as furniture, light fixtures, or other items.  The block diagram of the method used for this segmentation is shown in Figure~\ref{fig:procarve_mainidea}.  We first generate two representations of the same environment.  The populated octree represents a complex model of the volume, as shown by the red graphic in the upper-left of Figure~\ref{fig:procarve_mainidea}.  We then generate a simplified 2.5D model of the same volume, as shown by the blue graphic in the lower-left of Figure~\ref{fig:procarve_mainidea}.  This simplified model is obtained by first generating a 2D floorplan of the scanned area, then extruding the floorplan to form a 2.5D model that explicitly represents the floors, walls, and ceilings of the model.  This mesh does not represent any interior objects, but is aligned with the major surfaces of the building.
+
+% merging models and getting meshes
+We then perform a set difference between these two volumetric models, keeping the volume that is labeled {\it exterior} by the octree and {\it interior} by the extruded floorplan.  This subset of the volume represents the objects in the environment, and is shown as the green graphic in the upper-center of Figure~\ref{fig:procarve_mainidea}.  Similarly, we can denote the union of the {\it interior} space of both models to be the building geometry, as shown in the lower-center of Figure~\ref{fig:procarve_mainidea}.  Once the model is segmented into object and building geometry, we can generate meshes for each type.  The object geometry is refined to enhance detail and is meshed uniformly to preserve its fine structure.  The building geometry is split into planar surfaces and each surface is triangulated efficiently, preserving the sharp corners between floors, walls, and ceilings.  We perform this planar meshing on the carved representation of the building geometry, rather than simply using the 2.5D extruded mesh, because it preserves building features such as windows and door-frames.  These two meshes are combined to form the whole environment, shown by the graphic at the right-side of Figure~\ref{fig:procarve_mainidea}.  This approach has the added benefit of modeling hidden surfaces, such as the backs of furniture or areas of walls occluded by objects.
+
+% section on aligning floor plans to octree geometry
+\subsection{Aligning Floor Plan Geometry to Octree Structure}
+\label{ssec:procarve_fp_alignment}
+
+% display the flow chart for this approach
+\begin{figure*}[t]
+	\centerline{\includegraphics[height=2.0cm]{procarve/process/flowchart/system_flowchart}}
+	\caption{System flowchart of our approach.  Scan Preprocessing is described in Chapter~\ref{sec:fss_stats}, Carving is detailed in Chapter~\ref{sec:procarve}, Wall Sampling and Floor Plan Generation are discussed in Chapter~\ref{sec:oct2fp}, Merge Models is delineated in Chapter~\ref{ssec:procarve_fp_alignment}, and Planar and Detailed Meshing are documented in Chapter~\ref{ssec:procarve_boundary}.}
+	\label{fig:procarve_flowchart}
+\end{figure*}
+
+% basic overview of section, bring us up to speed on what is being used
+In this section, we combine many ideas that are introduced throughtout this dissertation.  The overview of data flow through this process is outlined in Figure~\ref{fig:procarve_flowchart}.  In Chapter~\ref{sec:fss_stats}, we discuss how we probabilistically model the input scans in order to produce volumetric estimates of {\it interior}/{\it exterior} occupancy from each scan point.  In Chapter~\ref{sec:procarve}, we describe how these scans are efficiently combined to generate a unified occupancy estimate for the entire scan volume.  These occupancy estimates are stored in an octree, representing a complex model of the environment.  In Chapter~\ref{sec:oct2fp}, we detail how the octree is used to produce a simplified buidling model by first generating a 2D floorplan and then extruding the floorplan into a 2.5D mesh.  
+
+In this section, we discuss how the complex model in the octree and the simplified model in the 2.5D extruded floorplan are merged in order to segment the volume delineating objects such as furniture in the environment.  This processes produces two separate watertight models:  one for the building elements itself and one for the objects and furniture inside the building.  These two types of models are meshed using the two separate techniques discussed in Chapter~\ref{ssec:procarve_boundary}:  dense uniform meshing on the octree structure and planar meshing by fitting large planar regions to the octree boundary.  Each of these surface reconstruction techniques are geared to efficiently characterized their respective parts of the building.
+
+% figure about floorplan alignment
+\begin{figure}[t]
+
+	% full nodes
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/fp_align/original_octree}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/fp_align/furniture_unaligned}}
+		\centerline{(b)}
+	\end{minipage}
+	
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/fp_align/furniture_aligned}}
+		\centerline{(c)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.48\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/fp_align/furniture_aligned_highres}}
+		\centerline{(d)}
+	\end{minipage}
+	
+	% caption
+	\caption[Aligning floor plans to octree geometry for object segmentation.]{Example of aligning floorplan to segment objects: (a) original octree nodes, at max resolution of $6.25$ cm; (b) segmented objects using unaligned floorplan; (c) segmented objects using aligned floorplan; (d) the segmented objects are recarved to a resolution of $0.8$ cm.}
+	\label{fig:procarve_fp_align}
+\end{figure}
+
+% explain the alignment process (high-level)
+Both the extruded floorplan and the original octree are volumetric models of the environment, so we can classify the overlapping volumes into three categories.  First, locations that are {\it exterior} in the octree yet {\it interior} in the extruded floorplan are objects or furniture in the environment.  Locations labeled {\it exterior} by both models are considered part of the building structure.  Lastly, all locations labeled {\it interior} by the octree are considered open space interior to the building, regardless of the extruded floorplan's labeling.  Volume intersected by the boundary of the 2.5D floorplan is considered {\it exterior}, since these represent the primary building surfaces and not objects within the building.  Using this segmentation, we can now consider the objects in the building separately from the 2.5D building structure.  For instance, in Figure~\ref{fig:procarve_fp_align}a, we see the original octree leaf nodes of a scanned environment.  By performing a set difference of the octree volume from the volume of the 2.5D model of the environment, we can extract the furniture and other objects.  Figure~\ref{fig:procarve_fp_align}b shows the segmentation using an unaligned floorplan and Figure~\ref{fig:procarve_fp_align}c shows the result with a fully aligned floorplan.  The unaligned floorplan was generated directly from the raw point cloud of the scans whereas the aligned floorplan was generated with our method described in Chapter~\ref{sec:oct2fp}.  With a properly segmented representation of the room's objects, we can recarve the nodes of the octree containing object geometry, since these locations tend to have finer detail than the rest of the model.  Figure~\ref{fig:procarve_fp_align}d shows an example of this recarving, which has been refined from the original resolution of $6.25$ centimeters to a new resolution of less than a centimeter.
+
 % TODO
-% TODO copy 'main idea' section from siggraph paper
-% TODO modify the 'overview' subsection's pipeline figure
+% TODO additional info/math on fp alignment
 
+% why alignment is important
+The effect of misalignment can be seen by comparing Figures~\ref{fig:procarve_fp_align}b and~\ref{fig:procarve_fp_align}c.  In Figure~\ref{fig:procarve_fp_align}b, the octree was segmented using a floorplan generated directly from the point cloud and not the octree.  As such, parts of the back wall and window are mislabeled as objects and kept in the output.  However, in Figure~\ref{fig:procarve_fp_align}c, the octree was segmented using a floorplan generated via the technique described in this section.  The back wall is no longer mislabeled and only the actual furniture in the environment are segmented as objects.
 
-% TODO discuss aligning the floorplan to the octree
-By generating these wall samples using the octree as input, we can ensure that the final floorplan is well-aligned with the octree geometry.  This alignment is important for the steps described in Section~\ref{ssec:merge}, where we combine the simplified model back into the octree geometry.  The effect of misalignment can be seen by comparing Figures~\ref{fig:fp_align}b and~\ref{fig:fp_align}c.  In Figure~\ref{fig:fp_align}b, the octree was segmented using a floorplan generated directly from the point cloud and not the octree.  As such, parts of the back wall and window are mislabeled as objects and kept in the output.  However, in Figure~\ref{fig:fp_align}c, the octree was segmented using a floorplan generated via the technique described in this section.  The back wall is no longer mislabeled and only the actual furniture in the environment are segmented as objects.
+% TODO additional info on refining object resolution
 
-% TODO discuss why using planar regions is important
-We perform planar meshing on the octree elements in order to represent building features rather than simply using the 2.5D extruded mesh generated from the floorplan because the latter does not capture sufficient detail of the environment.  Features that do not follow the 2.5D assumption, such as windows or door-frames, are unable to be captured by the extruded floorplan mesh.  As shown in Figures~\ref{fig:banner}d and~\ref{fig:kitchen}c, the planar mesh of the building surface still provide geometry for features such as window recesses.
+% wrap up
+Once we have fully merged these models, each node of the octree is labeled as either object geometry or room geometry.  In addition to refining the resolution of object nodes, we can use this labeling to adjust how we generate a mesh for each portion of the environment.  
+
+% subsection on using separate meshing techniques to represent parts of model
+\subsection{Meshing Building and Object Volumes}
+\label{ssec:procarve_meshing}
+
+% figure shows different meshing techniques, and hidden surfaces modeled
+\begin{figure}[t]
+
+	% picture of kitchen
+	\begin{minipage}[t]{0.3\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/meshing/camera_image}}
+		\centerline{(a)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.3\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/meshing/kitchen_all}}
+		\centerline{(b)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.3\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/meshing/kitchen_room_tris}}
+		\centerline{(c)}
+	\end{minipage}
+	
+	% show the object geometry from various angles
+	\centering
+	\hfill
+	\begin{minipage}[t]{0.3\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/meshing/kitchen_object_tris}}
+		\centerline{(d)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.3\linewidth}
+		\centerline{\includegraphics[width=1.0\linewidth]{procarve/process/meshing/kitchen_object_frombehind}}
+		\centerline{(e)}
+	\end{minipage}
+	\hfill	
+
+	% caption
+	\caption[Example meshing output of residential area.]{Example meshing output of residential area: (a) photo of area; (b) all reconstruction geometry; (c) geometry of room surfaces only, colored by planar region; (d) geometry of objects only; (e) geometry of objects from behind, showing watertightness.}
+	\label{fig:procarve_kitchen}
+\end{figure}
+
+% overview
+After segmenting the octree geometry into objects and rooms, we can mesh each separately.  Objects such as furniture, light fixtures, doors, etc. tend to have higher detail than the room-level geometry.  The room-level geometry tends to be composed of large, planar surfaces.  We use a dense meshing technique to represent the object geometry, which preserves detail and curves in the geometry.  For the room-level geometry, we identify planar regions and mesh each plane with large triangles.  Figure~\ref{fig:procarve_kitchen} shows an example of applying both of these methods to a given model.  Figure~\ref{fig:procarve_kitchen}a shows a photograph of the scanned area (a kitchen table) and Figure~\ref{fig:procarve_kitchen}b shows the final output of all meshing approaches combined.
+
+% planar meshing
+To mesh building geometry, we first partition the boundary faces of the octree into planar regions, as discussed in Chapter~\ref{sec:procarve_boundary}.   We perform planar meshing on the octree elements in order to represent building features rather than simply using the 2.5D extruded mesh generated from the floorplan because the latter does not capture sufficient detail of the environment.  Features that do not follow the 2.5D assumption, such as windows or door-frames, are unable to be captured by the extruded floorplan mesh.  As shown in Figures~\ref{fig:banner}d and~\ref{fig:procarve_kitchen}c, the planar mesh of the building surface still provide geometry for features such as window recesses.
+
+% dense meshing
+We choose to use dense meshing on the objects and furniture found in the environment.  This dense meshing technique is fully described in Chapter~\ref{ssec:procarve_boundary}, and based off of dual contouring~\cite{DualContouring}.   It works well with adaptively-sized nodes in an octree and well-represents both curved and sharp features in the output geometry.  Since our data labels are divided into node centers of the tree, rather than node corners, we perform dual contouring by mapping each boundary face of the octree to a vertex in the mesh and each corner of the octree into a face in the meshed output.   The advantage to this method is that it preserves all detail from the octree when generating the output surface, and takes full advantage of the probabilistic nature of the octree, allowing for sub-voxel accuracy in the mesh.  Figure~\ref{fig:kitchen}d shows the object mesh in isolation for an example model.  
+
+The disadvantage of this method is the output mesh size.  Even though there is some adaptive meshing, due to the adaptive nature of the octree, by far most of the output is of uniform element size, resulting in a large number of elements.  We make the assumption that objects and furniture in the building represent only a fraction of the total surface area observed in the model, which enables us to generate dense meshes for these objects of fine detail, while still leaving the remainder of the model to be meshed more economically.
+
+% watertightness
+An important aspect of meshing these two segments separately is to ensure watertightness of building and object models.  The surfaces of walls hidden behind any occluding objects are still meshed, even though they are never directly scanned.  This effect can be seen in Figure~\ref{fig:kitchen}c.  Similarly, the hidden surfaces of objects are also fully meshed.  Figure~\ref{fig:kitchen}e shows the rear surface of the table, which was filled in based on the wall location.
 
 % results section for better carving
 \FloatBarrier
@@ -2723,10 +2845,11 @@ We perform planar meshing on the octree elements in order to represent building 
 	\label{fig:procarve_gradlounge}
 \end{figure}
 
-% TODO text that references fig:procarve_gradlounge
+% text that references fig:procarve_gradlounge
+We aim to improve on existing methods by combining two fundamentally different surface reconstruction techniques for building environments.  We first generate both a fully detailed model of the environment and a highly simplified representation of the same scanned area, using the approaches of~\cite{Turner13,Turner14}.  We then combine these models to segment volumetric representations of the interior objects in the environment, such as furniture or light fixtures, from the permanent surfaces of the building such as floors, walls, and ceilings. These steps allow us to generate accurate, watertight models of objects in the building distinct from the building model itself, as demonstrated in Figure~\ref{fig:procarve_gradlounge}.  We first produce a volumetric representation of the entire space, stored in an octree, as shown in Figure~\ref{fig:procarve_gradlounge}b.  We use this representation to produce a rich model of the environment, as shown in Figure~\ref{fig:procarve_gradlounge}c.  The objects of the environment, shown in white, can be separated from the building structure, as shown in Figure~\ref{fig:procarve_gradlounge}d.  We use different meshing techniques for the objects and the building itself in order to ensure the best representation of each type of surface.  The result is a rich model of the environment that represents a whole building based on level, room, or individual objects.
 
 % Hybrid Operating Room table
-\begin{figure}
+\begin{figure}[t]
 
 	% camera photo	
 	\centering
@@ -2824,7 +2947,7 @@ We show examples of the output model from multiple locations.  Figures~\ref{fig:
 Our approach does have some limitations.  Since the object segmentation procedure described in Section~\ref{sec:procarve_main_idea} uses volumetric intersections with an extruded 2.5D model based on a floorplan, it relies on assumptions this 2.5D model makes about the scanned environment.  In this approach, each room has fixed floor and ceiling heights.  If a room's ceiling is not horizontal, then it is approximated with a horizontal surface.  Figure~\ref{fig:procarve_bookcase} shows a few additional limitations.  This figure shows a set of boxes on top of a raised platform next to a bookcase.  The raised platform is identified as a separate object, even though it is part of the building structure, since it is at a different elevation than the rest of the floor in this room.  Additionally, this figure shows a floor-to-ceiling bookcase.  Since the position of fitted walls is found by looking for vertical surfaces, it is difficult to accurately gauge the depth of the shelves, especially when they are filled.  As a result, the wall is not positioned correctly, and only part of the bookcase is segmented as an object.  It is important to note, however, that all these limitations are highly localized.  Other parts of the model, such as the set of boxes or the coat-rack, are still meshed correctly in the presence of these issues.
 
 % figure of Eric's apt bookcase and ledge, showing limitations
-\begin{figure}
+\begin{figure}[t]
 
 	\begin{minipage}[t]{0.45\linewidth} % camera photo	
 		\centerline{\includegraphics[width=1.0\linewidth]{procarve/erics_apt/bookshelf/camera_image}}
