@@ -74,7 +74,7 @@ x	Floorplan generation					\label{ch:floorplan}
 			- compare pf wall samples to pc wall samples (houston, office)
 		- limitations					\label{sec:fp_limitations}
 		
-	Carving							\label{ch:carving}
+x	Carving							\label{ch:carving}
 		- section on probabilistic models of input scans		\label{sec:fss_stats}
 			- expand A LOT on mathematics of probabiltiy		\label{ssec:point_noise_sources}
 				- explain what's going on with noisypath
