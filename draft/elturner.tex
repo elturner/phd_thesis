@@ -983,7 +983,7 @@ This section details a technique to generate 2D architectural floor plans.  By p
 \section{Floor Plan Generation with Room Partitioning}
 \label{sec:visigrapp}
 
-In this section, we present a technique to automatically generate accurate floor plan models at real-time speeds for indoor building environments~\cite{Turner14}.  In Section~\ref{ssec:visigrapp_carving}, we discuss how we compute the interior space of the 2D floor-plan, which defines the resultant building geometry.  The partitioning of this interior space into separate rooms is then considered in Section~\ref{ssec:room_label}.  Using these room labels, the geometry can be simplified, as described in Section~\ref{ssec:fp_simplify}.  In Section~\ref{ssec:fp_extrusion}, the final 2D geometry is extruded into an exported 3D model.
+In this section, we present a technique to automatically generate accurate floor plan models at real-time speeds for indoor building environments~\cite{Turner14}.  This technique provides an expansion on the method discussed in the previous section.  In Section~\ref{ssec:visigrapp_carving}, we discuss how we compute the interior space of the 2D floor-plan, which defines the resultant building geometry.  The partitioning of this interior space into separate rooms is then considered in Section~\ref{ssec:room_label}.  Using these room labels, the geometry can be simplified, as described in Section~\ref{ssec:fp_simplify}.  In Section~\ref{ssec:fp_extrusion}, the final 2D geometry is extruded into an exported 3D model.
 
 \subsection{Defining Interior Area}
 \label{ssec:visigrapp_carving}
@@ -1002,7 +1002,7 @@ We generate a floor plan by partitioning space into {\it interior} and {\it exte
 % carving process using pose positions  
 The input samples are used to define a volumetric representation by generating a Delaunay Triangulation in the plane.  Each triangle is labeled either interior or exterior by analyzing the line-of-sight information of each wall sample.  Initially, all triangles are considered exterior.  Each input wall sample, $p \in P$, is viewed by a set of scanner positions, $S_p \subseteq \mathbb{R}^2$.  For every scanner position $s \in S_p$, the line segment $(s,p)$ denotes the line-of-sight occurring from the scanner to the scanned point during data collection.  No solid object can possibly intersect this line, since otherwise the scan would have been occluded.  Thus, all triangles intersected by the line segment $(s,p)$ are relabeled to be interior.
 
-In order to prevent fine details from being removed, we check for occlusions when carving each line segment $(s,p)$.  If another wall sample $p'$ is located in between the positions of $s$ and $p$, then the line segment is truncated to $(s,p')$.  Thus, no features captured by wall samples are ever fully carved away, preserving environment details.  This process carves away the interior triangles with each captured scan.  Since these scans are captured on a mobile scanner, the scanner poses are ordered in time.  In order for the system to traverse the environment, the line segment between adjacent scanner poses must also intersect only interior space.  In addition to carving via scanner-to-scan lines, the same carving process is performed with scanner-to-scanner line segments.
+This process carves away the interior triangles with each captured scan.  Since these scans are captured on a mobile scanner, the scanner poses are ordered in time.  In order for the system to traverse the environment, the line segment between adjacent scanner poses must also intersect only interior space.  In addition to carving via scanner-to-scan lines, the same carving process is performed with scanner-to-scanner line segments.
 
 Figure~\ref{fig:visigrapp_floorplan_creation} demonstrates an example of this process.  Figure~\ref{fig:visigrapp_floorplan_creation}a shows the input wall samples, in blue, as well as the path of the mobile mapping system, in green.  These points are triangulated, as shown in Figure~\ref{fig:visigrapp_floorplan_creation}b.  The line-of-sight information is analyzed from each pose of the system, demonstrated by the laser scans from each pose to its observed wall samples in Figure~\ref{fig:visigrapp_floorplan_creation}c.  The subset of triangles that are intersected by these laser scans are considered interior.  The interior triangles are shown in pink in Figure~\ref{fig:visigrapp_floorplan_creation}d, denoting the interior volume of the reconstructed building model.  The border of this building model is shown in blue, denoting the estimated walls of the floor plan.
 
@@ -1119,78 +1119,79 @@ In this section, we show several results for each of the methods described in th
 
 %%%%% CORY THREE RESULTS %%%%%
 
-\begin{figure}[t]
+\begin{figure}[p]
 
 % Floor #2
+\centering
 \begin{minipage}[b]{0.24\linewidth}
   \centering
-  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_three_results/cory_three_2_wall_samples}}
+  \centerline{\includegraphics[width=0.7\linewidth]{3dimpvt2012/cory_three_results/cory_three_2_wall_samples}}
 \end{minipage}
 \hfill
 \begin{minipage}[b]{0.24\linewidth}
   \centering
-  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_three_results/backpack_cory_three_2_final_triangles}}
+  \centerline{\includegraphics[width=0.7\linewidth]{3dimpvt2012/cory_three_results/backpack_cory_three_2_final_triangles}}
 \end{minipage}
 \hfill
 \begin{minipage}[b]{0.24\linewidth}
   \centering
-  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_three_results/cory_three_2_boundary_snapped}}
+  \centerline{\includegraphics[width=0.7\linewidth]{3dimpvt2012/cory_three_results/cory_three_2_boundary_snapped}}
 \end{minipage}
 \hfill
 \begin{minipage}[b]{0.24\linewidth}
   \centering
-  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_ground_truth/03_4_overlay}}
+  \centerline{\includegraphics[width=0.7\linewidth]{3dimpvt2012/cory_ground_truth/03_4_overlay}}
 \end{minipage}
-\centerline{(b)}
+\centerline{(a)}
 \linebreak
 
 % Floor #1
 \begin{minipage}[b]{0.24\linewidth}
   \centering
-  \centerline{\includegraphics[height=3.2cm]{3dimpvt2012/cory_three_results/cory_three_1_wall_samples}}
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/cory_three_results/cory_three_1_wall_samples}}
 \end{minipage}
 \hfill
 \begin{minipage}[b]{0.24\linewidth}
   \centering
-  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_three_results/backpack_cory_three_1_final_triangles}}
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/cory_three_results/backpack_cory_three_1_final_triangles}}
 \end{minipage}
 \hfill
 \begin{minipage}[b]{0.24\linewidth}
   \centering
-  \centerline{\includegraphics[height=3.2cm]{3dimpvt2012/cory_three_results/cory_three_1_boundary_snapped_labeled}}
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/cory_three_results/cory_three_1_boundary_snapped_labeled}}
 \end{minipage}
 \hfill
 \begin{minipage}[b]{0.24\linewidth}
   \centering
-  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_ground_truth/03_3_overlay}}
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/cory_ground_truth/03_3_overlay}}
 \end{minipage}
-\centerline{(c)}
+\centerline{(b)}
 \linebreak
 
 % Floor #0
 \begin{minipage}[b]{0.24\linewidth}
   \centering
-  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_three_results/cory_three_0_wall_samples}}
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/cory_three_results/cory_three_0_wall_samples}}
 \end{minipage}
 \hfill
 \begin{minipage}[b]{0.24\linewidth}
   \centering
-  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_three_results/cory_three_0_triangles}}
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/cory_three_results/cory_three_0_triangles}}
 \end{minipage}
 \hfill
 \begin{minipage}[b]{0.24\linewidth}
   \centering
-  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_three_results/cory_three_0_boundary_snapped_labeled}}
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/cory_three_results/cory_three_0_boundary_snapped_labeled}}
 \end{minipage}
 \hfill
 \begin{minipage}[b]{0.24\linewidth}
   \centering
-  \centerline{\includegraphics[height=3.5cm]{3dimpvt2012/cory_ground_truth/03_2_overlay}}
+  \centerline{\includegraphics[width=1.0\linewidth]{3dimpvt2012/cory_ground_truth/03_2_overlay}}
 \end{minipage}
-\centerline{(d)}
+\centerline{(c)}
 \linebreak
 
-\caption[Example floor plan on three-story building.]{(a) Full point cloud for three-story model, taken with mobile scanning system; (b-d) Processing of each story, with (left to right) wall sample locations, triangulation labeling, watertight curve-fit model, and comparison against ground-truth blueprints.}
+\caption[Example floor plan on three-story building.]{Example floor plans on three-story building: (a-c) Processing of each story, with (left to right) wall sample locations, triangulation labeling, watertight curve-fit model, and comparison against ground-truth blueprints.}
 \label{fig:cory_three_results}
 
 \end{figure}
@@ -1277,11 +1278,11 @@ In this section, we show several results for each of the methods described in th
 
 \end{figure}
 
-In order to demonstrate the accuracy of the floor plan generation method discussed in Section~\ref{sec:eigencrust}, we apply it to a dataset representing the hallways in three stories of an academic office building, as shown in Figure~\ref{fig:cory_three_results}.  The input point-set has 17.4 million elements and the resultant wall samplings for each story are 5,544 samples, 5,357 samples, and 3,265 samples from bottom story to top respectively.  Our test code, written in unoptimized MATLAB and run on a personal laptop, processes these three stories in 371.4 seconds total.  These results show how our algorithm enforces water-tightness by fitting walls to the ends of any unscanned sections, such as the hallways labeled 1 and 2 in the third column of Figure~\ref{fig:cory_three_results}(c).  The resultant models are compared against the current building floor plans, as shown in the fourth column of Figure~\ref{fig:cory_three_results}.  In areas where the wall sampling is dense, our generated floor plan is accurate with respect to these ground-truth blueprints.
+In order to demonstrate the accuracy of the floor plan generation method discussed in Section~\ref{sec:eigencrust}, we apply it to a dataset representing the hallways in three stories of an academic office building, as shown in Figure~\ref{fig:cory_three_results}.  The input point-set has 17.4 million elements and the resultant wall samplings for each story are 5,544 samples, 5,357 samples, and 3,265 samples from bottom story to top respectively.  Our test code, written in unoptimized MATLAB and run on a personal laptop, processes these three stories in 371.4 seconds total.  These results show how our algorithm enforces water-tightness by fitting walls to the ends of any unscanned sections, such as the hallways labeled 1 and 2 in the third column of Figure~\ref{fig:cory_three_results}c.  The resultant models are compared against the current building floor plans, as shown in the fourth column of Figure~\ref{fig:cory_three_results}.  In areas where the wall sampling is dense, our generated floor plan is accurate with respect to these ground-truth blueprints.
 
 Figure~\ref{fig:bhh_hallway_results} shows this same floor plan reconstruction method, applied to a scan taken of a single level of a hotel.  The input point-cloud has 5.8 million elements and the wall sampling produced 13,557 samples.  This set demonstrates a model that is composed of both curves and straight line-segments. Figure~\ref{fig:bhh_lobby_results} shows the lobby of this building, which has been statically scanned.  This dataset has an input point-cloud of 2.7 million points from which 3,568 2D wall samples were extracted. This model demonstrates the ability of our algorithm to capture structural features such as columns.  It shows how areas of high curvature can be modeled just as effectively as straight walls.
 
-While enforcing watertight models allows for walls to be created in areas that are not scanned, it may also cause undesired homography changes.  If two parallel walls are arbitrarily close, the space between them may become incorrectly labeled with neither wall existing in the final model.  An example of this issue can be seen in the north-west stairway in Figure~\ref{fig:cory_three_results}(d), labeled 3.  Another limitation is that the walls placed in areas of sparse scanning may be inaccurate.  The corridor in the south-east corner of the floor plan labeled 2 in Figure~\ref{fig:cory_three_results}(c) is not fully scanned, so a wall is represented at the edge of the scan area, even though the hallway continues much further in reality.  While the sparsity of a scan is typically due to the placement of the scanning system, it can also be caused by the partitioning of the original point-cloud into separate stories.  Note that the south-west stairwell in the same model, labeled 1, is sparsely sampled and as a result the north wall is incorrectly modeled at an angle.  In this case, the wall in question was thoroughly scanned, but higher in the stairway on the next story.  The immediate partitioning of levels in a point-cloud causes cross-level scans to become under-represented and introduces sparsity into the wall sampling.
+While enforcing watertight models allows for walls to be created in areas that are not scanned, it may also cause undesired homography changes.  If two parallel walls are arbitrarily close, the space between them may become incorrectly labeled with neither wall existing in the final model.  An example of this issue can be seen in the north-west stairway in Figure~\ref{fig:cory_three_results}d, labeled (3).  Another limitation is that the walls placed in areas of sparse scanning may be inaccurate.  The corridor in the south-east corner of the floor plan labeled (2) in Figure~\ref{fig:cory_three_results}c is not fully scanned, so a wall is represented at the edge of the scan area, even though the hallway continues much further in reality.  While the sparsity of a scan is typically due to the placement of the scanning system, it can also be caused by the partitioning of the original point-cloud into separate stories.  Note that the south-west stairwell in the same model, labeled (1), is sparsely sampled and as a result the north wall is incorrectly modeled at an angle.  In this case, the wall in question was thoroughly scanned, but higher in the stairway on the next story.  The immediate partitioning of levels in a point-cloud causes cross-level scans to become under-represented and introduces sparsity into the wall sampling.
 
 % comparison of results
 \subsection{Comparing Floor Plan Results}
@@ -1369,12 +1370,14 @@ Figure~\ref{fig:pf_pc_compare} shows a comparison between floor plans generated 
 We demonstrate efficient approaches to automatically generate floor plans of building interiors at real-time speeds.  Classifying and labeling the rooms within each generated floor plan allows for simplification schemes that can preserve fine details at doorways.  These room labels allow for accurate 2.5D extrusion from noisy floor and ceiling height estimates of the input points.  The resulting model is suitable for visualization, simulation, and navigation applications.  Current limitations of this algorithm include the verticality assumption made about observed building features.  If the horizontal cross-section of an environment changes dramatically between different heights, the modeling techniques presented in this paper does not accurately portray the actual geometry.
 
 % visigrapp results
+\FloatBarrier
 \subsection{Room Labeling Results}
 \label{ssec:visigrapp_results}
 
 The approach discussed in Section~\ref{sec:visigrapp} works well on a variety of test cases, spanning several model types including offices, hotels, hospitals, and university buildings.  For the largest models, total processing time to compute an extruded 3D model from 2D wall samples is under 10 seconds.  Most of this time is spent on carving interior triangles, which can be performed real-time in a streaming manner during data acquisition, which typically lasts several minutes.
 
-First, we show sample models resulting from our method in five different environments.  For all the models shown in Figures~\ref{fig:visigrapp_results_a} through~\ref{fig:visigrapp_results_e}, the scale is in units of meters, and the resolution is $5$~cm.  Figure~\ref{fig:visigrapp_results_a} corresponds to an office building, including cubicles and individual offices.  The largest room in this model, shown in teal, primarily contains cubicles.  The cubicle walls do not meet our height threshold of $H=2$ meters, so they are not captured by the wall samples.  Since cubicles are not an architectural feature of the environment, this effect is desirable.  The room shown in purple in the lower-left corner of this model also shows an example error in the building reconstruction.  The adjacent room to the right was briefly seen through a window, but its area was considered part of this purple room rather than being removed in the manner described in Section~\ref{sec:room_label}, resulting in a small extrusion remaining in the model.
+First, we show sample models resulting from our method in five different environments.  For all the models shown in Figures~\ref{fig:visigrapp_results_a} through~\ref{fig:visigrapp_results_e}, the scale is in units of meters, and the resolution is $5$~cm.  Figure~\ref{fig:visigrapp_results_a} corresponds to an office building, including cubicles and individual offices.  The largest room in this model, shown in teal, primarily contains cubicles.  The cubicle walls do not meet our height threshold of $H=2$ meters, so they are not captured by the wall samples.  Since cubicles are not an architectural feature of the environment, this effect is desirable.  The room shown in purple in the lower-left corner of this model also shows an example error in the building reconstruction.  The adjacent room to the right was briefly seen through a window, but its area was considered part of this purple room rather than being removed in the manner described in Section~\ref{ssec:room_label}, resulting in a small extrusion remaining in the model.
+
 Figure~\ref{fig:visigrapp_results_d} shows a small test model of an apartment office complex and Figure~\ref{fig:visigrapp_results_b} denotes a hotel lobby, hallways, and side rooms.  The vast majority of this model is labeled as one room, consisting of the hallways of the building.  Since no part of these hallways are separated by doors, this result is desirable.  Figure~\ref{fig:visigrapp_results_c} represents an academic research lab, including conference rooms and student cubicles.  The upper portion of the center room, shown in blue, is a kitchenette area, with a counter-top.  Since the counter was not sufficiently captured by the wall samples, it is not represented in the 2.5D extrusion of the model. Figure~\ref{fig:visigrapp_results_e} shows the hallways of an academic building.
 
 % lbnl results
