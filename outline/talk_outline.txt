@@ -1,0 +1,148 @@
+Talk outline (goal time: 45-50 minutes)
+
+
+overview (1 min):
+
+	- go over outline
+
+	- discuss the different modeling techniques
+
+Motivation
+
+	- show examples of each modeling technique
+
+	- discuss potential application areas for each one
+
+	- give main thesis:  combining these techniques
+		- show cartoon figure
+		- include basic concept of furniture segmentation
+
+Hardware
+
+	- show hardware comparisons (gen 1,2,3)
+
+	- discuss sensors on latest hardware
+		- show wifi map as example
+
+	- *very* briefly mention localiation
+		- show pipeline of three repos
+		- show example output paths
+		- aligning path to north
+
+Modeling Techniques
+
+	overview
+		- briefly rehighlight the different types of techniques
+		- remind audience that these will later be combined
+
+	2D Floor Plans
+		- say how we have two techniques, but only go in depth into visigrapp
+
+		- talk about background on floor plan modeling, and other people's stuff
+
+		- give quick overview of visigrapp method, showing some results
+			- level split, define area, partition rooms, simplify, extrude
+
+		- discuss level splitting
+			- remark we can make this better
+
+		- discuss wall sampling
+			- remark that we can make this better
+
+		- discuss highlights of interior/exterior modeling
+
+		- discuss highlights of room labeling
+
+		- discuss highlights of simplification
+
+		- discuss highlights of extruding model
+			- remark that we can make this better with more info
+			- compare to some other techniques
+
+		- lots of examples, videos, including texture-mapping
+			- end with cory299 example
+
+	3D Complex Models
+		- say we have two techniques, but only talk about procarve
+
+		- brief background on reconstruction
+			- kinect fusion
+
+		- give quick overview of procarve/carving method, show some examples
+			- define volume, fit surface
+
+		- talk about probabilistic analysis of scans
+
+		- octree and chunking
+
+		- forming a probability estimate for each node
+
+		- talk about how we can form a boundary for the model in two ways
+			- dense meshing (e.g. marching cubes, dual contours)
+			- planar meshing (show Pons et al, victor's, etc.)
+			- talk about how we have methods to do both
+
+		- discuss dense meshing
+			- isosurface analysis
+			- variant of dual contours
+			- show some examples
+
+		- discuss planar meshing
+			- briefly recap planar surface fitting and triangulation
+			- show examples
+
+		- show comparison from 3dv2013, between us and bosse
+
+		- show comparison between dense and planar, from thesis
+
+		- show lots of results:  videos and images, include texture-mapping
+			- discuss how planar is important for texture-mapping
+
+Combining Modeling Techniques
+
+	reiterate:  two 3D modeling methods
+
+	show comparisons between two model types: bunch of figures and videos
+
+	Improving floorplans with carving
+		- level splitting improvement
+			- remind audience of previous level-splitting
+			- *briefly* show how it's better
+		
+		- wall sampling improvement
+			- spend more time on this
+			- show how to find vertical surfaces
+			- find vertical extent using horizontal surfaces
+			- filling in missing parts of walls
+			- show comparison between wall sample types and improvements on floor plans
+
+	Improving carving with floor plans
+		- remind audience that we just used carving to improve floor plans, now we go the other way
+
+		- removing explosions
+			- use figures from quals
+
+		- furniture segmentation (go into LOTS of detail)
+			- show original cartoon from overview
+
+			- talk about background methods (classification of furniture)
+				- discuss limitations
+
+			- talk about need to align the floorplans to the octree
+				- maybe talking about explicit alignment as well?
+
+			- talk about recarving furniture nodes
+				- more efficient than carving everything at that detail
+
+			- talk about how both surface reconstruction methods are employed
+
+			- discuss watertightness of both furniture and building
+
+		- show ALL the videos from siggraph
+
+conclusion:
+	restate thesis, show pretty result, end
+
+
+
+
