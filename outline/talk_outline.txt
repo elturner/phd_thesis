@@ -3,13 +3,17 @@ Talk outline (goal time: 45-50 minutes)
 
 overview (1 min):
 
-	- go over outline
+x	- go over outline
 
 	- discuss the different modeling techniques
 
 Motivation
 
-	- show examples of each modeling technique
+x	- show examples of each modeling technique		
+		- show photo:  "we are interested in capturing this geometry"
+		- show 2.5d:   "Sometimes we want to model the basic surfaces"
+		- show 3d:     "Sometimes we want to capture every detail"
+		- show fp:     "Sometimes we want to just show a macro view"
 
 	- discuss potential application areas for each one
 
