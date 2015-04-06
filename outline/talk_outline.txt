@@ -15,23 +15,29 @@ x	- show examples of each modeling technique
 		- show 3d:     "Sometimes we want to capture every detail"
 		- show fp:     "Sometimes we want to just show a macro view"
 
+x	- give main thesis:  combining these techniques
+		- show side-by-side example of these models
+		- show the idea of segmenting furniture
+		- show improvements of floor plans
+		- show removing explosions
+
 	- discuss potential application areas for each one
 
-	- give main thesis:  combining these techniques
-		- show cartoon figure
-		- include basic concept of furniture segmentation
 
 Hardware
 
-	- show hardware comparisons (gen 1,2,3)
+x	- show hardware comparisons (gen 1,2,3)
 
-	- discuss sensors on latest hardware
+x	- discuss sensors on latest hardware
 		- show wifi map as example
 
-	- *very* briefly mention localiation
+x	- *very* briefly mention localiation
 		- show pipeline of three repos
 		- show example output paths
 		- aligning path to north
+
+	- discuss probability model for points
+		- talk about probabilistic analysis of scans
 
 Modeling Techniques
 
@@ -74,8 +80,6 @@ Modeling Techniques
 
 		- give quick overview of procarve/carving method, show some examples
 			- define volume, fit surface
-
-		- talk about probabilistic analysis of scans
 
 		- octree and chunking
 
