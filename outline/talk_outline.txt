@@ -1,7 +1,7 @@
 Talk outline (goal time: 45-50 minutes)
 
 
-overview (1 min):
+overview (******1 min):
 
 x	- go over outline
 
@@ -36,19 +36,31 @@ x	- *very* briefly mention localiation
 		- show example output paths
 		- aligning path to north
 
+x	- show example point cloud
+
+TODO: video of pointcloud
+
 	- discuss probability model for points
 		- talk about probabilistic analysis of scans
 
-Modeling Techniques
+Modeling Techniques  (******10 minute mark)
 
-	overview
+x	overview
 		- briefly rehighlight the different types of techniques
 		- remind audience that these will later be combined
 
 	2D Floor Plans
-		- say how we have two techniques, but only go in depth into visigrapp
 
-		- talk about background on floor plan modeling, and other people's stuff
+TODO: good result to show at beginning
+
+x		- talk about background on floor plan modeling, other people's stuff
+			- mention common themes:
+				- want simplified representation
+				- generated from pointclouds (typically static)
+				- 2d histogram
+				- not really watertight
+			- more recent techniques are watertight, but not scalable,
+				or sometimes rely on manhattan-worlds
 
 		- give quick overview of visigrapp method, showing some results
 			- level split, define area, partition rooms, simplify, extrude
@@ -72,7 +84,7 @@ Modeling Techniques
 		- lots of examples, videos, including texture-mapping
 			- end with cory299 example
 
-	3D Complex Models
+	3D Complex Models (******20 minute mark)
 		- say we have two techniques, but only talk about procarve
 
 		- brief background on reconstruction
@@ -106,7 +118,7 @@ Modeling Techniques
 		- show lots of results:  videos and images, include texture-mapping
 			- discuss how planar is important for texture-mapping
 
-Combining Modeling Techniques
+Combining Modeling Techniques (******30 minute mark)
 
 	reiterate:  two 3D modeling methods
 
@@ -124,7 +136,7 @@ Combining Modeling Techniques
 			- filling in missing parts of walls
 			- show comparison between wall sample types and improvements on floor plans
 
-	Improving carving with floor plans
+	Improving carving with floor plans (******35-40 minute mark)
 		- remind audience that we just used carving to improve floor plans, now we go the other way
 
 		- removing explosions
@@ -148,7 +160,7 @@ Combining Modeling Techniques
 
 		- show ALL the videos from siggraph
 
-conclusion:
+conclusion: (****** 50 minute mark)
 	restate thesis, show pretty result, end
 
 
