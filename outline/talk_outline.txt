@@ -88,7 +88,9 @@ x		- talk about background on floor plan modeling, other people's stuff
 		- say we have two techniques, but only talk about procarve
 
 		- brief background on reconstruction
-			- kinect fusion
+			- bosse:  mobile, watertight, but dense and noisy
+			- pons:  clean, but not scalable and not mobile
+			- kinect fusion: clean, but slow, dense, and not scalable
 
 		- give quick overview of procarve/carving method, show some examples
 			- define volume, fit surface
@@ -111,18 +113,28 @@ x		- talk about background on floor plan modeling, other people's stuff
 			- briefly recap planar surface fitting and triangulation
 			- show examples
 
-		- show comparison from 3dv2013, between us and bosse
-
 		- show comparison between dense and planar, from thesis
+
+		- show comparison from 3dv2013, between us and bosse
 
 		- show lots of results:  videos and images, include texture-mapping
 			- discuss how planar is important for texture-mapping
+
+		- end section by saying we want the best of both worlds
+				-> dense meshing on furniture, planar on building
 
 Combining Modeling Techniques (******30 minute mark)
 
 	reiterate:  two 3D modeling methods
 
-	show comparisons between two model types: bunch of figures and videos
+	overview section by discussing furniture segmentation (go into LOTS of detail)
+		- show original cartoon from overview
+			- overview each step
+			- talk about volumetric nature of output
+
+		- talk about background methods (classification of furniture)
+			- discuss limitations
+			- discuss how our method overcomes these
 
 	Improving floorplans with carving
 		- level splitting improvement
@@ -138,15 +150,6 @@ Combining Modeling Techniques (******30 minute mark)
 
 	Improving carving with floor plans (******35-40 minute mark)
 		- remind audience that we just used carving to improve floor plans, now we go the other way
-
-		- removing explosions
-			- use figures from quals
-
-		- furniture segmentation (go into LOTS of detail)
-			- show original cartoon from overview
-
-			- talk about background methods (classification of furniture)
-				- discuss limitations
 
 			- talk about need to align the floorplans to the octree
 				- maybe talking about explicit alignment as well?
