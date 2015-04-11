@@ -84,7 +84,7 @@ x		- talk about background on floor plan modeling, other people's stuff
 		- lots of examples, videos, including texture-mapping
 			- end with cory299 example
 
-	3D Complex Models (******20 minute mark)
+x	3D Complex Models (******20 minute mark)
 		- say we have two techniques, but only talk about procarve
 
 		- brief background on reconstruction
@@ -125,46 +125,43 @@ x		- talk about background on floor plan modeling, other people's stuff
 
 Combining Modeling Techniques (******30 minute mark)
 
-	reiterate:  two 3D modeling methods
+x	reiterate:  two 3D modeling methods
 
 	overview section by discussing furniture segmentation (go into LOTS of detail)
-		- show original cartoon from overview
+x		- show original cartoon from overview
 			- overview each step
 			- talk about volumetric nature of output
 
-		- talk about background methods (classification of furniture)
+x		- talk about background methods (classification of furniture)
 			- discuss limitations
 			- discuss how our method overcomes these
 
-	Improving floorplans with carving
-		- level splitting improvement
-			- remind audience of previous level-splitting
-			- *briefly* show how it's better
-		
-		- wall sampling improvement
-			- spend more time on this
-			- show how to find vertical surfaces
-			- find vertical extent using horizontal surfaces
-			- filling in missing parts of walls
+x		- talk about need to align the floorplans to the octree
+			- show what happens when you don't align
+			- show how much better alignment is
+			- briefly discuss alignment process
+				- show how to find vertical surfaces
+				- find vertical extent using horizontal surfaces
+				- filling in missing parts of walls
 			- show comparison between wall sample types and improvements on floor plans
 
-	Improving carving with floor plans (******35-40 minute mark)
-		- remind audience that we just used carving to improve floor plans, now we go the other way
+			- level splitting improvement
+				- remind audience of previous level-splitting
+				- *briefly* show how it's better
 
-			- talk about need to align the floorplans to the octree
-				- maybe talking about explicit alignment as well?
 
-			- talk about recarving furniture nodes
-				- more efficient than carving everything at that detail
+x		- talk about recarving furniture nodes
+			- more efficient than carving everything at that detail
 
-			- talk about how both surface reconstruction methods are employed
+x		- talk about how both surface reconstruction methods are employed
 
-			- discuss watertightness of both furniture and building
+x		- discuss modeling rare objects
+			- verbally mention watertightness of furniture and building
 
 		- show ALL the videos from siggraph
 
 conclusion: (****** 50 minute mark)
-	restate thesis, show pretty result, end
+x	restate thesis, show pretty result, end
 
 
 
