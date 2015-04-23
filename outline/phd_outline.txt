@@ -97,10 +97,11 @@ x	Carving							\label{ch:carving}
 			- all of voxel carve results				\label{ssec:3dv2013_results}
 			- add results for mulford and other large procarve stuff
 
-x	Comparisons of 2.5D and 3D Models					\label{ch:fp_carving_compare}
+x	Combining Modeling Techniques						\label{ch:multimodal_modeling}
 
-x	Improving floorplans with carving  					\label{ch:better_floorplans}
-		- level-splitting with octree, improves on pointcloud level split
+		- Comparisons of 2.5D and 3D Models				\label{sec:fp_carving_compare} 
+
+		- level-splitting with octree					\label{sec:octree_level_split}
 		- wall sample generation via procarve				\label{sec:oct2fp}
 			- generating 2D wall samples				\label{ssec:oct2dq}
 			- discuss how planarity is observed
@@ -108,14 +109,13 @@ x	Improving floorplans with carving  					\label{ch:better_floorplans}
 			- including heights via horizontal surfaces		\label{ssec:octree_fp_extrusion}
 		- include some hia stuff					\label{sec:hia}
 
-	Improving carving with floorplans					\label{ch:better_carving}
 		- removing explosions (see journal paper)			\label{sec:explosion_removal}
 		- furniture segmentation					\label{sec:procarve_main_idea}
 			- main idea				
 			- merging fp and oct					\label{ssec:procarve_fp_alignment}
 				- include optimization of fp alignment
 				- refining furniture
-			- representing furniture and building separately	\label{ssec:procarve_meshing}
+			- representing furniture/building separately		\label{ssec:procarve_meshing}
 		- all results							\label{sec:procarve_results}
 
 x	Applications and Analysis						\label{ch:applications}
