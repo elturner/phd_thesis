@@ -15,16 +15,17 @@ x	- show examples of each modeling technique
 		- show 3d:     "Sometimes we want to capture every detail"
 		- show fp:     "Sometimes we want to just show a macro view"
 
+	- discuss potential application areas for each one
+
 x	- give main thesis:  combining these techniques
 		- show side-by-side example of these models
 		- show the idea of segmenting furniture
 		- show improvements of floor plans
 		- show removing explosions
 
-	- discuss potential application areas for each one
-
-
 Hardware
+
+	make sure to mention how a backpack system is unique/interesting
 
 x	- show hardware comparisons (gen 1,2,3)
 
@@ -32,13 +33,16 @@ x	- discuss sensors on latest hardware
 		- show wifi map as example
 
 x	- *very* briefly mention localiation
-		- show pipeline of three repos
+		- give kudos to Nick
 		- show example output paths
-		- aligning path to north
+			- aligning path to north
+		- discuss how modeling requires path
+		- lead into pointcloud
 
 x	- show example point cloud
-
-TODO: video of pointcloud
+		- minimal processing required
+		- we can color it
+		- discuss how it's important to have watertight mesh
 
 	- discuss probability model for points
 		- talk about probabilistic analysis of scans
@@ -50,6 +54,7 @@ x	overview
 		- remind audience that these will later be combined
 
 	2D Floor Plans
+		- discuss how 2D and 2.5D are same method
 
 TODO: good result to show at beginning
 
@@ -63,41 +68,63 @@ x		- talk about background on floor plan modeling, other people's stuff
 				or sometimes rely on manhattan-worlds
 
 		- give quick overview of visigrapp method, showing some results
+			- first mention input/output data types
 			- level split, define area, partition rooms, simplify, extrude
 
 		- discuss level splitting
+			- little/no details
 			- remark we can make this better
 
 		- discuss wall sampling
+			- we want to find "large, vertical surfaces"
+			- we keep height info
 			- remark that we can make this better
 
 		- discuss highlights of interior/exterior modeling
+			- discuss "line-of-sight"
+			- remark on 'explosion' triangles
 
 		- discuss highlights of room labeling
+			- discuss "local maxima" of feature size
+			- show good:  rooms
+			- show bad: hallways
+		
+		- room  merging
+			- talk about ADA compliance
 
 		- discuss highlights of simplification
+			- say that we can export this as a floor plan
 
 		- discuss highlights of extruding model
+			- only represents simple, major geometry
 			- remark that we can make this better with more info
 			- compare to some other techniques
 
 		- lots of examples, videos, including texture-mapping
 			- end with cory299 example
+			- explicitly talk about limitations
 
 x	3D Complex Models (******20 minute mark)
-		- say we have two techniques, but only talk about procarve
 
 		- brief background on reconstruction
 			- bosse:  mobile, watertight, but dense and noisy
 			- pons:  clean, but not scalable and not mobile
 			- kinect fusion: clean, but slow, dense, and not scalable
 
-		- give quick overview of procarve/carving method, show some examples
+			** we have to deal with the worst input of all worlds
+				- sparse and noisy
+
+		- say we have two techniques, but only talk about procarve
+
+		- give quick overview of procarve/carving method
+			- first focus on input/output
 			- define volume, fit surface
 
 		- octree and chunking
 
 		- forming a probability estimate for each node
+			- maximum likelihood
+			- show naive labeling (if nodes forced to be binary in/out)
 
 		- talk about how we can form a boundary for the model in two ways
 			- dense meshing (e.g. marching cubes, dual contours)
@@ -105,7 +132,7 @@ x	3D Complex Models (******20 minute mark)
 			- talk about how we have methods to do both
 
 		- discuss dense meshing
-			- isosurface analysis
+			- isosurface analysis... "placing surface at p=0.5"
 			- variant of dual contours
 			- show some examples
 
@@ -140,6 +167,7 @@ x		- talk about need to align the floorplans to the octree
 			- show what happens when you don't align
 			- show how much better alignment is
 			- briefly discuss alignment process
+				- reminder:  making floorplans
 				- show how to find vertical surfaces
 				- find vertical extent using horizontal surfaces
 				- filling in missing parts of walls
